@@ -40,5 +40,5 @@ export const DATE_TIME_CONFIG = {
   },
   DATE_LOCALE: 'en-GB',
   TIME_LOCALE: 'en-US',
-  UPDATE_INTERVAL: 60000, // 1 minute
+  UPDATE_INTERVAL: 1000, // 1 second for real-time updates
 } as const;

@@ -4,18 +4,11 @@ import { getFormattedPatientName, getPatientId, getCurrentDate, getFormattedDOB,
 import { useSettings } from '../../../contexts/SettingsContext';
 import { useAngle } from '../../../contexts/AngleContext';
 import svgPaths from "../../../imports/svg-lsvrftrq7x";
-import imgImage1 from "figma:asset/82f7f32e258c1f3564c6028958e44e4ec5476529.png";
 import imgCoronal from "figma:asset/4c8bbf83fe02a6ff097b8e4c2200db41b8b53782.png";
 import imgImage2 from "figma:asset/71dabdc7502548dbc0e7e3fc8521d3ad4a8010af.png";
 import imgImage3 from "figma:asset/db228b80ad186ca3d5adc278aa560e86a0eda3b7.png";
 import imgAxial from "figma:asset/d7258c707bf99e6cc2fdd9e2b612b0b00247fc8f.png";
 import imgImage4 from "figma:asset/7ece7bb00a5e8eaa345a0ea283f6a6bc424b0ef3.png";
-import imgSagittal from "figma:asset/c12d087aa3c301b81e74e12cfc43dd149178b7a0.png";
-import imgUntitled11 from "figma:asset/0f0384f86d80f261ddeb017dcfe5c3bd1140e4e8.png";
-import Angle1 from "../../../assets/ImageAngles/Angle1.png";
-import Angle2 from "../../../assets/ImageAngles/Angle2.png";
-import Angle3 from "../../../assets/ImageAngles/Angle3.png";
-import Angle4 from "../../../assets/ImageAngles/Angle4.png";
 import { imgDlsCapture16, imgDlsTabMaximize48, imgImageInformation, imgLeft, imgBottom, imgRight, imgCollapse, imgIconsTaskSeries24, imgIconsTaskPlanning24, imgIconsTaskLive24, imgTitle, imgVector1, imgCheckbox, imgIcon5, imgPath, imgVector2, imgDlsHome24, imgPhilipsWordmark2, imgDlsPatientAcquisition24, imgNavIcon, imgNavIcon1 } from "../../../assets/interventional-workspace-svg-assets";
 
 // Custom PatientBar for InterventionalWorkspace with NavigationBar content
@@ -498,6 +491,7 @@ function TaskGuidancePanel({ subFocusMode, selectedAngleIndex, onAngleSelect }: 
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isViewingAnglesCollapsed, setIsViewingAnglesCollapsed] = useState(false);
   const { inputSettings } = useSettings();
+  const { selectedAngle } = useAngle();
 
   return (
     <div className="w-full h-full bg-black border-r border-[#383838]" data-name="Task Guidance">
@@ -628,7 +622,7 @@ function TaskGuidancePanel({ subFocusMode, selectedAngleIndex, onAngleSelect }: 
               <div className="flex flex-col items-center justify-center relative size-full">
                 <div className="box-border content-stretch flex flex-col gap-1 items-center justify-center pb-0 pt-1 px-[60px] relative w-full">
                   <div className="h-[100px] relative shrink-0 w-[150px]">
-                    <div className="absolute bg-center bg-cover bg-no-repeat inset-0" style={{ backgroundImage: `url('${imgUntitled11}')` }} />
+                    <div className="absolute bg-center bg-cover bg-no-repeat inset-0" style={{ backgroundImage: `url('/src/assets/0f0384f86d80f261ddeb017dcfe5c3bd1140e4e8.png')` }} />
                   </div>
                   <div className="h-8 relative shrink-0 w-[220px]">
                     <div className="absolute flex flex-col font-['CentraleSans:Book',_sans-serif] inset-0 justify-center leading-[0] not-italic text-[#d6d6d6] text-[14px] text-center">
@@ -655,24 +649,44 @@ function TaskGuidancePanel({ subFocusMode, selectedAngleIndex, onAngleSelect }: 
               { id: "3", name: "Angle 3", rotation: "Rot 0° Ang 45°" },
               { id: "4", name: "Angle 4", rotation: "Rot -90° Ang 30°" }
             ].map((angle, index) => {
-              const isSelected = subFocusMode === 'angles' && selectedAngleIndex === index;
-              const focusStyles = isSelected ? {
-                backgroundColor: '#2b86b2',
-                borderColor: '#2b86b2'
-              } : {};
+              const isFocused = subFocusMode === 'angles' && selectedAngleIndex === index;
+              const isSelectedFromContext = selectedAngle?.id === angle.id;
+              const isSelected = isFocused || isSelectedFromContext;
+              // Apply gradient background for focus mode (before activation) or solid color for activated angles
+              const focusStyles = isSelected ? (
+                isFocused && !isSelectedFromContext ? {
+                  background: `linear-gradient(125deg, ${inputSettings.focusBorderColor1} 0%, ${inputSettings.focusBorderColor2} 75%, ${inputSettings.focusBorderColor2} 100%)`,
+                  borderColor: 'transparent'
+                } : {
+                  backgroundColor: '#2b86b2',
+                  borderColor: '#2b86b2'
+                }
+              ) : {};
+              
+              // Use import icon for first two angles, C-arm icon for others
+              const isImportAngle = index < 2;
+              const iconPath = isImportAngle 
+                ? "M30 30H2V10H5V27H27V5H19V2H30V30ZM16.5 23L9 13H14.5C14.5 10.1592 13.3742 8.48169 12.0928 7.46875C10.7238 6.38673 9.08669 6.00009 8.16699 6H2V2H8.16699C9.91388 2.00008 12.4427 2.64698 14.5732 4.33105C16.7918 6.08478 18.5 8.90744 18.5 13H24L16.5 23Z"
+                : "M24.2501 12V2.66667H22.9167V1.33333H17.5834V2.66667H16.2501V5.11333C13.8034 5.78667 11.4635 7.42667 10.0234 9.04667C8.58327 10.6667 7.86687 13.19 7.58337 14.3333C7.29986 15.4767 7.20354 16.9733 7.58345 20C7.96336 23.0267 12.2116 27.561 16.9167 29.3333C17.4511 29.5346 17.3461 29.4854 17.8634 29.8733C18.53 30.3733 19.3567 30.6667 20.2501 30.6667C22.4567 30.6667 24.2501 28.8733 24.2501 26.6667C24.2501 25.0467 23.2901 23.66 21.9034 23.0267L23.5834 19.3333H16.9167L18.5967 23.0267C17.2101 23.66 16.2501 25.0467 16.2501 26.6667C16.2501 26.7 16.2567 26.7267 16.2567 26.76C13.2034 25.6733 10.6234 21.3333 10.25 20.3333C9.87662 19.3333 9.84635 17.1804 9.95672 16.3333C10.0671 15.4863 10.3026 13.8643 10.9167 12.6667C11.5309 11.469 13.9901 8.71333 16.2501 7.90667V12H24.2501Z";
               
               return (
                 <button 
                   key={index} 
-                  className="content-stretch flex h-12 items-start justify-start relative shrink-0 w-full transition-colors hover:bg-[rgba(255,255,255,0.05)] focus:outline-none focus:ring-2 focus:ring-[#2b86b2] focus:ring-inset"
-                  onClick={() => onAngleSelect?.(angle.id)}
+                  className="content-stretch flex h-12 items-start justify-start relative shrink-0 w-full transition-colors hover:bg-[rgba(255,255,255,0.05)] focus:outline-2 focus:outline-blue-500"
+                  onClick={() => {
+                    console.log('Button clicked - angle:', angle.id);
+                    onAngleSelect?.(angle.id);
+                  }}
+                  onFocus={() => console.log('Button focused - angle:', angle.id)}
+                  onBlur={() => console.log('Button blurred - angle:', angle.id)}
                   type="button"
+                  tabIndex={0}
                 >
                   <div className="box-border content-stretch flex gap-2 h-12 items-center justify-start px-3 py-2 relative shrink-0 w-full" style={focusStyles}>
                     <div className="basis-0 content-stretch flex gap-3 grow items-center justify-start min-h-px min-w-px relative shrink-0">
                       <div className="relative shrink-0 size-6">
                         <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 32 32">
-                          <path d={svgPaths.p115e8900} fill="#D6D6D6" />
+                          <path d={iconPath} fill="#D6D6D6" />
                         </svg>
                       </div>
                       <div className="content-stretch flex flex-col font-['CentraleSans:Book',_sans-serif] items-start justify-center leading-[0] not-italic relative shrink-0 text-[#d6d6d6] text-[14px] text-nowrap">
@@ -706,34 +720,57 @@ interface InterventionalWorkspaceProps {
   focusMode?: boolean;
   subFocusMode?: 'none' | 'angles';
   selectedAngleIndex?: number;
+  onAngleSelect?: (angleId: string) => void;
 }
 
 export function InterventionalWorkspace({ 
   focusMode = false, 
   subFocusMode = 'none', 
-  selectedAngleIndex = 0 
-}: InterventionalWorkspaceProps = {}) {
-  const { selectedAngleImage, setSelectedAngle, activateUniGuide } = useAngle();
+  selectedAngleIndex = 0,
+  onAngleSelect
+}: InterventionalWorkspaceProps) {
+  const { selectedAngle, setSelectedAngle, activateUniGuide } = useAngle();
   
   // Map angle IDs to their corresponding images
   const angleImages = {
-    "1": Angle1,
-    "2": Angle2,
-    "3": Angle3,
-    "4": Angle4
+    "1": "/src/assets/ImageAngles/Angle1.png",
+    "2": "/src/assets/ImageAngles/Angle2.png",
+    "3": "/src/assets/ImageAngles/Angle3.png",
+    "4": "/src/assets/ImageAngles/Angle4.png"
   };
 
   // SmartUI function to activate angles and switch TSM tab
   const handleAngleActivation = (angleId: string) => {
+    console.log('🎯 FlexVision - handleAngleActivation called for angle:', angleId);
     const angleImage = angleImages[angleId as keyof typeof angleImages];
     if (angleImage) {
-      setSelectedAngle(angleId, angleImage);
+      // Use consistent angle descriptions across screens
+      const angleDescriptions = {
+        "1": { rotation: "Rot -180°", angle: "Ang -180°" },
+        "2": { rotation: "Rot 90°", angle: "Ang 0°" },
+        "3": { rotation: "Rot 0°", angle: "Ang 45°" },
+        "4": { rotation: "Rot -90°", angle: "Ang 30°" }
+      };
+      
+      const angleDesc = angleDescriptions[angleId as keyof typeof angleDescriptions];
+      const angleData = {
+        id: angleId,
+        name: `Angle ${angleId}`,
+        image: angleImage,
+        rotation: angleDesc.rotation,
+        angle: angleDesc.angle
+      };
+      console.log('📤 FlexVision - Sending angle data to context:', angleData);
+      setSelectedAngle(angleData);
       activateUniGuide();
+      console.log('🚀 FlexVision - UniGuide activated');
+    } else {
+      console.log('❌ FlexVision - No image found for angleId:', angleId);
     }
   };
 
   // Use selected angle image or default
-  const mainImage = selectedAngleImage || imgImage1;
+  const mainImage = selectedAngle?.image || imgImage2;
 
   return (
     <div className="flex flex-col h-full">
@@ -782,7 +819,7 @@ export function InterventionalWorkspace({
             />
             <ViewContainer 
               image={imgImage4}
-              orientationImage={imgSagittal}
+              orientationImage={imgAxial}
               orientationText="Rot 90˚ Ang 0˚"
               showReferenceLines={true}
               indicatorColor="#ff8370"

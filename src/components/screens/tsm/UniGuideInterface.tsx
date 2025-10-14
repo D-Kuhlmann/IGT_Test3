@@ -219,17 +219,19 @@ function StoreAngleButton({ onClick }: { onClick: () => void }) {
 function AngleListItem({ 
   angle, 
   onDelete,
-  onSelect 
+  onSelect,
+  isSelected = false
 }: { 
   angle: AngleData; 
   onDelete?: () => void;
   onSelect?: () => void;
+  isSelected?: boolean;
 }) {
   const iconPath = angle.icon === "import" ? svgPaths.p19e4b880 : svgPaths.p10a6ce00;
 
   return (
     <button 
-      className="content-stretch flex h-[72px] items-start justify-start relative shrink-0 w-[304px] transition-colors hover:bg-[rgba(255,255,255,0.05)] focus:outline-none focus:ring-2 focus:ring-[#2b86b2] focus:ring-inset"
+      className={`content-stretch flex h-[72px] items-start justify-start relative shrink-0 w-[304px] transition-colors hover:bg-[rgba(255,255,255,0.05)] focus:outline-none focus:ring-2 focus:ring-[#2b86b2] focus:ring-inset ${isSelected ? 'bg-[#2b86b2]' : ''}`}
       onClick={onSelect}
       type="button"
     >
@@ -368,13 +370,13 @@ function ToolbarButton({
 }
 
 export function UniGuideInterface() {
-  const { selectedAngleId, selectedAngleImage, setSelectedAngle } = useAngle();
+  const { selectedAngle, setSelectedAngle } = useAngle();
   
   const [angles, setAngles] = useState<AngleData[]>([
     { id: "1", name: "Angle 1", rotation: "Rot -180°", angle: "Ang -180°", icon: "import", canDelete: false },
-    { id: "2", name: "Angle 2", rotation: "Rot -180°", angle: "Ang -180°", icon: "import", canDelete: false },
-    { id: "3", name: "Angle 3", rotation: "Rot -180°", angle: "Ang -180°", icon: "carm", canDelete: true },
-    { id: "4", name: "Angle 4", rotation: "Rot -180°", angle: "Ang -180°", icon: "carm", canDelete: true }
+    { id: "2", name: "Angle 2", rotation: "Rot 90°", angle: "Ang 0°", icon: "import", canDelete: false },
+    { id: "3", name: "Angle 3", rotation: "Rot 0°", angle: "Ang 45°", icon: "carm", canDelete: true },
+    { id: "4", name: "Angle 4", rotation: "Rot -90°", angle: "Ang 30°", icon: "carm", canDelete: true }
   ]);
 
   const [activeImage, setActiveImage] = useState<number>(1);
@@ -389,12 +391,17 @@ export function UniGuideInterface() {
     "4": Angle4
   };
 
-  // Sync with cross-screen angle selection
+  // Listen for changes to selectedAngle from context
   useEffect(() => {
-    if (selectedAngleImage) {
-      setMainImage(selectedAngleImage);
+    console.log('📥 TSM - selectedAngle changed in context:', selectedAngle);
+    if (selectedAngle?.image) {
+      console.log('🖼️ TSM - Updating main image to:', selectedAngle.image);
+      setMainImage(selectedAngle.image);
+      console.log('✅ TSM - Main image updated successfully');
+    } else {
+      console.log('⚠️ TSM - No image in selectedAngle, keeping current image');
     }
-  }, [selectedAngleImage]);
+  }, [selectedAngle]);
 
   const handleStoreAngle = () => {
     const newAngle: AngleData = {
@@ -412,10 +419,22 @@ export function UniGuideInterface() {
     setAngles(angles.filter(angle => angle.id !== angleId));
   };
 
-  const handleSelectAngle = (angleId: string) => {
-    const selectedImage = angleImages[angleId as keyof typeof angleImages];
-    if (selectedImage) {
-      setMainImage(selectedImage);
+  const handleSelectAngle = (angle: AngleData) => {
+    console.log('🎯 TSM - handleSelectAngle called for angle:', angle.id);
+    const angleImage = angleImages[angle.id as keyof typeof angleImages];
+    if (angleImage) {
+      const angleData = {
+        id: angle.id,
+        name: angle.name,
+        image: angleImage,
+        rotation: angle.rotation,
+        angle: angle.angle
+      };
+      console.log('📤 TSM - Sending angle data to context:', angleData);
+      setSelectedAngle(angleData);
+      console.log('✅ TSM - Angle selection sent to context');
+    } else {
+      console.log('❌ TSM - No image found for angleId:', angle.id);
     }
   };
 
@@ -469,14 +488,18 @@ export function UniGuideInterface() {
           
           {/* Angles List */}
           <div className="content-stretch flex flex-col items-start justify-start relative shrink-0">
-            {angles.map((angle) => (
-              <AngleListItem
-                key={angle.id}
-                angle={angle}
-                onDelete={angle.canDelete ? () => handleDeleteAngle(angle.id) : undefined}
-                onSelect={() => handleSelectAngle(angle.id)}
-              />
-            ))}
+            {angles.map((angle) => {
+              const isSelected = selectedAngle?.id === angle.id;
+              return (
+                <AngleListItem
+                  key={angle.id}
+                  angle={angle}
+                  onDelete={angle.canDelete ? () => handleDeleteAngle(angle.id) : undefined}
+                  onSelect={() => handleSelectAngle(angle)}
+                  isSelected={isSelected}
+                />
+              );
+            })}
           </div>
         </div>
       </div>

@@ -106,11 +106,14 @@ function AppsButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-function BottomNavigation({ onTabChange }: { onTabChange?: (tabId: string) => void }) {
-  const [activeTab, setActiveTab] = useState<string>("xray-live");
+function BottomNavigation({ onTabChange, activeTab }: { onTabChange?: (tabId: string) => void; activeTab?: string }) {
+  const [localActiveTab, setLocalActiveTab] = useState<string>("xray-live");
+  
+  // Use prop activeTab if provided, otherwise use local state
+  const currentActiveTab = activeTab || localActiveTab;
 
   const handleTabClick = (tabId: string) => {
-    setActiveTab(tabId);
+    setLocalActiveTab(tabId);
     onTabChange?.(tabId);
   };
 
@@ -129,19 +132,19 @@ function BottomNavigation({ onTabChange }: { onTabChange?: (tabId: string) => vo
         <BottomNavButton 
           icon={imgIcoCardio} 
           label="X-ray Live" 
-          isActive={activeTab === "xray-live"} 
+          isActive={currentActiveTab === "xray-live"} 
           onClick={() => handleTabClick("xray-live")}
         />
         <BottomNavButton 
           icon={imgIcoIw} 
           label="UniGuide" 
-          isActive={activeTab === "uniguide"}
+          isActive={currentActiveTab === "uniguide"}
           onClick={() => handleTabClick("uniguide")}
         />
         <BottomNavButton 
           icon={imgIcoCollablive} 
           label="Collaboration Live" 
-          isActive={activeTab === "collaboration"}
+          isActive={currentActiveTab === "collaboration"}
           onClick={() => handleTabClick("collaboration")}
         />
       </div>
@@ -173,10 +176,35 @@ export function TSMInterface() {
 
   // Sync with cross-screen UniGuide activation
   useEffect(() => {
+    console.log('🔄 TSM - isUniGuideActive changed:', isUniGuideActive);
     if (isUniGuideActive) {
+      console.log('✅ TSM - Activating UniGuide tab');
       setActiveBottomTab("uniguide");
     }
   }, [isUniGuideActive]);
+
+  // Listen for localStorage changes for cross-tab communication
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'isUniGuideActive' && e.newValue === 'true') {
+        console.log('📡 TSM - Received UniGuide activation from localStorage');
+        setActiveBottomTab("uniguide");
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Check initial state from localStorage
+    const storedUniGuideActive = localStorage.getItem('isUniGuideActive');
+    if (storedUniGuideActive === 'true') {
+      console.log('🔄 TSM - Loading UniGuide active state from localStorage');
+      setActiveBottomTab("uniguide");
+    }
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   const handleBottomTabChange = (tabId: string) => {
     setActiveBottomTab(tabId);
@@ -197,7 +225,7 @@ export function TSMInterface() {
           </>
         )}
       </div>
-      <BottomNavigation onTabChange={handleBottomTabChange} />
+      <BottomNavigation onTabChange={handleBottomTabChange} activeTab={activeBottomTab} />
       <div className="font-['CentraleSans:Medium',_sans-serif] h-5 leading-[0] not-italic relative shrink-0 text-[#959595] text-[12px] text-center w-14">
         <p className="leading-[20px]">04</p>
       </div>

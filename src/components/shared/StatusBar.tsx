@@ -8,6 +8,8 @@ import imgRectangle15 from "figma:asset/f335dd870d73d3a3a42625b146863522001a070f
 import imgRectangle16 from "figma:asset/a05764f1b689ed6937d133abf58e8584fe89dd5d.png";
 import imgImage11 from "figma:asset/9658092021be4f26ecf8b1d1daa7d9530ccdde74.png";
 import { imgExposureLabel, imgDlsTiltAngle48, imgSmartMask1, imgCropSquare, img1Icons24VesselNavigatorPlanning, imgDlsStopwatch48 } from "../../imports/svg-6n20x";
+import { useDateTime } from "../../hooks/useDateTime";
+import { formatTimeWithAMPM } from "../../utils/helpers";
 
 function Frame4() {
   return (
@@ -1135,11 +1137,14 @@ function CorFvViewingOverview() {
 }
 
 function ForPpt() {
+  const { currentTime } = useDateTime();
+  const currentTimeFormatted = formatTimeWithAMPM(new Date());
+
   return (
     <div className="box-border content-stretch flex gap-20 items-end justify-start leading-[0] pl-[60px] pr-0 py-0 relative shrink-0" data-name="for-ppt">
       <CorFvViewingOverview />
       <div className="font-['CentraleSansCnd:Medium',_sans-serif] not-italic relative shrink-0 text-[#b0b0b0] text-[34px] text-nowrap text-right">
-        <p className="leading-[34px] whitespace-pre">11:14 AM</p>
+        <p className="leading-[34px] whitespace-pre">{currentTimeFormatted}</p>
       </div>
     </div>
   );

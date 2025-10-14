@@ -245,7 +245,7 @@ export function NavigationHeader({
 }: NavigationHeaderProps) {
   return (
     <div
-      className="box-border content-stretch flex items-start justify-center p-0 relative shadow-[0px_1px_6px_0px_rgba(0,0,0,0.2)] shrink-0 w-full"
+      className="box-border content-stretch flex items-start justify-center p-0 relative shadow-[0px_1px_6px_0px_rgba(0,0,0,0.2)] shrink-0 w-full z-50"
       data-name="Template"
     >
       <div

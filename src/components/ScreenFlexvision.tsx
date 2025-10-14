@@ -7,10 +7,10 @@ import { NavigationHeader } from "./screens/flexvision/NavigationHeader";
 import { NavigationMenu } from "./shared/NavigationMenu";
 import { SmartWorkflowsOverlay } from "./shared/SmartWorkflowsOverlay";
 import { SettingsMenu } from "./SettingsMenu";
-import { useSettings } from "../contexts/SettingsContext";
+import { useSettings, matchesInput } from '../contexts/SettingsContext';
 import { useUnifiedInput } from '../hooks/useUnifiedInput';
+import { useAngle } from '../contexts/AngleContext';
 import { useDateTime } from '../hooks/useDateTime';
-import { matchesInput } from '../contexts/SettingsContext';
 import { getNextWorkflow, getPreviousWorkflow } from "../config/workflows";
 import type { WorkflowStep } from "../types";
 
@@ -21,6 +21,7 @@ export function ScreenFlexvision() {
   const [focusedComponent, setFocusedComponent] = useState<'xray' | 'iw' | 'hemo'>('xray');
   const [iwSubFocus, setIwSubFocus] = useState<'none' | 'angles'>('none');
   const [selectedAngleIndex, setSelectedAngleIndex] = useState(0);
+  const { setSelectedAngle, activateUniGuide } = useAngle();
   const { currentDate, currentTime } = useDateTime();
   const { inputSettings, setIsSettingsOpen } = useSettings();
 
@@ -82,6 +83,49 @@ export function ScreenFlexvision() {
         console.log(`Activating ${focusedComponent} component`);
         // TODO: Add specific activation logic for other components
       }
+    } else if (focusMode && iwSubFocus === 'angles') {
+      // Select the currently focused angle
+      const angleId = String(selectedAngleIndex + 1); // Convert index to angle ID (1-4)
+      console.log(`Selecting angle ${angleId} via Enter key`);
+      // Trigger angle selection - this should activate the angle and switch to TSM
+      handleAngleSelection(angleId);
+    }
+  };
+
+  const handleAngleSelection = (angleId: string) => {
+    // Map angle images
+    const angleImages = {
+      "1": "/src/assets/ImageAngles/Angle1.png",
+      "2": "/src/assets/ImageAngles/Angle2.png", 
+      "3": "/src/assets/ImageAngles/Angle3.png",
+      "4": "/src/assets/ImageAngles/Angle4.png"
+    };
+    
+    const angleImage = angleImages[angleId as keyof typeof angleImages];
+    if (angleImage) {
+      console.log(`🎯 FlexVision - Angle ${angleId} selected, activating UniGuide`);
+      // Use the same angle descriptions as in FlexVision
+      const angleDescriptions = {
+        "1": { rotation: "Rot -180°", angle: "Ang -180°" },
+        "2": { rotation: "Rot 90°", angle: "Ang 0°" },
+        "3": { rotation: "Rot 0°", angle: "Ang 45°" },
+        "4": { rotation: "Rot -90°", angle: "Ang 30°" }
+      };
+      
+      const angleDesc = angleDescriptions[angleId as keyof typeof angleDescriptions];
+      const angleData = {
+        id: angleId,
+        name: `Angle ${angleId}`,
+        image: angleImage,
+        rotation: angleDesc.rotation,
+        angle: angleDesc.angle
+      };
+      console.log('📤 FlexVision - Setting angle data:', angleData);
+      setSelectedAngle(angleData);
+      console.log('🚀 FlexVision - Calling activateUniGuide()');
+      activateUniGuide();
+    } else {
+      console.log('❌ FlexVision - No image found for angleId:', angleId);
     }
   };
 
@@ -233,7 +277,7 @@ export function ScreenFlexvision() {
   return (
     <div className="bg-[#000000] relative size-full flex flex-col overflow-hidden h-screen" data-name="IGT-Layout">
       {/* Navigation Header */}
-      <div className="relative w-full z-10 shrink-0">
+      <div className="relative w-full z-50 shrink-0">
         <NavigationHeader 
           date={currentDate} 
           time={currentTime}
@@ -285,6 +329,7 @@ export function ScreenFlexvision() {
                 focusMode={focusMode && focusedComponent === 'iw'}
                 subFocusMode={iwSubFocus}
                 selectedAngleIndex={selectedAngleIndex}
+                onAngleSelect={handleAngleSelection}
               />
             </div>
             <div 

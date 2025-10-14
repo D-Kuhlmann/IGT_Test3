@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useDateTime } from '../../hooks/useDateTime';
 
 interface ECGProps {
   className?: string;
@@ -6,13 +7,23 @@ interface ECGProps {
 
 export function AnimatedECG({ className = "" }: ECGProps) {
   const [scanPosition, setScanPosition] = useState(0);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const { currentTime } = useDateTime();
 
   useEffect(() => {
     const interval = setInterval(() => {
       setScanPosition(prev => (prev + 2) % 800);
+      setElapsedTime(prev => prev + 0.05); // Increment by 50ms
     }, 50);
     return () => clearInterval(interval);
   }, []);
+
+  // Format elapsed time as MM:SS
+  const formatElapsedTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
 
   // Generate static ECG heartbeat waveform
   const generateStaticECGWave = (amplitude: number = 25, heartRate: number = 75, phaseOffset: number = 0) => {
@@ -330,7 +341,7 @@ export function AnimatedECG({ className = "" }: ECGProps) {
       <div className="absolute bottom-0 left-0 right-0 bg-black/90 border-t border-gray-600 p-2 flex justify-between items-center">
         <div className="flex items-center gap-4">
           <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-          <span className="text-white text-xs font-mono">00:10:53</span>
+          <span className="text-white text-xs font-mono">00:{formatElapsedTime(elapsedTime)}</span>
           <span className="text-gray-400 text-xs">Vitals Interval: 1:07 (2 min)</span>
           <span className="text-gray-400 text-xs">STAT</span>
           <span className="text-gray-400 text-xs">Sweep Speed: 25 mm/s</span>

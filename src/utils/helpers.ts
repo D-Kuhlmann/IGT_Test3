@@ -18,6 +18,18 @@ export function formatTime(date: Date): string {
   return date.toLocaleTimeString('en-US', {
     hour12: false,
     hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+}
+
+/**
+ * Format time with AM/PM for status bar displays
+ */
+export function formatTimeWithAMPM(date: Date): string {
+  return date.toLocaleTimeString('en-US', {
+    hour12: true,
+    hour: '2-digit',
     minute: '2-digit'
   });
 }
