@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useDateTime } from '../../hooks/useDateTime';
 
 interface ECGProps {
   className?: string;
@@ -8,7 +7,6 @@ interface ECGProps {
 export function AnimatedECG({ className = "" }: ECGProps) {
   const [scanPosition, setScanPosition] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const { currentTime } = useDateTime();
 
   useEffect(() => {
     const interval = setInterval(() => {

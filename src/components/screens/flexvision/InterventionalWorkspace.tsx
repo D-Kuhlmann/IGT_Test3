@@ -721,13 +721,15 @@ interface InterventionalWorkspaceProps {
   subFocusMode?: 'none' | 'angles';
   selectedAngleIndex?: number;
   onAngleSelect?: (angleId: string) => void;
+  componentSize?: 'small' | 'medium' | 'large' | 'xlarge' | 'fullscreen';
 }
 
 export function InterventionalWorkspace({ 
   focusMode = false, 
   subFocusMode = 'none', 
   selectedAngleIndex = 0,
-  onAngleSelect
+  onAngleSelect,
+  componentSize = 'large'
 }: InterventionalWorkspaceProps) {
   const { selectedAngle, setSelectedAngle, activateUniGuide } = useAngle();
   
@@ -775,7 +777,6 @@ export function InterventionalWorkspace({
   return (
     <div className="flex flex-col h-full">
       <ViewportHeader title="Interventional Workspace" />
-      <InterventionalPatientBar />
       
       <div className="bg-[#000000] relative flex-1 flex flex-col overflow-hidden">
         {/* Main Content Area */}

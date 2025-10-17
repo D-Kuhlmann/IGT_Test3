@@ -14,6 +14,7 @@ interface SmartWorkflowsOverlayProps {
   onClose: () => void;
   onStepSelect: (step: WorkflowStep) => void;
   currentStep?: string;
+  activePreset?: 1 | 2;
 }
 
 // Step Component - reusable for infinite scroll
@@ -28,6 +29,34 @@ function WorkflowStepButton({
   isFocused: boolean;
   onClick: () => void;
 }) {
+  // Get icon based on step label
+  const getStepIcon = () => {
+    switch (step.label) {
+      case 'Start':
+      case 'Access':
+        return (
+          <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 37 37">
+            <path d="M13.3333 21.6833C14.0083 23.175 14.8667 24.2167 15.8667 25.15C17.15 24.1583 18.7167 23.1917 20.4917 22.525C20.3917 22.4417 20.2833 22.35 20.1833 22.275C18.5 20.9167 17.1167 19.8 16.7583 13.5583C18.2583 14.35 20.1917 15.0667 22.675 15.7417C22.8917 15.8 23.1 15.825 23.3167 15.825C23.325 15.825 23.325 15.825 23.3333 15.825C23.5083 15.825 23.5917 15.8083 23.625 15.7833C24.4083 15.575 25 14.5583 25 13.325C25 11.95 24.2583 10.8333 23.3417 10.825C18.3417 10.825 16.675 9.15833 16.675 2.49167C16.675 2.31667 16.65 2.16667 16.6083 2.025C16.6083 2.01667 16.6083 2 16.6 1.99167C16.5833 1.925 16.55 1.86667 16.525 1.80833C16.125 0.766667 14.8583 0 13.3333 0C11.9083 0 10.7083 0.675 10.225 1.60833C10.0917 1.825 10.0083 2.09167 10.0083 2.45C10.0083 2.46667 10 2.48333 10 2.5C10 2.5 10 2.5 10 2.50833C10 9.16667 8.33333 10.8333 3.33333 10.8333C2.41667 10.8333 1.66667 11.95 1.66667 13.3333C1.66667 14.6083 2.30833 15.65 3.13333 15.8C3.18333 15.825 3.24167 15.8333 3.33333 15.8333H3.34167C3.55833 15.8333 3.775 15.8083 3.99167 15.7417C6.475 15.0667 8.40833 14.35 9.90833 13.5583C9.55 19.8 8.16667 20.9167 6.48333 22.275C4.36667 23.975 0.833333 27.5 0 35C0 35.9167 1.11667 36.6667 2.5 36.6667C2.65833 36.6667 2.80833 36.6583 2.95833 36.6333C3.05 36.625 3.13333 36.6 3.225 36.5833C3.26667 36.575 3.30833 36.5667 3.35 36.5583C4.30833 36.325 5 35.7167 5 35C6.66667 29.1667 7.875 27.5667 9.61667 26.1667C11.1333 24.95 12.4083 23.7417 13.3333 21.6833ZM23.3333 11.6667C23.7917 11.6667 24.1667 12.4167 24.1667 13.3333C24.1667 14.25 23.7917 15 23.3333 15C22.875 15 22.5 14.25 22.5 13.3333C22.5 12.4167 22.875 11.6667 23.3333 11.6667ZM3.33333 15C2.875 15 2.5 14.25 2.5 13.3333C2.5 12.4167 2.875 11.6667 3.33333 11.6667C3.79167 11.6667 4.16667 12.4167 4.16667 13.3333C4.16667 14.25 3.79167 15 3.33333 15ZM2.5 35.8333C1.58333 35.8333 0.833333 35.4583 0.833333 35C0.833333 34.5417 1.58333 34.1667 2.5 34.1667C3.41667 34.1667 4.16667 34.5417 4.16667 35C4.16667 35.4583 3.425 35.8333 2.5 35.8333ZM36.65 29.9833C36.65 29.9833 32.4833 23.35 24.9833 23.3333C18.3 23.3333 13.3167 29.9833 13.3167 29.9833C13.3167 29.9917 13.3167 30.0083 13.3167 30.0167C13.3167 30.0167 18.275 36.65 24.9833 36.6667C31.6667 36.65 36.65 30.0167 36.65 30.0167C36.6583 30.0083 36.5667 30.0083 36.4 30C36.5667 29.9917 36.6583 29.9917 36.65 29.9833ZM24.9917 35C20.6833 34.9917 17.3917 31.6917 15.8167 30C17.3833 28.3 20.6667 25 24.9833 25C29.825 25.0167 32.775 28.3417 34.15 30C32.6083 31.675 29.3333 34.9917 24.9917 35ZM24.9833 25.8333C22.6833 25.8333 20.8167 27.7 20.8167 30C20.8167 32.3 22.6833 34.1667 24.9833 34.1667C27.2833 34.1667 29.15 32.3 29.15 30C29.15 27.7 27.2833 25.8333 24.9833 25.8333Z" fill="#F0F8FA"/>
+          </svg>
+        );
+      case '3D Scan':
+        return (
+          <svg className="block size-full" fill="none" preserveAspectRatio="xMidYMid meet" viewBox="0 0 19 37">
+            <path d="M12.5012 18.2667C14.1679 16.5167 16.6679 13.4334 16.6679 10.0167C16.6679 9.10003 15.9179 8.35003 15.0012 8.35003C14.0845 8.35003 13.3345 9.10003 13.3345 10.0167C13.3345 12.1 11.5845 14.4334 10.1679 15.85C6.41787 11.9334 5.41787 9.7667 9.16787 5.5167C10.4179 4.18337 10.2512 2.10003 8.91787 0.850034C7.50121 -0.399966 5.41787 -0.233299 4.16787 1.10003C1.25121 4.35003 0.00120716 7.35003 0.00120716 10.0167C-0.0821262 15.2667 4.16787 19.2667 6.91787 22.1C9.00121 24.1834 11.1679 26.35 11.1679 27.9334C11.1679 29.0167 10.1679 30.1834 9.33454 31.1C8.00121 32.4334 8.00121 34.5167 9.33454 35.85C10.0012 36.35 10.8345 36.6834 11.6679 36.6834C12.5012 36.6834 13.3345 36.35 14.0012 35.6834C16.5012 33.1834 18.3345 30.1834 18.3345 27.5167C18.1679 23.7667 15.1679 20.85 12.5012 18.2667ZM11.6679 35.0167C10.7512 35.0167 10.0012 34.2667 10.0012 33.35C10.0012 32.4334 10.7512 31.6834 11.6679 31.6834C12.5845 31.6834 13.3345 32.4334 13.3345 33.35C13.3345 34.2667 12.5845 35.0167 11.6679 35.0167Z" fill="white"/>
+          </svg>
+        );
+      case 'Planning':
+      case 'Treatment':
+        return (
+          <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 40 40">
+            <path d="M40 1.81818V14.5455H29.0909V8.96364C26.0091 10.0636 23.4273 12.2455 21.8182 15.0455V14.5455C21.8182 13.0545 21.3636 11.6727 20.6 10.5182C22.8091 7.97273 25.7545 6.07273 29.0909 5.15455V1.81818H30.9091V0H38.1818V1.81818H40ZM36.8 29.5818L39.0909 24.5455H30L32.2909 29.5818C30.4 30.4455 29.0909 32.3364 29.0909 34.5455C29.0909 34.5909 29.1 34.6273 29.1 34.6727C24.9364 33.1909 21.7 29.7455 20.5091 25.4545H16.7545C18.2727 32.4909 24.0818 37.9273 31.2909 38.9182C32.2 39.6 33.3273 40 34.5455 40C37.5545 40 40 37.5545 40 34.5455C40 32.3364 38.6909 30.4455 36.8 29.5818ZM10 7.27273C12.0091 7.27273 13.6364 5.64545 13.6364 3.63636C13.6364 1.62727 12.0091 0 10 0C7.99091 0 6.36364 1.62727 6.36364 3.63636C6.36364 5.64545 7.99091 7.27273 10 7.27273ZM20 23.6364V14.5455C20 11.5364 17.5545 9.09091 14.5455 9.09091H5.45455C2.44545 9.09091 0 11.5364 0 14.5455V23.6364H3.63636V14.5455C3.63636 14.0455 4.04545 13.6364 4.54545 13.6364C5.04545 13.6364 5.45455 14.0455 5.45455 14.5455V40H9.09091V24.5455C9.09091 24.0455 9.5 23.6364 10 23.6364C10.5 23.6364 10.9091 24.0455 10.9091 24.5455V40H14.5455V14.5455C14.5455 14.0455 14.9545 13.6364 15.4545 13.6364C15.9545 13.6364 16.3636 14.0455 16.3636 14.5455V23.6364H20Z" fill="#F0F8FA"/>
+          </svg>
+        );
+      default:
+        // Fallback to original icons for other steps
+        return stepIcons[stepIndex] || stepIcons[0];
+    }
+  };
   const stepIcons = [
     // Review - StartManual icon
     <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 40 40">
@@ -74,36 +103,39 @@ function WorkflowStepButton({
     </svg>
   ];
 
-  const stepLabels = ["Review", "Access", "DSA", "IVUS", "Confirm", "Finalize"];
 
   return (
     <button
-      className={`content-stretch flex gap-[8px] items-center relative shrink-0 p-2 rounded-lg transition-all duration-300 w-[200px] ${
-        isFocused ? 'bg-blue-500/30 scale-110' : 'bg-transparent hover:bg-white/10 scale-100'
-      }`}
+      className="content-stretch flex gap-[16px] items-center relative shrink-0 p-2 rounded-lg transition-all duration-300 min-w-[120px] bg-transparent hover:bg-white/5"
       onClick={onClick}
     >
-      {/* Connecting Line */}
-      <div className="flex h-[58px] items-center justify-center relative shrink-0 w-[15px]">
-        <div className="flex-none rotate-[270deg]">
-          <div className="h-[15px] relative w-[58px]">
-            <div className="absolute inset-[46.67%_-0.86%]">
-              <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 60 1">
-                <path d="M59 0.500001H1" stroke="var(--stroke-0, #BEBEBE)" strokeLinecap="square" />
-              </svg>
+      {/* Connecting Line - hidden for first step */}
+      {stepIndex > 0 && (
+        <div className="flex h-[58px] items-center justify-center relative shrink-0 w-[15px]">
+          <div className="flex-none rotate-[270deg]">
+            <div className="h-[15px] relative w-[58px]">
+              <div className="absolute inset-[46.67%_-0.86%]">
+                <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 60 1">
+                  <path d="M59 0.500001H1" stroke="var(--stroke-0, #BEBEBE)" strokeLinecap="square" />
+                </svg>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Icon */}
-      <div className="relative shrink-0 size-[40px]">
-        {stepIcons[stepIndex]}
+      <div className={`relative shrink-0 size-[40px] transition-opacity duration-300 ${
+        isFocused ? 'opacity-100' : 'opacity-30'
+      }`}>
+        {getStepIcon()}
       </div>
 
       {/* Label */}
-      <div className="flex flex-col font-['CentraleSans:Book',_sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[32px] text-white">
-        <p className="leading-[24px] whitespace-pre">{stepLabels[stepIndex]}</p>
+      <div className={`flex flex-col font-['CentraleSans:Book',_sans-serif] justify-center leading-[0] not-italic relative shrink-0 text-[32px] text-white transition-opacity duration-300 ${
+        isFocused ? 'opacity-100' : 'opacity-30'
+      }`}>
+        <p className="leading-[24px] whitespace-pre">{step.label}</p>
       </div>
     </button>
   );
@@ -114,6 +146,7 @@ export function SmartWorkflowsOverlay({
   onClose,
   onStepSelect,
   currentStep,
+  activePreset = 1,
 }: SmartWorkflowsOverlayProps) {
   // Add CSS animations for slide effect
   const slideAnimationStyles = `
@@ -141,22 +174,48 @@ export function SmartWorkflowsOverlay({
   `;
   const [focusedStepIndex, setFocusedStepIndex] = useState(0);
   const [lastNavigationDirection, setLastNavigationDirection] = useState<'left' | 'right' | null>(null);
+  const [isClosing, setIsClosing] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  const workflowSteps: WorkflowStep[] = [
-    { id: "review", label: "Review", category: "Review" },
-    { id: "ultrasound", label: "Access", category: "Access" },
-    { id: "ccta-planning", label: "Baseline DSA", category: "Planning" },
-    { id: "ivus-acquisition", label: "IVUS Acquisition", category: "Treatment" },
-    { id: "start", label: "Confirm DSA", category: "Planning" },
-    { id: "finalise", label: "Finalise", category: "Treatment" },
-  ];
+  // Dynamic workflow steps based on active preset
+  const workflowSteps: WorkflowStep[] = activePreset === 1 
+    ? [
+        // Preset 1: Original workflow steps
+        { id: "review", label: "Review", category: "Review" },
+        { id: "ultrasound", label: "Access", category: "Access" },
+        { id: "ccta-planning", label: "Baseline DSA", category: "Planning" },
+        { id: "ivus-acquisition", label: "IVUS Acquisition", category: "Treatment" },
+        { id: "start", label: "Confirm DSA", category: "Planning" },
+        { id: "finalise", label: "Finalise", category: "Treatment" },
+      ]
+    : [
+        // Preset 2: Navigator workflow steps
+        { id: "start", label: "Start", category: "Start" },
+        { id: "access", label: "Access", category: "Access" },
+        { id: "3d-scan", label: "3D Scan", category: "3D Scan" },
+        { id: "planning", label: "Planning", category: "Planning" },
+        { id: "treatment", label: "Treatment", category: "Treatment" },
+      ];
+
 
   const totalSteps = workflowSteps.length;
 
+  // Reset focus when preset changes
+  useEffect(() => {
+    setFocusedStepIndex(0);
+  }, [activePreset]);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      onClose();
+    }, 300); // Match animation duration
+  };
+
   const handleStepClick = (step: WorkflowStep) => {
     onStepSelect(step);
-    onClose();
+    handleClose();
   };
 
   const moveLeft = () => {
@@ -173,23 +232,73 @@ export function SmartWorkflowsOverlay({
     setTimeout(() => setLastNavigationDirection(null), 300);
   };
 
-  // Calculate the transform to center the focused step in the blue container
+  // Calculate the actual width needed for each button based on its content
+  const calculateButtonWidth = (step: WorkflowStep) => {
+    // Base width: icon (40px) + internal gap (16px) + padding (8px) + borders
+    const baseWidth = 40 + 16 + 8 + 4; // ~68px base
+    
+    // Estimate text width based on character count and font size (32px CentraleSans)
+    const avgCharWidth = 18; // Approximate width per character at 32px font size
+    const textWidth = step.label.length * avgCharWidth;
+    
+    // Minimum width constraint
+    const minWidth = 120;
+    
+    return Math.max(minWidth, baseWidth + textWidth);
+  };
+
+  // Calculate the exact width needed for the button container using real button widths
+  const getButtonContainerWidth = () => {
+    const gapWidth = 15; // Gap between buttons
+    const sidePadding = 20; // Padding on left and right
+    const extraBuffer = 50; // Additional buffer to ensure last step is fully visible
+    
+    // Calculate total width of all buttons
+    const totalButtonWidth = workflowSteps.reduce((total, step) => {
+      return total + calculateButtonWidth(step);
+    }, 0);
+    
+    // Add gaps between buttons
+    const totalGapWidth = (workflowSteps.length - 1) * gapWidth;
+    
+    // Total container width: buttons + gaps + padding + buffer
+    return totalButtonWidth + totalGapWidth + (sidePadding * 2) + extraBuffer;
+  };
+
+  // Calculate transform for scrolling within the 900px visible container
   const getTransform = () => {
-    const containerWidth = 350; // Width of blue container
-    const containerCenter = containerWidth / 2; // 175px - center of blue container
+    const visibleWidth = 900; // Fixed visible container width
+    const buttonContainerWidth = getButtonContainerWidth();
     
-    // Each button is now 200px wide + 7px gap = 207px total spacing
-    const buttonSpacing = 207;
-    const buttonWidth = 200; // Fixed button width
-    const leftPadding = 75; // Padding: (350px / 2) - (200px / 2) = 175px - 100px = 75px
+    // If button container fits in visible area, center it
+    if (buttonContainerWidth <= visibleWidth) {
+      const centerOffset = (visibleWidth - buttonContainerWidth) / 2;
+      return `translateX(${centerOffset}px)`;
+    }
     
-    // Calculate where the focused button's center would be with padding
-    const focusedButtonLeft = leftPadding + (focusedStepIndex * buttonSpacing);
-    const focusedButtonCenter = focusedButtonLeft + (buttonWidth / 2);
+    // If button container is wider, scroll to keep focused step visible
+    const gapWidth = 15;
+    const padding = 20;
     
-    // Calculate translation needed to center the focused button in the container
-    const translateX = containerCenter - focusedButtonCenter;
+    // Calculate position of focused step using actual button widths
+    let focusedStepPosition = padding;
     
+    // Add widths of all buttons before the focused one
+    for (let i = 0; i < focusedStepIndex; i++) {
+      focusedStepPosition += calculateButtonWidth(workflowSteps[i]) + gapWidth;
+    }
+    
+    // Add half the width of the focused button to center it
+    focusedStepPosition += calculateButtonWidth(workflowSteps[focusedStepIndex]) / 2;
+    
+    // Calculate desired translation to center focused step in visible area
+    const desiredTranslateX = (visibleWidth / 2) - focusedStepPosition;
+    
+    // Constrain translation to keep button container within bounds
+    const maxTranslateX = 0; // Don't scroll past start
+    const minTranslateX = visibleWidth - buttonContainerWidth; // Don't scroll past end
+    
+    const translateX = Math.max(minTranslateX, Math.min(maxTranslateX, desiredTranslateX));
     return `translateX(${translateX}px)`;
   };
 
@@ -212,7 +321,7 @@ export function SmartWorkflowsOverlay({
         case "ArrowUp":
           event.preventDefault();
           event.stopPropagation();
-          onClose();
+          handleClose();
           break;
         case "Enter":
         case " ":
@@ -223,7 +332,7 @@ export function SmartWorkflowsOverlay({
         case "Escape":
           event.preventDefault();
           event.stopPropagation();
-          onClose();
+          handleClose();
           break;
         case "Home":
           event.preventDefault();
@@ -285,7 +394,7 @@ export function SmartWorkflowsOverlay({
     }
   }, [isVisible, currentStep]);
 
-  if (!isVisible) return null;
+  if (!isVisible && !isClosing) return null;
 
   return (
     <>
@@ -295,18 +404,18 @@ export function SmartWorkflowsOverlay({
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/10 z-30"
-        onClick={onClose}
+        onClick={handleClose}
       />
 
       {/* Overlay Container */}
       <div
         ref={overlayRef}
-        className="fixed top-14 left-0 right-0 z-40 flex justify-center outline-none p-2"
+        className="fixed top-9 left-0 right-0 z-40 flex justify-center outline-none"
         tabIndex={0}
         role="dialog"
         aria-label="Smart Workflows Navigation Menu"
         style={{
-          animation: 'slideDown 0.3s ease-out'
+          animation: isClosing ? 'slideUp 0.3s ease-out' : 'slideDown 0.3s ease-out'
         }}
       >
         <div
@@ -314,7 +423,8 @@ export function SmartWorkflowsOverlay({
           data-name="_SmartWorkflows"
           style={{
             backgroundImage:
-              "linear-gradient(90deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.4) 100%), linear-gradient(179.6deg, rgba(42, 218, 234, 0.8) 0.99874%, rgba(89, 80, 255, 0.6) 100%)",
+              "linear-gradient(45deg, #27316F 20%, #2E9BC8 140%)",
+            transform: "scale(0.667)"
           }}
         >
           <div className="relative w-full h-full">
@@ -331,7 +441,7 @@ export function SmartWorkflowsOverlay({
               {/* Infinite Dial Container */}
               <div className="relative rounded-bl-[10px] rounded-br-[10px] w-full h-[100px]">
                 <div className="flex flex-row items-center justify-center relative w-full h-full">
-                  <div className="box-border content-stretch flex gap-[50px] items-center justify-center px-[34px] py-0 relative w-full h-full">
+                  <div className="box-border content-stretch flex gap-[25px] items-center justify-center px-[25px] py-0 relative w-full h-full">
                     
                     {/* Stars Icon */}
                     <div className="h-[50px] relative shrink-0 w-[56.571px]">
@@ -359,7 +469,7 @@ export function SmartWorkflowsOverlay({
                     </div>
 
                     {/* Carousel Container */}
-                    <div className="h-[80px] relative shrink-0 w-[400px]">
+                    <div className="h-[80px] relative shrink-0 w-[950px]">
                       {/* Left Arrow Button */}
                       <div className="absolute bottom-[41.94%] flex items-center justify-center left-0 right-[98.64%] top-[36.56%] z-10">
                         <button 
@@ -404,38 +514,38 @@ export function SmartWorkflowsOverlay({
                         </button>
                       </div>
 
-                      {/* Blue background container with buttons as direct children */}
-                      <div className="absolute bg-[#14213b] h-[80px] left-[25px] opacity-90 rounded-[10px] top-0 w-[350px] overflow-hidden">
+                      {/* Carousel background container with buttons as direct children */}
+                      <div className="absolute bg-[#060F1F] h-[80px] left-[25px] opacity-90 rounded-[10px] top-0 w-[900px] overflow-hidden">
                         {/* Workflow Steps - positioned relative to the blue container */}
                         <div 
-                          className="flex gap-[7px] h-full items-center absolute transition-transform duration-300 ease-out"
+                          className="flex gap-[15px] h-full items-center absolute transition-transform duration-300 ease-out"
                           style={{
                             transform: getTransform(),
                             left: 0,
                             top: 0,
-                            paddingLeft: '75px', // Half container width minus half button width (175px - 100px)
-                            paddingRight: '75px' // Same padding on both sides for equal centering
+                            width: `${getButtonContainerWidth()}px`, // Exact width for buttons, no extra space
+                            paddingLeft: '20px', // Small padding before first step
+                            paddingRight: '20px' // Small padding after last step
                           }}
                         >
                           {/* Single set of workflow steps */}
-                          {workflowSteps.map((step, stepIndex) => (
-                            <WorkflowStepButton
-                              key={step.id}
-                              step={step}
-                              stepIndex={stepIndex}
-                              isFocused={stepIndex === focusedStepIndex}
-                              onClick={() => handleStepClick(step)}
-                            />
-                          ))}
+                          {workflowSteps.map((step, stepIndex) => {
+                            return (
+                              <WorkflowStepButton
+                                key={step.id}
+                                step={step}
+                                stepIndex={stepIndex}
+                                isFocused={stepIndex === focusedStepIndex}
+                                onClick={() => handleStepClick(step)}
+                              />
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
 
-                    {/* Settings Icon */}
-                    <div className="relative shrink-0 size-[32px]">
-                      <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 32 32">
-                        <path d="M30 19V13H25.5C25.3 12.4 25.1 11.9 24.8 11.4L28 8.2L23.8 4L20.6 7.2C20.1 6.9 19.5 6.7 19 6.5V2H13V6.5C12.4 6.7 11.9 6.9 11.4 7.2L8.2 4L4 8.2L7.2 11.4C6.9 11.9 6.7 12.5 6.5 13H2V19H6.5C6.7 19.6 6.9 20.1 7.2 20.6L4 23.8L8.2 28L11.4 24.8C11.9 25.1 12.5 25.3 13 25.5V30H19V25.5C19.6 25.3 20.1 25.1 20.6 24.8L23.8 28L28 23.8L24.8 20.6C25.1 20.1 25.3 19.5 25.5 19H30ZM16 20.5C13.5 20.5 11.5 18.5 11.5 16C11.5 13.5 13.5 11.5 16 11.5C18.5 11.5 20.5 13.5 20.5 16C20.5 18.5 18.5 20.5 16 20.5Z" fill="var(--fill-0, white)" />
-                      </svg>
+                    {/* Dashed Square */}
+                    <div className="relative shrink-0 size-[32px] border-2 border-dashed border-white rounded-sm">
                     </div>
                     
                   </div>

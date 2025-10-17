@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ViewportHeader, PatientBar } from "../../shared/ViewportHeaders";
+import { ComponentHeader } from "../../shared/ViewportHeaders";
 import { imgVesselIcon, imgPath, imgIconLargeBrain, imgIconLargeHeart, imgWrist1, imgGroup192, imgSupine, imgVector, imgVector1, imgPath1, imgPath2, imgVector90, imgVector88, imgVector89, imgVector91, imgVector106, imgVector107, imgVector92, imgVector93, imgVector109, imgVector111, imgVector112, imgVector110, imgVector117, imgVector118, imgVector94, imgVector95, imgVector105 } from "../../../imports/svg-qdmr4";
 
 function VesselIcon() {
@@ -312,14 +312,59 @@ function XrayLiveContent() {
   );
 }
 
-export function XrayLive() {
+interface XrayLiveProps {
+  componentSize?: 'small' | 'medium' | 'large' | 'xlarge' | 'fullscreen';
+}
+
+export function XrayLive({ componentSize = 'large' }: XrayLiveProps) {
+  // Content scaling based on component size - headers stay normal, only content scales
+  const getContentScale = () => {
+    switch (componentSize) {
+      case 'small':
+        return {
+          scale: 'scale-[0.3]',
+          showPatientBar: false
+        };
+      case 'medium':
+        return {
+          scale: 'scale-[0.5]',
+          showPatientBar: false
+        };
+      case 'large':
+        return {
+          scale: 'scale-[0.7]',
+          showPatientBar: true
+        };
+      case 'xlarge':
+        return {
+          scale: 'scale-[0.9]',
+          showPatientBar: true
+        };
+      case 'fullscreen':
+        return {
+          scale: 'scale-100',
+          showPatientBar: true
+        };
+      default:
+        return {
+          scale: 'scale-[0.7]',
+          showPatientBar: true
+        };
+    }
+  };
+
+  const { scale, showPatientBar } = getContentScale();
+
   return (
     <div className="flex flex-col h-full">
-      <ViewportHeader title="Xray Live" />
-      <PatientBar />
+      {/* Headers stay normal size */}
+      <ComponentHeader title="Xray Live" showPatientBar={showPatientBar} />
       
-      <div className="flex-1 flex items-center justify-center p-4 min-h-0 w-full overflow-hidden">
-        <XrayLiveContent />
+      {/* Content area uses full available space, then gets scaled */}
+      <div className="flex-1 p-4 min-h-0 w-full overflow-hidden">
+        <div className={`transform ${scale} origin-center w-full h-full flex items-center justify-center`}>
+          <XrayLiveContent />
+        </div>
       </div>
     </div>
   );
