@@ -3,12 +3,22 @@ import { ViewportHeader } from '../../shared/ViewportHeaders';
 import svgPaths from './svg-paths';
 import CBCT1 from '../../../assets/CBCT1.png';
 import CBCT2 from '../../../assets/CBCT2.png';
-import CArmLeft from '../../../assets/carm-left.png';
-import CArmRight from '../../../assets/carm-right.png';
+import CArmLeft from '../../../assets/carm-right.png';
+import CArmRight from '../../../assets/carm-left.png';
 import SmartKnobImg from '../../../assets/smart-knob.png';
 import PedalImg from '../../../assets/pedal.png';
 import SmartButtonIcon from '../../../assets/Smart-Button-squares.svg';
 import SmartUIIcon from '../../../assets/SmartUIIconSquare.svg';
+import PedalPress from '../../../assets/PedalPress.svg';
+import CinePedal from '../../../assets/CinePedal.svg';
+import SkullAP from '../../../assets/Skull-big-AP.png';
+import SkullLAT from '../../../assets/Skull-big-LAT.png';
+import ViewportIndicationOrange from '../../../assets/viewportindication-orange.png';
+import ViewportIndicationGreen from '../../../assets/viewportindication-green.png';
+import ViewportIndicationLatOrange from '../../../assets/viewportindication-lat-orange.png';
+import ViewportIndicationLatGreen from '../../../assets/viewportindication-lat-green.png';
+import CArmRotation from '../../../assets/CArmRotation.png';
+import ExposurePress from '../../../assets/Switch - Exposure Press.png';
 import { useSettings, matchesInput } from '../../../contexts/SettingsContext';
 
 interface SmartNavigatorProps {
@@ -84,7 +94,7 @@ function SettingsStep({ onPrevious, onContinue, selectedType: propSelectedType, 
       {/* CBCT Type Selection */}
       <div className="px-4 py-3">
         <div className="flex items-center gap-4 mb-4">
-          <p className="font-['CentraleSans:Bold',_sans-serif] text-sm text-[#d6d6d6]">CBCT Type</p>
+          <p className="font-['CentraleSans:Bold',_sans-serif] text-base text-[#d6d6d6]">CBCT Type</p>
           
           <div className="flex gap-3">
             {/* Helical 10s */}
@@ -103,7 +113,7 @@ function SettingsStep({ onPrevious, onContinue, selectedType: propSelectedType, 
                   : 'border-[#3b3b3b] bg-[#383838] hover:border-[#41c9fe]'
               }`}
             >
-              <span className="font-['CentraleSans:Bold',_sans-serif] text-sm text-[#d6d6d6]">
+              <span className="font-['CentraleSans:Bold',_sans-serif] text-base text-[#d6d6d6]">
                 Helical 10s
               </span>
             </button>
@@ -124,7 +134,7 @@ function SettingsStep({ onPrevious, onContinue, selectedType: propSelectedType, 
                   : 'border-[#3b3b3b] bg-[#383838] hover:border-[#41c9fe]'
               }`}
             >
-              <span className="font-['CentraleSans:Bold',_sans-serif] text-sm text-[#d6d6d6]">
+              <span className="font-['CentraleSans:Bold',_sans-serif] text-base text-[#d6d6d6]">
                 Circular 10s
               </span>
             </button>
@@ -140,18 +150,18 @@ function SettingsStep({ onPrevious, onContinue, selectedType: propSelectedType, 
         <div className="flex justify-between gap-8">
           {/* Settings Section */}
           <div className="flex-1 max-w-sm">
-            <h3 className="font-['CentraleSans:Bold',_sans-serif] text-sm text-[#d6d6d6] mb-4">
+            <h3 className="font-['CentraleSans:Bold',_sans-serif] text-base text-[#d6d6d6] mb-4">
               Settings
             </h3>
 
             <div className="space-y-4">
               {/* Type Dropdown */}
               <div>
-                <label className="block font-['CentraleSans:Book',_sans-serif] text-sm text-[#d6d6d6] mb-2">
+                <label className="block font-['CentraleSans:Book',_sans-serif] text-base text-[#d6d6d6] mb-2">
                   Type
                 </label>
                 <div className="bg-[rgba(89,89,89,0.55)] rounded px-3 py-2 flex items-center justify-between">
-                  <span className="font-['CentraleSans:Book',_sans-serif] text-sm text-[#e8e8e8]">
+                  <span className="font-['CentraleSans:Book',_sans-serif] text-base text-[#e8e8e8]">
                     Roll - 8s
                   </span>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -162,7 +172,7 @@ function SettingsStep({ onPrevious, onContinue, selectedType: propSelectedType, 
 
               {/* Injector coupling toggle */}
               <div className="flex items-center justify-between">
-                <span className="font-['CentraleSans:Book',_sans-serif] text-sm text-[#d6d6d6]">
+                <span className="font-['CentraleSans:Book',_sans-serif] text-base text-[#d6d6d6]">
                   Injector coupling
                 </span>
                 <button
@@ -180,7 +190,7 @@ function SettingsStep({ onPrevious, onContinue, selectedType: propSelectedType, 
 
               {/* X-ray delay */}
               <div className="flex items-center justify-between">
-                <span className="font-['CentraleSans:Book',_sans-serif] text-sm text-[#d6d6d6]">
+                <span className="font-['CentraleSans:Book',_sans-serif] text-base text-[#d6d6d6]">
                   X-ray delay
                 </span>
                 <StepperControl value={xrayDelay} onChange={setXrayDelay} unit="s" />
@@ -188,7 +198,7 @@ function SettingsStep({ onPrevious, onContinue, selectedType: propSelectedType, 
 
               {/* Interval */}
               <div className="flex items-center justify-between">
-                <span className="font-['CentraleSans:Book',_sans-serif] text-sm text-[#d6d6d6]">
+                <span className="font-['CentraleSans:Book',_sans-serif] text-base text-[#d6d6d6]">
                   Interval
                 </span>
                 <StepperControl value={interval} onChange={setInterval} unit="s" />
@@ -203,7 +213,7 @@ function SettingsStep({ onPrevious, onContinue, selectedType: propSelectedType, 
             </h3>
 
             {/* Table */}
-            <div className="grid grid-cols-5 gap-4 text-sm">
+            <div className="grid grid-cols-5 gap-4 text-base">
               {/* Headers */}
               <div className="font-['CentraleSans:Book',_sans-serif] text-[#d6d6d6]">Catheter tip location</div>
               <div className="font-['CentraleSans:Book',_sans-serif] text-[#d6d6d6] text-right">X-ray delay</div>
@@ -234,10 +244,10 @@ function SettingsStep({ onPrevious, onContinue, selectedType: propSelectedType, 
             </div>
 
             <div className="mt-6">
-              <p className="font-['CentraleSans:Book',_sans-serif] text-sm text-[#d6d6d6]">
+              <p className="font-['CentraleSans:Book',_sans-serif] text-base text-[#d6d6d6]">
                 These suggestions apply to normal sized patients.
               </p>
-              <p className="font-['CentraleSans:Book',_sans-serif] text-sm text-[#d6d6d6]">
+              <p className="font-['CentraleSans:Book',_sans-serif] text-base text-[#d6d6d6]">
                 For more information, refer to the Instructions for use.
               </p>
             </div>
@@ -249,11 +259,291 @@ function SettingsStep({ onPrevious, onContinue, selectedType: propSelectedType, 
       <div className="border-t border-[#d6d6d6] border-opacity-12 p-3">
         <button
           onClick={onPrevious}
-          className={`px-4 py-2 rounded text-[#e8e8e8] text-sm transition-all ${
+          className={`px-4 py-2 rounded text-[#e8e8e8] text-base transition-all ${
             focusedElement === 'previous'
               ? 'bg-[#41c9fe] text-black shadow-lg shadow-[#41c9fe]/30'
               : 'bg-[dimgrey] hover:opacity-90'
           }`}
+        >
+          Previous
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface CheckPathStepProps {
+  onPrevious: () => void;
+  onContinue?: () => void;
+}
+
+function CheckPathStep({ onPrevious, onContinue }: CheckPathStepProps) {
+  const [isRotating, setIsRotating] = useState(false);
+  const [rotationComplete, setRotationComplete] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Enter") {
+        if (!isRotating && !rotationComplete) {
+          setIsRotating(true);
+          // After 3 seconds, mark rotation as complete
+          setTimeout(() => {
+            setIsRotating(false);
+            setRotationComplete(true);
+          }, 3000);
+        } else if (rotationComplete && onContinue) {
+          // Proceed to Acquisition step
+          onContinue();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isRotating, rotationComplete, onContinue]);
+
+  return (
+    <div className="flex-1 relative">
+      {/* View Containers - 2 viewport layout */}
+      <div className="absolute left-6 top-4 right-6 h-[500px] flex gap-0">
+        {/* Left View Container - C-arm visualization */}
+        <div className="relative flex-1 border-2 border-white">
+          <div className="absolute bg-neutral-900 h-10 left-0 right-0 top-0 flex items-center justify-end px-3 z-10">
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24">
+              <path d="M2 2V22H22V2H2ZM20 20H4V6H20V20Z" fill="#D6D6D6" />
+            </svg>
+          </div>
+          <div className="absolute left-0 right-0 top-10 bottom-0 bg-black flex items-center justify-center p-4">
+            <img 
+              src={CArmLeft} 
+              alt="C-arm Left View" 
+              className="w-full h-full object-contain"
+            />
+          </div>
+        </div>
+
+        {/* Right View Container - C-arm with rotation path */}
+        <div className={`relative flex-1 border-2 transition-colors duration-300 ${
+          isRotating ? 'border-[#41c9fe] animate-pulse' : 'border-white'
+        }`}>
+          <div className="absolute bg-neutral-900 h-10 left-0 right-0 top-0 flex items-center justify-end px-3 z-10">
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24">
+              <path d="M2 2V22H22V2H2ZM20 20H4V6H20V20Z" fill="#D6D6D6" />
+            </svg>
+          </div>
+          <div className="absolute left-0 right-0 top-10 bottom-0 bg-black flex items-center justify-center p-4">
+            <img 
+              src={CArmRotation} 
+              alt="C-arm Rotation Path" 
+              className="w-full h-full object-contain"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Instruction Banner */}
+      <div className="absolute top-[520px] backdrop-blur-sm backdrop-filter" style={{ width: '600px', left: '50%', transform: 'translateX(-50%)' }}>
+        <div className="relative border-2 border-[rgba(158,213,255,0.8)] rounded p-6 shadow-[0px_4px_20px_10px_rgba(0,0,0,0.2)] overflow-hidden">
+          <div className="absolute inset-0 opacity-50" style={{ backgroundImage: "linear-gradient(45deg, #27316F 20%, #2E9BC8 140%)" }} />
+          <div className="relative flex items-start gap-6">
+            {/* Smart UI Icon */}
+            <div className="flex-shrink-0">
+              <img src={SmartUIIcon} alt="Smart UI" className="w-12 h-12" />
+            </div>
+
+            {/* Content */}
+            <div className="flex-1">
+              {!rotationComplete ? (
+                <>
+                  <div className="font-['CentraleSans:Bold',_sans-serif] text-[#41c9fe] text-lg mb-3">
+                    Ready to perform the test rotation
+                  </div>
+                  <p className="font-['CentraleSans:Book',_sans-serif] text-[rgba(255,255,255,0.8)] text-base">
+                    <span className="font-['CentraleSans:Bold',_sans-serif]">Press and hold</span>
+                    <span> one of the </span>
+                    <span className="font-['CentraleSans:Bold',_sans-serif]">Smart controls™</span>
+                    <span> to move the </span>
+                    <span className="font-['CentraleSans:Bold',_sans-serif]">align the iso center.</span>
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="font-['CentraleSans:Bold',_sans-serif] text-[#41c9fe] text-lg mb-3">
+                    Test rotation is complete
+                  </div>
+                  <p className="font-['CentraleSans:Book',_sans-serif] text-[rgba(255,255,255,0.8)] text-base">
+                    The rotation path has been verified successfully.
+                  </p>
+                </>
+              )}
+            </div>
+
+            {!rotationComplete && (
+              <>
+                {/* Smart Knob Illustration */}
+                <div className="flex-shrink-0">
+                  <SmartKnobIllustration small />
+                </div>
+
+                {/* Pedal Press Illustration */}
+                <div className="flex-shrink-0 w-24 h-16">
+                  <img src={PedalPress} alt="Pedal Press" className="w-full h-full object-contain" />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer with Previous button */}
+      <div className="absolute bottom-0 left-0 right-0 border-t border-[#d6d6d6] border-opacity-12 p-3">
+        <button
+          onClick={onPrevious}
+          className="px-4 py-2 rounded text-[#e8e8e8] text-base transition-all bg-[dimgrey] hover:opacity-90"
+        >
+          Previous
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface AcquisitionStepProps {
+  onPrevious: () => void;
+  onContinue?: () => void;
+}
+
+function AcquisitionStep({ onPrevious, onContinue }: AcquisitionStepProps) {
+  return (
+    <div className="flex-1 flex flex-col bg-[#1a1a1a]">
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-8">
+        {/* Title */}
+        <h2 className="text-white text-xl font-['CentraleSans:Book',_sans-serif] mb-12">
+          Follow these steps below to perform the acquisition.
+        </h2>
+
+        {/* Steps Flow */}
+        <div className="flex items-center gap-8 mb-16">
+          {/* Step 1: Press exposure button */}
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative w-32 h-32">
+              <img src={ExposurePress} alt="Press Exposure" className="w-full h-full object-contain" />
+              <div className="absolute -top-4 -left-4">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                  <path d="M20 5L20 35M20 5L15 10M20 5L25 10" stroke="#41c9fe" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </div>
+            <span className="text-white text-base font-['CentraleSans:Book',_sans-serif]">
+              Press and hold exposure button
+            </span>
+          </div>
+
+          {/* Arrow */}
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+            <path d="M10 20H30M30 20L25 15M30 20L25 25" stroke="#8c8c8c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+
+          {/* Step 2: Forward scan */}
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-32 h-32 rounded-full border-4 border-[#3b3b3b] flex flex-col items-center justify-center">
+              <span className="text-5xl font-['CentraleSans:Bold',_sans-serif] text-[#8c8c8c]">8</span>
+              <span className="text-base font-['CentraleSans:Book',_sans-serif] text-[#8c8c8c]">SEC</span>
+            </div>
+            <span className="text-[#8c8c8c] text-base font-['CentraleSans:Book',_sans-serif]">
+              Forward scan
+            </span>
+          </div>
+
+          {/* Arrow */}
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+            <path d="M10 20H30M30 20L25 15M30 20L25 25" stroke="#8c8c8c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+
+          {/* Step 3: Interval */}
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-32 h-32 rounded-full border-4 border-[#3b3b3b] flex flex-col items-center justify-center">
+              <span className="text-5xl font-['CentraleSans:Bold',_sans-serif] text-[#8c8c8c]">2</span>
+              <span className="text-base font-['CentraleSans:Book',_sans-serif] text-[#8c8c8c]">SEC</span>
+            </div>
+            <span className="text-[#8c8c8c] text-base font-['CentraleSans:Book',_sans-serif]">
+              Interval
+            </span>
+          </div>
+
+          {/* Arrow */}
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+            <path d="M10 20H30M30 20L25 15M30 20L25 25" stroke="#8c8c8c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+
+          {/* Step 4: Reverse scan */}
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-32 h-32 rounded-full border-4 border-[#3b3b3b] flex flex-col items-center justify-center">
+              <span className="text-5xl font-['CentraleSans:Bold',_sans-serif] text-[#8c8c8c]">8</span>
+              <span className="text-base font-['CentraleSans:Book',_sans-serif] text-[#8c8c8c]">SEC</span>
+            </div>
+            <span className="text-[#8c8c8c] text-base font-['CentraleSans:Book',_sans-serif]">
+              Reverse scan
+            </span>
+          </div>
+
+          {/* Arrow */}
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+            <path d="M10 20H30M30 20L25 15M30 20L25 25" stroke="#8c8c8c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+
+          {/* Step 5: Release exposure button */}
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative w-32 h-32">
+              <img src={ExposurePress} alt="Release Exposure" className="w-full h-full object-contain opacity-60" />
+              <div className="absolute -top-4 -right-4">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                  <path d="M20 35L20 5M20 35L15 30M20 35L25 30" stroke="#8c8c8c" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </div>
+            <span className="text-[#8c8c8c] text-base font-['CentraleSans:Book',_sans-serif]">
+              Release exposure button
+            </span>
+          </div>
+        </div>
+
+        {/* Settings Summary */}
+        <div className="bg-[#2a2a2a] rounded-lg p-8 w-full max-w-md">
+          <h3 className="text-white text-lg font-['CentraleSans:Bold',_sans-serif] mb-6 text-center">
+            Settings
+          </h3>
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-[#8c8c8c] text-base font-['CentraleSans:Book',_sans-serif]">Protocol</span>
+              <span className="text-white text-base font-['CentraleSans:Book',_sans-serif]">CBCT Dual</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[#8c8c8c] text-base font-['CentraleSans:Book',_sans-serif]">Type</span>
+              <span className="text-white text-base font-['CentraleSans:Book',_sans-serif]">Roll - 8s</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[#8c8c8c] text-base font-['CentraleSans:Book',_sans-serif]">Injector</span>
+              <span className="text-white text-base font-['CentraleSans:Book',_sans-serif]">Coupled</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[#8c8c8c] text-base font-['CentraleSans:Book',_sans-serif]">X-ray delay</span>
+              <span className="text-white text-base font-['CentraleSans:Book',_sans-serif]">0 s</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[#8c8c8c] text-base font-['CentraleSans:Book',_sans-serif]">Interval</span>
+              <span className="text-white text-base font-['CentraleSans:Book',_sans-serif]">2 s</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer with Previous button */}
+      <div className="border-t border-[#d6d6d6] border-opacity-12 p-3">
+        <button
+          onClick={onPrevious}
+          className="px-4 py-2 rounded text-[#e8e8e8] text-base transition-all bg-[dimgrey] hover:opacity-90"
         >
           Previous
         </button>
@@ -268,66 +558,228 @@ interface IsocenterStepProps {
 }
 
 function IsocenterStep({ onPrevious, onContinue }: IsocenterStepProps) {
+  // Left viewport states
   const [isEnterPressed, setIsEnterPressed] = useState(false);
+  const [isAcquisitionMade, setIsAcquisitionMade] = useState(false);
+  const [isAligning, setIsAligning] = useState(false);
+  const [isAligned, setIsAligned] = useState(false);
+  
+  // Right viewport states
+  const [rightEnterPressed, setRightEnterPressed] = useState(false);
+  const [rightAcquisitionMade, setRightAcquisitionMade] = useState(false);
+  const [rightAligning, setRightAligning] = useState(false);
+  const [rightAligned, setRightAligned] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Enter" && !isEnterPressed) {
-        setIsEnterPressed(true);
-        if (onContinue) {
+      if (event.key === "Enter") {
+        if (!isEnterPressed) {
+          // First Enter - left viewport ready for acquisition
+          setIsEnterPressed(true);
+        } else if (isAcquisitionMade && !isAligning && !isAligned) {
+          // Second Enter - start left alignment animation
+          setIsAligning(true);
           setTimeout(() => {
-            onContinue();
-          }, 1000);
+            setIsAligned(true);
+          }, 2000);
+        } else if (isAligned && !rightEnterPressed) {
+          // Third Enter - right viewport ready for acquisition
+          setRightEnterPressed(true);
+        } else if (rightEnterPressed && rightAcquisitionMade && !rightAligning) {
+          // Fourth Enter - start right alignment animation
+          setRightAligning(true);
+          setTimeout(() => {
+            setRightAligned(true);
+          }, 2000);
+        } else if (rightAligned && onContinue) {
+          // Fifth Enter - proceed to Check Path step
+          onContinue();
         }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isEnterPressed, onContinue]);
+  }, [isEnterPressed, isAcquisitionMade, isAligning, isAligned, rightEnterPressed, rightAcquisitionMade, rightAligning, rightAligned, onContinue]);
+
+  const handleCinePedalClick = () => {
+    if (isEnterPressed && !isAcquisitionMade) {
+      setIsAcquisitionMade(true);
+    }
+  };
+
+  const handleRightCinePedalClick = () => {
+    if (rightEnterPressed && !rightAcquisitionMade) {
+      setRightAcquisitionMade(true);
+    }
+  };
 
   return (
     <div className="flex-1 relative">
       {/* View Containers - 2 viewport layout */}
-      <div className="absolute left-6 top-16 right-6 bottom-48 flex gap-0">
-        {/* Left View Container - Selected with white border */}
-        <div className="relative flex-1 border-2 border-white">
-          <div className="absolute bg-neutral-900 h-10 left-0 right-0 top-0 flex items-center justify-end px-3">
+      <div className="absolute left-6 top-4 right-6 h-[500px] flex gap-0">
+        {/* Left View Container - White border initially, green after Enter */}
+        <div className={`relative flex-1 border-2 ${isEnterPressed ? 'border-[#00bd5e]' : 'border-white'}`}>
+          <div className="absolute bg-neutral-900 h-10 left-0 right-0 top-0 flex items-center justify-end px-3 z-10">
+            {isAcquisitionMade && (
+              <div className="flex items-center gap-2 mr-auto">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 20 20">
+                  <circle cx="10" cy="10" r="10" fill="#00bd5e" />
+                  <path d="M6 10L9 13L14 7" stroke="white" strokeWidth="2" fill="none" />
+                </svg>
+                <span className="text-[#00bd5e] text-base font-['CentraleSans:Bold',_sans-serif]">
+                  Acquisition has been made
+                </span>
+              </div>
+            )}
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24">
               <path d="M2 2V22H22V2H2ZM20 20H4V6H20V20Z" fill="#D6D6D6" />
             </svg>
           </div>
-          <div className="absolute bg-black left-0 right-0 top-10 bottom-0 flex items-center justify-center p-4">
-            <img 
-              src={CArmLeft} 
-              alt="C-arm Left View" 
-              className="w-full h-full object-contain"
-            />
+          <div className="absolute left-0 right-0 top-10 bottom-0 bg-black flex items-center justify-center p-4">
+            {isAcquisitionMade ? (
+              <div className="relative flex items-center justify-center" style={{ height: '100%' }}>
+                {/* Overlay - switches from orange to green when aligned */}
+                <img 
+                  src={isAligned ? ViewportIndicationGreen : ViewportIndicationOrange} 
+                  alt="Viewport Indication" 
+                  className="h-full object-contain"
+                  style={{ 
+                    position: 'relative', 
+                    zIndex: 2,
+                    transform: isAligned ? 'rotate(180deg)' : 'none'
+                  }}
+                />
+                {/* White background matches the overlay size */}
+                <div className="absolute inset-0 bg-white" style={{ zIndex: 0 }} />
+                {/* Skull positioned - animates from 51% to 47% when aligning */}
+                <img 
+                  src={SkullAP} 
+                  alt="Skull X-ray AP" 
+                  className="absolute h-full object-contain"
+                  style={{ 
+                    zIndex: 1,
+                    // Animates from 51% to 47% when isAligning is true
+                    left: isAligning ? '47%' : '51%',
+                    transform: 'translateX(-50%)',
+                    transition: 'left 2s ease-in-out'
+                  }}
+                />
+              </div>
+            ) : (
+              <img 
+                src={CArmLeft} 
+                alt="C-arm Left View" 
+                className="w-full h-full object-contain"
+              />
+            )}
           </div>
         </div>
 
-        {/* Right View Container - Dimmed */}
-        <div className="relative flex-1 border border-[#383838] opacity-50">
-          <div className="absolute bg-neutral-900 h-10 left-0 right-0 top-0 flex items-center justify-end px-3">
+        {/* Right View Container - Becomes active when left is aligned */}
+        <div className={`relative flex-1 border-2 ${isAligned ? (rightEnterPressed ? 'border-[#00bd5e]' : 'border-white') : 'border-[#383838]'} ${!isAligned ? 'opacity-50' : ''}`}>
+          <div className="absolute bg-neutral-900 h-10 left-0 right-0 top-0 flex items-center justify-end px-3 z-10">
+            {rightAcquisitionMade && (
+              <div className="flex items-center gap-2 mr-auto">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 20 20">
+                  <circle cx="10" cy="10" r="10" fill="#00bd5e" />
+                  <path d="M6 10L9 13L14 7" stroke="white" strokeWidth="2" fill="none" />
+                </svg>
+                <span className="text-[#00bd5e] text-base font-['CentraleSans:Bold',_sans-serif]">
+                  Acquisition has been made
+                </span>
+              </div>
+            )}
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24">
               <path d="M2 2V22H22V2H2ZM20 20H4V6H20V20Z" fill="#D6D6D6" />
             </svg>
           </div>
-          <div className="absolute bg-black left-0 right-0 top-10 bottom-0 flex items-center justify-center p-4">
-            <img 
-              src={CArmRight} 
-              alt="C-arm Right View" 
-              className="w-full h-full object-contain"
-            />
+          <div className="absolute left-0 right-0 top-10 bottom-0 bg-black flex items-center justify-center p-4">
+            {rightAcquisitionMade ? (
+              <div className="relative flex items-center justify-center" style={{ height: '100%' }}>
+                {/* Overlay - switches from orange to green when aligned */}
+                <img 
+                  src={rightAligned ? ViewportIndicationLatGreen : ViewportIndicationLatOrange} 
+                  alt="Viewport Indication" 
+                  className="h-full object-contain"
+                  style={{ 
+                    position: 'relative', 
+                    zIndex: 2,
+                    transform: rightAligned ? 'rotate(180deg)' : 'none'
+                  }}
+                />
+                {/* White background matches the overlay size */}
+                <div className="absolute inset-0 bg-white" style={{ zIndex: 0 }} />
+                {/* Lateral skull positioned - animates when aligning */}
+                <img 
+                  src={SkullLAT} 
+                  alt="Skull X-ray Lateral" 
+                  className="absolute"
+                  style={{ 
+                    zIndex: 1,
+                    // Adjust width percentage to scale horizontally (e.g., 100%, 110%, 120%)
+                    width: '86%',
+                    // Height stays at 100% to fill viewport
+                    height: '100%',
+                    // object-fill allows independent width/height scaling (skewing)
+                    objectFit: 'fill',
+                    left: rightAligning ? '48%' : '52%',
+                    transform: 'translateX(-50%)',
+                    transition: 'left 2s ease-in-out'
+                  }}
+                />
+              </div>
+            ) : (
+              <img 
+                src={CArmRight} 
+                alt="C-arm Right View" 
+                className="w-full h-full object-contain"
+              />
+            )}
           </div>
         </div>
+        
+        {/* Green status text under left viewport */}
+        {isAligned && (
+          <div className="absolute left-6 top-[510px] text-[#00bd5e] text-base font-['CentraleSans:Book',_sans-serif]">
+            <div className="flex items-center gap-2 mb-1">
+              <span>•</span>
+              <span>AP orientation has been created</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>•</span>
+              <span>Iso center is aligned</span>
+            </div>
+          </div>
+        )}
+        
+        {/* Green status text under right viewport */}
+        {rightAligned && (
+          <div className="absolute right-6 top-[510px] text-[#00bd5e] text-base font-['CentraleSans:Book',_sans-serif]">
+            <div className="flex items-center gap-2 mb-1">
+              <span>•</span>
+              <span>Lateral orientation has been created</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>•</span>
+              <span>Iso center is aligned</span>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* AI C-arm Confirm Banner */}
-      <div className="absolute left-7 bottom-20 w-[708px] backdrop-blur-sm backdrop-filter">
-        <div className="relative border-2 border-[rgba(158,213,255,0.8)] rounded p-6 shadow-[0px_4px_20px_10px_rgba(0,0,0,0.2)] overflow-hidden">
-          <div className="absolute inset-0 opacity-50" style={{ backgroundImage: "linear-gradient(45deg, #27316F 20%, #2E9BC8 140%)" }} />
-          {!isEnterPressed ? (
+      {/* AI C-arm Confirm Banner - moves from left to right viewport, replaced by completion message when both aligned */}
+      {!rightAligned && (
+        <div 
+          className="absolute top-[520px] backdrop-blur-sm backdrop-filter transition-all duration-500" 
+          style={{ 
+            width: 'calc(50% - 24px)',
+            left: isAligned ? 'calc(50% + 6px)' : '24px'
+          }}
+        >
+          <div className="relative border-2 border-[rgba(158,213,255,0.8)] rounded p-6 shadow-[0px_4px_20px_10px_rgba(0,0,0,0.2)] overflow-hidden">
+            <div className="absolute inset-0 opacity-50" style={{ backgroundImage: "linear-gradient(45deg, #27316F 20%, #2E9BC8 140%)" }} />
+          {!isAligned ? (!isEnterPressed ? (
             <div className="relative flex items-start gap-6">
               {/* Smart UI Icon */}
               <div className="flex-shrink-0">
@@ -356,10 +808,10 @@ function IsocenterStep({ onPrevious, onContinue }: IsocenterStepProps) {
 
               {/* Pedal Press Illustration */}
               <div className="flex-shrink-0 w-24 h-16">
-                <img src={PedalImg} alt="Pedal" className="w-full h-full object-contain" />
+                <img src={PedalPress} alt="Pedal Press" className="w-full h-full object-contain" />
               </div>
             </div>
-          ) : (
+          ) : !isAcquisitionMade ? (
             <div className="relative flex items-start gap-6">
               {/* Smart UI Icon */}
               <div className="flex-shrink-0">
@@ -380,20 +832,186 @@ function IsocenterStep({ onPrevious, onContinue }: IsocenterStepProps) {
                 </p>
               </div>
 
-              {/* Cine Pedal Illustration */}
-              <div className="flex-shrink-0 w-32 h-20">
-                <img src={PedalImg} alt="CINE Pedal" className="w-full h-full object-contain" />
+              {/* Cine Pedal Illustration - Clickable */}
+              <div 
+                className="flex-shrink-0 w-32 h-20 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={handleCinePedalClick}
+              >
+                <img src={CinePedal} alt="CINE Pedal" className="w-full h-full object-contain" />
               </div>
             </div>
-          )}
+          ) : (
+            <div className="relative flex items-start gap-6">
+              {/* Smart UI Icon */}
+              <div className="flex-shrink-0">
+                <img src={SmartUIIcon} alt="Smart UI" className="w-12 h-12" />
+              </div>
+
+              {/* Content */}
+              <div className="flex-1">
+                <div className="font-['CentraleSans:Bold',_sans-serif] text-[#41c9fe] text-lg mb-3">
+                  Automatically align the ISO center of patient
+                </div>
+                <p className="font-['CentraleSans:Book',_sans-serif] text-[rgba(255,255,255,0.8)] text-base">
+                  <span className="font-['CentraleSans:Bold',_sans-serif]">Press and hold</span>
+                  <span> one of the </span>
+                  <span className="font-['CentraleSans:Bold',_sans-serif]">Smart controls™</span>
+                  <span> to move the </span>
+                  <span className="font-['CentraleSans:Bold',_sans-serif]">align the iso center.</span>
+                </p>
+              </div>
+
+              {/* Smart Knob Illustration */}
+              <div className="flex-shrink-0">
+                <SmartKnobIllustration small />
+              </div>
+
+              {/* Pedal Press Illustration */}
+              <div className="flex-shrink-0 w-24 h-16">
+                <img src={PedalPress} alt="Pedal Press" className="w-full h-full object-contain" />
+              </div>
+            </div>
+          )) : (!rightEnterPressed ? (
+            <div className="relative flex items-start gap-6">
+              {/* Smart UI Icon */}
+              <div className="flex-shrink-0">
+                <img src={SmartUIIcon} alt="Smart UI" className="w-12 h-12" />
+              </div>
+
+              {/* Content */}
+              <div className="flex-1">
+                <div className="font-['CentraleSans:Bold',_sans-serif] text-[#41c9fe] text-lg mb-3">
+                  <ol className="list-decimal ml-7">
+                    <li>Automatically move C-arm into Lateral Position</li>
+                  </ol>
+                </div>
+                <p className="font-['CentraleSans:Book',_sans-serif] text-[rgba(255,255,255,0.8)] text-base">
+                  <span className="font-['CentraleSans:Bold',_sans-serif]">Press and hold</span>
+                  <span> one of the </span>
+                  <span className="font-['CentraleSans:Bold',_sans-serif]">Smart controls™</span>
+                  <span> to move the C-arm to the lateral position</span>
+                </p>
+              </div>
+
+              {/* Smart Knob Illustration */}
+              <div className="flex-shrink-0">
+                <SmartKnobIllustration small />
+              </div>
+
+              {/* Pedal Press Illustration */}
+              <div className="flex-shrink-0 w-24 h-16">
+                <img src={PedalPress} alt="Pedal Press" className="w-full h-full object-contain" />
+              </div>
+            </div>
+          ) : !rightAcquisitionMade ? (
+            <div className="relative flex items-start gap-6">
+              {/* Smart UI Icon */}
+              <div className="flex-shrink-0">
+                <img src={SmartUIIcon} alt="Smart UI" className="w-12 h-12" />
+              </div>
+
+              {/* Content */}
+              <div className="flex-1">
+                <div className="font-['CentraleSans:Bold',_sans-serif] text-[#41c9fe] text-lg mb-3">
+                  <ol className="list-decimal ml-7" start={2}>
+                    <li>Ready for acquisition</li>
+                  </ol>
+                </div>
+                <p className="font-['CentraleSans:Book',_sans-serif] text-[rgba(255,255,255,0.8)] text-base">
+                  <span>Step on the </span>
+                  <span className="font-['CentraleSans:Bold',_sans-serif]">CINE pedal</span>
+                  <span> to acquire expose</span>
+                </p>
+              </div>
+
+              {/* Cine Pedal Illustration - Clickable */}
+              <div 
+                className="flex-shrink-0 w-32 h-20 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={handleRightCinePedalClick}
+              >
+                <img src={CinePedal} alt="CINE Pedal" className="w-full h-full object-contain" />
+              </div>
+            </div>
+          ) : (
+            <div className="relative flex items-start gap-6">
+              {/* Smart UI Icon */}
+              <div className="flex-shrink-0">
+                <img src={SmartUIIcon} alt="Smart UI" className="w-12 h-12" />
+              </div>
+
+              {/* Content */}
+              <div className="flex-1">
+                <div className="font-['CentraleSans:Bold',_sans-serif] text-[#41c9fe] text-lg mb-3">
+                  Automatically align the ISO center of patient
+                </div>
+                <p className="font-['CentraleSans:Book',_sans-serif] text-[rgba(255,255,255,0.8)] text-base">
+                  <span className="font-['CentraleSans:Bold',_sans-serif]">Press and hold</span>
+                  <span> one of the </span>
+                  <span className="font-['CentraleSans:Bold',_sans-serif]">Smart controls™</span>
+                  <span> to move the </span>
+                  <span className="font-['CentraleSans:Bold',_sans-serif]">align the iso center.</span>
+                </p>
+              </div>
+
+              {/* Smart Knob Illustration */}
+              <div className="flex-shrink-0">
+                <SmartKnobIllustration small />
+              </div>
+
+              {/* Pedal Press Illustration */}
+              <div className="flex-shrink-0 w-24 h-16">
+                <img src={PedalPress} alt="Pedal Press" className="w-full h-full object-contain" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
+      )}
+
+      {/* Completion Banner - appears when both viewports are aligned */}
+      {rightAligned && (
+        <div className="absolute top-[520px] backdrop-blur-sm backdrop-filter" style={{ width: '600px', left: '50%', transform: 'translateX(-50%)' }}>
+          <div className="relative border-2 border-[rgba(158,213,255,0.8)] rounded p-6 shadow-[0px_4px_20px_10px_rgba(0,0,0,0.2)] overflow-hidden">
+            <div className="absolute inset-0 opacity-50" style={{ backgroundImage: "linear-gradient(45deg, #27316F 20%, #2E9BC8 140%)" }} />
+            <div className="relative flex items-start gap-6">
+              {/* Smart UI Icon */}
+              <div className="flex-shrink-0">
+                <img src={SmartUIIcon} alt="Smart UI" className="w-12 h-12" />
+              </div>
+
+              {/* Content */}
+              <div className="flex-1">
+                <div className="font-['CentraleSans:Bold',_sans-serif] text-[#41c9fe] text-lg mb-3">
+                  Isocentering is has been completed succesfully
+                </div>
+                <p className="font-['CentraleSans:Book',_sans-serif] text-[rgba(255,255,255,0.8)] text-base">
+                  <span className="font-['CentraleSans:Bold',_sans-serif]">Press and hold</span>
+                  <span> one of the </span>
+                  <span className="font-['CentraleSans:Bold',_sans-serif]">Smart controls™</span>
+                  <span> to continue to </span>
+                  <span className="font-['CentraleSans:Bold',_sans-serif]">Check the rotation Path</span>
+                </p>
+              </div>
+
+              {/* Smart Knob Illustration */}
+              <div className="flex-shrink-0">
+                <SmartKnobIllustration small />
+              </div>
+
+              {/* Pedal Press Illustration */}
+              <div className="flex-shrink-0 w-24 h-16">
+                <img src={PedalPress} alt="Pedal Press" className="w-full h-full object-contain" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer with Previous button */}
       <div className="absolute bottom-0 left-0 right-0 border-t border-[#d6d6d6] border-opacity-12 p-3">
         <button
           onClick={onPrevious}
-          className="px-4 py-2 rounded text-[#e8e8e8] text-sm transition-all bg-[dimgrey] hover:opacity-90"
+          className="px-4 py-2 rounded text-[#e8e8e8] text-base transition-all bg-[dimgrey] hover:opacity-90"
         >
           Previous
         </button>
@@ -423,7 +1041,7 @@ interface StepperControlProps {
 function StepperControl({ value, onChange, unit }: StepperControlProps) {
   return (
     <div className="bg-[#212121] border border-[#8c8c8c] rounded px-3 py-1 flex items-center gap-2 w-24">
-      <span className="font-['CentraleSans:Book',_sans-serif] text-sm text-[rgba(214,214,214,0.8)] flex-1">
+      <span className="font-['CentraleSans:Book',_sans-serif] text-base text-[rgba(214,214,214,0.8)] flex-1">
         {value}{unit}
       </span>
       
@@ -458,13 +1076,13 @@ export function SmartNavigator({ componentSize = 'large', isActive = false }: Sm
       case 'medium':
         return 'scale-[0.6]';
       case 'large':
-        return 'scale-[0.8]'; // Scaled down to 80% for better fit
+        return 'scale-[0.72]'; // Scaled down to 72% (10% less than 80%)
       case 'xlarge':
-        return 'scale-[0.9]'; // Slightly scaled down for xlarge
+        return 'scale-[0.81]'; // Scaled down to 81% (10% less than 90%)
       case 'fullscreen':
-        return 'scale-100';
+        return 'scale-[0.9]'; // Scaled down to 90% (10% less than 100%)
       default:
-        return 'scale-[0.8]';
+        return 'scale-[0.72]';
     }
   };
 
@@ -680,14 +1298,14 @@ export function SmartNavigator({ componentSize = 'large', isActive = false }: Sm
                             <path d="M15 4L13 2L7 9L3 5L1 7L7 13L15 4Z" fill="white" />
                           </svg>
                         ) : (
-                          <span className={`text-sm font-['CentraleSans:Bold',_sans-serif] ${
+                          <span className={`text-base font-['CentraleSans:Bold',_sans-serif] ${
                             currentStep === step.id ? 'text-black' : 'text-[#d6d6d6]'
                           }`}>
                             {step.id}
                           </span>
                         )}
                       </div>
-                      <span className={`text-sm font-['CentraleSans:Book',_sans-serif] ${
+                      <span className={`text-base font-['CentraleSans:Book',_sans-serif] ${
                         currentStep === step.id ? 'text-white' : 'text-[#d6d6d6]'
                       }`}>
                         {step.label}
@@ -751,9 +1369,9 @@ export function SmartNavigator({ componentSize = 'large', isActive = false }: Sm
                     <div className="flex items-center justify-between">
                       {/* Smart UI Banner */}
                       {showSmartBanner && (
-                        <div className="relative backdrop-blur-sm backdrop-filter rounded-lg border border-white shadow-lg p-6 max-w-2xl overflow-hidden">
+                        <div className="relative backdrop-blur-sm backdrop-filter rounded border border-white shadow-lg p-6 w-[708px] overflow-hidden">
                           <div className="absolute inset-0 opacity-50" style={{ backgroundImage: "linear-gradient(45deg, #27316F 20%, #2E9BC8 140%)" }} />
-                          <div className="relative flex items-center gap-4">
+                          <div className="relative flex items-start gap-6">
                             {/* Smart UI Icon */}
                             <div className="flex-shrink-0">
                               <img src={SmartUIIcon} alt="Smart UI" className="w-12 h-12" />
@@ -776,7 +1394,7 @@ export function SmartNavigator({ componentSize = 'large', isActive = false }: Sm
 
                             {/* Smart Knob illustration */}
                             <div className="flex-shrink-0">
-                              <SmartKnobIllustration />
+                              <SmartKnobIllustration small />
                             </div>
                           </div>
                         </div>
@@ -784,17 +1402,17 @@ export function SmartNavigator({ componentSize = 'large', isActive = false }: Sm
 
                       {/* Instruction text */}
                       <div className="flex items-center gap-3 mr-4">
-                        <p className="font-['CentraleSans:Book',_sans-serif] text-[#d6d6d6] text-lg">
+                        <p className="font-['CentraleSans:Book',_sans-serif] text-[#d6d6d6] text-base">
                           <span>Select </span>
                           <span className="font-['CentraleSans:Bold',_sans-serif]">acquisition protocol</span>
                           <span> then press a </span>
                         </p>
                         
                         <div className="inline-block">
-                          <SmartKnobIllustration />
+                          <SmartKnobIllustration small />
                         </div>
                         
-                        <p className="font-['CentraleSans:Book',_sans-serif] text-[#d6d6d6] text-lg">
+                        <p className="font-['CentraleSans:Book',_sans-serif] text-[#d6d6d6] text-base">
                           <span> to continue</span>
                         </p>
                       </div>
@@ -821,14 +1439,30 @@ export function SmartNavigator({ componentSize = 'large', isActive = false }: Sm
                 />
               )}
 
+              {/* Step 4: Check Path */}
+              {currentStep === 4 && (
+                <CheckPathStep 
+                  onPrevious={handlePrevious}
+                  onContinue={handleContinue}
+                />
+              )}
+
+              {/* Step 5: Acquisition */}
+              {currentStep === 5 && (
+                <AcquisitionStep 
+                  onPrevious={handlePrevious}
+                  onContinue={handleContinue}
+                />
+              )}
+
               {/* Other steps placeholder */}
-              {currentStep > 3 && (
+              {currentStep > 5 && (
                 <div className="flex-1 flex items-center justify-center">
                   <div className="text-center">
                     <h2 className="text-white text-xl font-['CentraleSans:Bold',_sans-serif] mb-4">
                       {STEPS[currentStep - 1].name} Step
                     </h2>
-                    <p className="text-[#d6d6d6] text-sm">
+                    <p className="text-[#d6d6d6] text-base">
                       Step {currentStep} content coming soon...
                     </p>
                     <div className="flex gap-4 justify-center">

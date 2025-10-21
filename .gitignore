@@ -201,3 +201,6 @@ docs/build/
 # Backup files
 *.bak
 *.backup
+
+# Figma imports
+FigmaImports/
