@@ -118,7 +118,7 @@ export function ScreenFlexvision() {
         { component: 'placeholder', size: 'small' },    // Top row - second small  
         { component: 'hemo', size: 'small' },           // Top row - small hemo
         { component: 'xrayLive', size: 'medium' },      // Left side - vertical medium
-        { component: 'smartNavigator', size: 'large' }  // Bottom right - large
+        { component: 'smartNavigator', size: 'large' }  // Bottom right - large (2x2)
       ]
     },
     "planning": {
@@ -514,7 +514,7 @@ export function ScreenFlexvision() {
                   { col: 3, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
                   // XrayLive - Left side vertical medium (1x2)
                   { col: 1, row: 2, colSpan: 1, rowSpan: 2, originalSize: 'medium', adjustedSize: 'medium', variant: 'vertical' },
-                  // SmartNavigator - Bottom right large (2x2)
+                  // SmartNavigator - Bottom right large (2x2) - FORCE 2x2
                   { col: 2, row: 2, colSpan: 2, rowSpan: 2, originalSize: 'large', adjustedSize: 'large' }
                 ];
               }
@@ -672,7 +672,13 @@ export function ScreenFlexvision() {
 
               // Process each component in order
               currentLayout.components.forEach((component, index) => {
-                const adjustedSize = adjustComponentSize(component.size, index, currentLayout.components.length);
+                let adjustedSize = adjustComponentSize(component.size, index, currentLayout.components.length);
+                
+                // Special handling for SmartNavigator - always make it large (2x2) when possible
+                if (component.component === 'smartNavigator' && (adjustedSize === 'large' || adjustedSize === 'xlarge')) {
+                  adjustedSize = 'large'; // Force to large (2x2)
+                }
+                
                 let sizeDef = getSizeDefinition(adjustedSize);
                 
                 // Try to place with adjusted size
@@ -681,17 +687,33 @@ export function ScreenFlexvision() {
                 
                 // Fallback strategy if can't fit
                 if (!position) {
-                  // Try smaller sizes in order
-                  const fallbackSizes = ['large', 'medium', 'small'];
-                  for (const fallbackSize of fallbackSizes) {
-                    if (fallbackSize === adjustedSize) continue; // Skip same size
-                    const fallbackDef = sizeDefinitions[fallbackSize];
-                    position = findPosition(fallbackDef.width, fallbackDef.height);
-                    if (position) {
-                      // Update to fallback size
-                      sizeDef = fallbackDef;
-                      finalSize = fallbackSize;
-                      break;
+                  // Special handling for SmartNavigator - try to keep it large if possible
+                  if (component.component === 'smartNavigator') {
+                    // Try large first, then medium, then small
+                    const fallbackSizes = ['large', 'medium', 'small'];
+                    for (const fallbackSize of fallbackSizes) {
+                      if (fallbackSize === adjustedSize) continue; // Skip same size
+                      const fallbackDef = sizeDefinitions[fallbackSize];
+                      position = findPosition(fallbackDef.width, fallbackDef.height);
+                      if (position) {
+                        sizeDef = fallbackDef;
+                        finalSize = fallbackSize;
+                        console.log(`SmartNavigator placed as ${finalSize} (${sizeDef.width}x${sizeDef.height}) at position ${position.col+1},${position.row+1}`);
+                        break;
+                      }
+                    }
+                  } else {
+                    // Regular fallback for other components
+                    const fallbackSizes = ['large', 'medium', 'small'];
+                    for (const fallbackSize of fallbackSizes) {
+                      if (fallbackSize === adjustedSize) continue; // Skip same size
+                      const fallbackDef = sizeDefinitions[fallbackSize];
+                      position = findPosition(fallbackDef.width, fallbackDef.height);
+                      if (position) {
+                        sizeDef = fallbackDef;
+                        finalSize = fallbackSize;
+                        break;
+                      }
                     }
                   }
                 }
@@ -709,6 +731,16 @@ export function ScreenFlexvision() {
                     variant: (adjustedSize === 'xlarge' || adjustedSize === 'medium') ? 
                       (sizeDef.width > sizeDef.height ? 'horizontal' : 'vertical') : null
                   };
+                  
+                  // Debug logging for SmartNavigator
+                  if (component.component === 'smartNavigator') {
+                    console.log(`✅ SmartNavigator placed successfully:`, {
+                      position: `${position.col + 1},${position.row + 1}`,
+                      size: `${sizeDef.width}x${sizeDef.height}`,
+                      finalSize,
+                      gridClasses: `col-start-${position.col + 1} row-start-${position.row + 1} col-span-${sizeDef.width} row-span-${sizeDef.height}`
+                    });
+                  }
                 } else {
                   // Emergency fallback - place in first available cell
                   placements[index] = {
@@ -730,7 +762,37 @@ export function ScreenFlexvision() {
                 return 'col-start-1 row-start-1 col-span-1 row-span-1'; // Emergency fallback
               }
               
-              return `col-start-${placement.col} row-start-${placement.row} col-span-${placement.colSpan} row-span-${placement.rowSpan}`;
+              // Use explicit Tailwind classes to ensure they're included in the build
+              const colStartClasses = {
+                1: 'col-start-1',
+                2: 'col-start-2', 
+                3: 'col-start-3'
+              };
+              
+              const rowStartClasses = {
+                1: 'row-start-1',
+                2: 'row-start-2',
+                3: 'row-start-3'
+              };
+              
+              const colSpanClasses = {
+                1: 'col-span-1',
+                2: 'col-span-2',
+                3: 'col-span-3'
+              };
+              
+              const rowSpanClasses = {
+                1: 'row-span-1',
+                2: 'row-span-2', 
+                3: 'row-span-3'
+              };
+              
+              const colStart = colStartClasses[placement.col as keyof typeof colStartClasses] || 'col-start-1';
+              const rowStart = rowStartClasses[placement.row as keyof typeof rowStartClasses] || 'row-start-1';
+              const colSpan = colSpanClasses[placement.colSpan as keyof typeof colSpanClasses] || 'col-span-1';
+              const rowSpan = rowSpanClasses[placement.rowSpan as keyof typeof rowSpanClasses] || 'row-span-1';
+              
+              return `${colStart} ${rowStart} ${colSpan} ${rowSpan}`;
             };
 
             // Render components based on configuration
@@ -767,7 +829,7 @@ export function ScreenFlexvision() {
                   focusKey = 'hemo';
                   break;
                 case 'smartNavigator':
-                  ComponentToRender = () => <SmartNavigator componentSize={componentSize} />;
+                  ComponentToRender = () => <SmartNavigator componentSize={componentSize} isActive={currentWorkflowStep === '3d-scan'} />;
                   focusKey = 'smartnav';
                   break;
                 case 'placeholder':
