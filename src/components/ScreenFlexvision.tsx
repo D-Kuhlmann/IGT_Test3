@@ -13,6 +13,7 @@ import { useSettings, matchesInput } from '../contexts/SettingsContext';
 import { useUnifiedInput } from '../hooks/useUnifiedInput';
 import { useAngle } from '../contexts/AngleContext';
 import { useDateTime } from '../hooks/useDateTime';
+import { useActiveComponents } from '../contexts/ActiveComponentsContext';
 import { getNextWorkflow, getPreviousWorkflow } from "../config/workflows";
 import type { WorkflowStep } from "../types";
 
@@ -26,6 +27,7 @@ export function ScreenFlexvision() {
   const [activePreset, setActivePreset] = useState<1 | 2>(1);
   const { setSelectedAngle, activateUniGuide } = useAngle();
   const { inputSettings, setIsSettingsOpen } = useSettings();
+  const { setActiveComponents, setFocusedComponent: setContextFocusedComponent } = useActiveComponents();
 
   // Component layout configurations for each workflow step
   interface ComponentConfig {
@@ -169,6 +171,39 @@ export function ScreenFlexvision() {
 
   const currentLayout = useMemo(() => getCurrentLayout(), [currentWorkflowStep, activePreset]);
 
+  // Update active components context when layout changes
+  useEffect(() => {
+    const activeComps = currentLayout.components
+      .map(config => config.component)
+      .filter((comp): comp is 'xrayLive' | 'interventionalWorkspace' | 'hemo' | 'smartNavigator' => 
+        comp !== 'placeholder'
+      );
+    
+    // Only update if components actually changed
+    const stored = localStorage.getItem('activeComponents');
+    const storedStr = stored || '[]';
+    const newStr = JSON.stringify(activeComps);
+    
+    if (storedStr !== newStr) {
+      setActiveComponents(activeComps);
+    }
+  }, [currentLayout, setActiveComponents, currentWorkflowStep]);
+
+  // Sync focused component with context
+  useEffect(() => {
+    // Map local component names to context component names
+    const componentMap: Record<string, 'xrayLive' | 'interventionalWorkspace' | 'hemo' | 'smartNavigator' | null> = {
+      'xray': 'xrayLive',
+      'iw': 'interventionalWorkspace',
+      'hemo': 'hemo',
+      'smartnav': 'smartNavigator',
+      'placeholder': null
+    };
+    
+    const mappedComponent = componentMap[focusedComponent];
+    setContextFocusedComponent(mappedComponent);
+  }, [focusedComponent, setContextFocusedComponent]);
+
 
   const handleShowWorkflows = () => {
     setShowWorkflows(true);
@@ -293,7 +328,6 @@ export function ScreenFlexvision() {
       newIndex = (selectedAngleIndex - 1 + totalAngles) % totalAngles;
     }
     
-    console.log(`Navigating angles: ${direction}, from ${selectedAngleIndex} to ${newIndex}`);
     setSelectedAngleIndex(newIndex);
   };
 
@@ -302,6 +336,12 @@ export function ScreenFlexvision() {
     if (!inputSettings.focusModeEnabled) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Don't handle key events if SmartNavigator is active
+      const hasSmartNavigator = currentLayout.components.some(c => c.component === 'smartNavigator');
+      if (hasSmartNavigator) {
+        return; // Let SmartNavigator handle the events
+      }
+      
       if (matchesInput(event, inputSettings.focusModeToggle)) {
         if (focusMode) {
           // Activate the currently focused component
@@ -323,6 +363,12 @@ export function ScreenFlexvision() {
     };
 
     const handleWheel = (event: WheelEvent) => {
+      // Don't handle wheel events if SmartNavigator is active
+      const hasSmartNavigator = currentLayout.components.some(c => c.component === 'smartNavigator');
+      if (hasSmartNavigator) {
+        return; // Let SmartNavigator handle the events
+      }
+      
       let navigationTriggered = false;
       
       // Check for forward navigation
@@ -351,9 +397,7 @@ export function ScreenFlexvision() {
         navigationTriggered = true;
       }
       
-      if (navigationTriggered) {
-        console.log(`Navigation triggered: iwSubFocus=${iwSubFocus}, deltaY=${event.deltaY}`);
-      }
+      // Navigation triggered
     };
 
     const handleMouseClick = (event: MouseEvent) => {
@@ -829,7 +873,8 @@ export function ScreenFlexvision() {
                   focusKey = 'hemo';
                   break;
                 case 'smartNavigator':
-                  ComponentToRender = () => <SmartNavigator componentSize={componentSize} isActive={currentWorkflowStep === '3d-scan'} />;
+                  // SmartNavigator is always active when rendered
+                  ComponentToRender = () => <SmartNavigator componentSize={componentSize} isActive={true} />;
                   focusKey = 'smartnav';
                   break;
                 case 'placeholder':

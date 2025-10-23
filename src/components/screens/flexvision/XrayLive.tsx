@@ -314,9 +314,10 @@ function XrayLiveContent() {
 
 interface XrayLiveProps {
   componentSize?: 'small' | 'medium' | 'large' | 'xlarge' | 'fullscreen';
+  hideHeader?: boolean;
 }
 
-export function XrayLive({ componentSize = 'large' }: XrayLiveProps) {
+export function XrayLive({ componentSize = 'large', hideHeader = false }: XrayLiveProps) {
   // Content scaling based on component size - headers stay normal, only content scales
   const getContentScale = () => {
     switch (componentSize) {
@@ -358,7 +359,7 @@ export function XrayLive({ componentSize = 'large' }: XrayLiveProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Headers stay normal size */}
-      <ComponentHeader title="Xray Live" showPatientBar={showPatientBar} />
+      {!hideHeader && <ComponentHeader title="Xray Live" showPatientBar={showPatientBar} />}
       
       {/* Content area uses full available space, then gets scaled */}
       <div className="flex-1 p-4 min-h-0 w-full overflow-hidden">

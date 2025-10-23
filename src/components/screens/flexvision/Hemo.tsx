@@ -11,9 +11,10 @@ interface HemoReading {
 }
 interface HemoProps {
   componentSize?: 'small' | 'medium' | 'large' | 'xlarge' | 'fullscreen';
+  hideHeader?: boolean;
 }
 
-const HemoComponent = ({ componentSize = 'large' }: HemoProps) => {
+const HemoComponent = ({ componentSize = 'large', hideHeader = false }: HemoProps) => {
   // Simple scaling approach - larger components get more space for content
   const getScaleConfig = () => {
     switch (componentSize) {
@@ -55,7 +56,7 @@ const HemoComponent = ({ componentSize = 'large' }: HemoProps) => {
   return (
     <div className="flex flex-col h-full">
       {/* Headers stay normal size */}
-      <ComponentHeader title="Hemo" showPatientBar={showPatientBar} />
+      {!hideHeader && <ComponentHeader title="Hemo" showPatientBar={showPatientBar} />}
       
       {/* Content area - responsive approach */}
       {/* Content area - ECG only, no headers to save space */}

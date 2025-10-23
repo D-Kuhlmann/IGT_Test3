@@ -20,10 +20,14 @@ import ViewportIndicationLatGreen from '../../../assets/viewportindication-lat-g
 import CArmRotation from '../../../assets/CArmRotation.png';
 import ExposurePress from '../../../assets/Switch - Exposure Press.png';
 import { useSettings, matchesInput } from '../../../contexts/SettingsContext';
+import { UniguideUI } from './UniguideUI';
+import CBCTVideo from '../../../assets/neuro-3D-RA_Frontal (1).mp4';
 
 interface SmartNavigatorProps {
   componentSize?: 'small' | 'medium' | 'large' | 'xlarge' | 'fullscreen';
   isActive?: boolean; // Whether this component should handle navigation
+  onComplete?: () => void; // Callback when wizard is completed
+  hideHeader?: boolean;
 }
 
 interface SmartKnobIllustrationProps {
@@ -1067,7 +1071,7 @@ function StepperControl({ value, onChange, unit }: StepperControlProps) {
   );
 }
 
-export function SmartNavigator({ componentSize = 'large', isActive = false }: SmartNavigatorProps) {
+export function SmartNavigator({ componentSize = 'large', isActive = false, onComplete, hideHeader = false }: SmartNavigatorProps) {
   // Content scaling based on component size - headers stay normal, only content scales
   const getContentScale = () => {
     switch (componentSize) {
@@ -1095,6 +1099,9 @@ export function SmartNavigator({ componentSize = 'large', isActive = false }: Sm
   const [focusedProtocol, setFocusedProtocol] = useState(1); // For navigation
   const [selectedCBCTType, setSelectedCBCTType] = useState('helical'); // For step 2 navigation
   const [focusedElement, setFocusedElement] = useState<'helical' | 'circular' | 'previous'>('helical'); // For step 2 navigation
+  const [wizardCompleted, setWizardCompleted] = useState(false); // Track if wizard is completed
+  const [showWizard, setShowWizard] = useState(true); // Control wizard visibility
+  const [showVideo, setShowVideo] = useState(false); // Control video playback in Uniguide UI
   
   // Get input settings for navigation
   const { inputSettings } = useSettings();
@@ -1126,6 +1133,14 @@ export function SmartNavigator({ componentSize = 'large', isActive = false }: Sm
   const handleContinue = () => {
     if (currentStep < STEPS.length) {
       setCurrentStep(currentStep + 1);
+    } else {
+      // Final step completed - close wizard and play video
+      setWizardCompleted(true);
+      setShowWizard(false);
+      setShowVideo(true);
+      if (onComplete) {
+        onComplete();
+      }
     }
   };
 
@@ -1136,12 +1151,21 @@ export function SmartNavigator({ componentSize = 'large', isActive = false }: Sm
   };
 
   const handleCancel = () => {
-    console.log('Acquisition cancelled');
+    setShowWizard(false);
+  };
+
+  const handleOpenWizard = () => {
+    setShowWizard(true);
+    setWizardCompleted(false);
+    setCurrentStep(1);
+    setShowVideo(false);
   };
 
   // Navigation controls when SmartNavigator is active
   useEffect(() => {
-    if (!isActive) return; // Only handle navigation when active
+    if (!isActive) {
+      return; // Only handle navigation when active
+    }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (currentStep === 1) {
@@ -1191,8 +1215,15 @@ export function SmartNavigator({ componentSize = 'large', isActive = false }: Sm
             handlePrevious();
           }
         }
+      } else if (currentStep === 5) {
+        // Step 5 - Enter key completes wizard
+        // Steps 3 (Isocenter) and 4 (Check Path) handle their own Enter key logic internally
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          event.stopPropagation();
+          handleContinue();
+        }
       }
-      // No navigation for other steps - wizard steps are not scrollable
     };
 
     const handleWheel = (event: WheelEvent) => {
@@ -1246,14 +1277,28 @@ export function SmartNavigator({ componentSize = 'large', isActive = false }: Sm
   return (
     <div className="flex flex-col h-full">
       {/* Headers stay normal size */}
-      <ViewportHeader title="Smart Navigator" />
+      {!hideHeader && <ViewportHeader title="Smart Navigator" />}
       
       {/* Content area uses full available space, then gets scaled */}
-      <div className="flex-1 p-6 min-h-0 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden">
         <div className={`transform ${scale} origin-center w-full h-full`}>
-          {/* Figma Wizard Content */}
-          <div className="bg-[#212121] relative rounded-[4px] w-full h-full flex flex-col">
-            <div aria-hidden="true" className="absolute border border-[#595959] border-solid inset-0 pointer-events-none rounded-[4px] shadow-[0px_2px_10px_0px_rgba(0,0,0,0.2)]" />
+          {/* Uniguide UI - Always visible as background */}
+          <div className="relative w-full h-full">
+            <UniguideUI 
+              onOpenWizard={handleOpenWizard}
+              showVideo={showVideo}
+              videoSrc={CBCTVideo}
+            />
+            
+            {/* Wizard Overlay - Only visible when showWizard is true */}
+            {showWizard && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                {/* 30% opacity black backdrop */}
+                <div className="absolute inset-0 bg-black opacity-30" />
+                
+                {/* Wizard Content */}
+                <div className="relative bg-[#212121] rounded-[4px] w-[95%] h-[95%] flex flex-col shadow-2xl">
+                  <div aria-hidden="true" className="absolute border border-[#595959] border-solid inset-0 pointer-events-none rounded-[4px] shadow-[0px_2px_10px_0px_rgba(0,0,0,0.2)]" />
             
             {/* Wizard Header */}
             <div className="flex items-center justify-between p-8 pb-4">
@@ -1271,7 +1316,7 @@ export function SmartNavigator({ componentSize = 'large', isActive = false }: Sm
                 </div>
               </div>
               <button 
-                onClick={() => console.log('Close wizard')}
+                onClick={handleCancel}
                 className="text-white hover:text-gray-300 transition-colors"
               >
                 <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
@@ -1320,7 +1365,7 @@ export function SmartNavigator({ componentSize = 'large', isActive = false }: Sm
             </div>
 
             {/* Step Content */}
-            <div className="flex-1 flex flex-col px-8">
+            <div className={`flex-1 flex flex-col ${currentStep === 3 || currentStep === 4 || currentStep === 5 ? 'px-0' : 'px-8'}`}>
               {currentStep === 1 && (
                 <>
                   {/* Section Title */}
@@ -1483,6 +1528,9 @@ export function SmartNavigator({ componentSize = 'large', isActive = false }: Sm
                 </div>
               )}
             </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

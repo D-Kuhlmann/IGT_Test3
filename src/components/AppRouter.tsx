@@ -9,13 +9,15 @@ import { AuthProvider } from '../hooks/useAuth';
 import { ProtectedRoute } from './ProtectedRoute';
 import { SettingsProvider } from '../contexts/SettingsContext';
 import { AngleProvider } from '../contexts/AngleContext';
+import { ActiveComponentsProvider } from '../contexts/ActiveComponentsContext';
 
 export function AppRouter() {
   return (
     <AuthProvider>
       <SettingsProvider>
         <AngleProvider>
-          <Router>
+          <ActiveComponentsProvider>
+            <Router>
             <Routes>
               <Route path="/" element={<Navigate to="/hub" replace />} />
               <Route path="/hub" element={<MultiScreenHub />} />
@@ -46,6 +48,7 @@ export function AppRouter() {
               } />
             </Routes>
           </Router>
+          </ActiveComponentsProvider>
         </AngleProvider>
       </SettingsProvider>
     </AuthProvider>

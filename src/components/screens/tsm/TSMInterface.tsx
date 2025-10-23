@@ -1,9 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { TaskMenu } from "./TaskMenu";
 import { TopNavigation } from "./TopNavigation";
 import { MainContent } from "./MainContent";
 import { UniGuideInterface } from "./UniGuideInterface";
 import { useAngle } from "../../../contexts/AngleContext";
+import { useActiveComponents } from "../../../contexts/ActiveComponentsContext";
+import { XrayLive } from "../flexvision/XrayLive";
+import { InterventionalWorkspace } from "../flexvision/InterventionalWorkspace";
+import { Hemo } from "../flexvision/Hemo";
+import { SmartNavigator } from "../flexvision/SmartNavigator";
 import { 
   imgFluoroscopyImageStore,
   imgIcon32DlsHome,
@@ -11,9 +17,7 @@ import {
   imgIcoIw,
   imgIcoCollablive
 } from "../../../imports/svg-w95w9";
-// Radiation assets - using fallback for local development
-const imgDlsRadiation = "/api/placeholder/32/32";
-const imgDlsRadiation1 = "/api/placeholder/32/32";
+import DLSHome from "../../../assets/DLS_Home.png";
 
 function BottomNavButton({ 
   icon, 
@@ -47,32 +51,22 @@ function BottomNavButton({
 
 function SmallNavButton({ 
   icon, 
-  variant = "default",
   onClick,
   ariaLabel
 }: { 
   icon: string; 
-  variant?: "default" | "radiation";
   onClick: () => void;
   ariaLabel: string;
 }) {
   return (
     <button 
-      className="h-[71.111px] overflow-clip relative shrink-0 w-16 transition-colors hover:bg-[#3a3a3a] rounded focus:outline-none focus:ring-2 focus:ring-[#2b86b2] focus:ring-inset"
+      className="h-[71.111px] relative shrink-0 w-16 transition-colors hover:bg-[#3a3a3a] rounded focus:outline-none focus:ring-2 focus:ring-[#2b86b2] focus:ring-inset flex items-center justify-center"
       onClick={onClick}
       aria-label={ariaLabel}
       type="button"
     >
-      <div className="absolute left-1/2 size-16 translate-x-[-50%] translate-y-[-50%]" style={{ top: "calc(50% + 0.444px)" }} />
-      <div className="absolute left-1/2 size-8 top-4 translate-x-[-50%]">
-        {variant === "radiation" ? (
-          <div className="absolute contents inset-0">
-            <div className="absolute bg-no-repeat bg-size-[100%_100%] bg-top-left inset-0" style={{ backgroundImage: `url('${imgDlsRadiation}')` }} />
-            <div className="absolute bg-[#d6d6d6] inset-0 mask-alpha mask-intersect mask-no-clip mask-no-repeat mask-position-[0px] mask-size-[32px_32px]" style={{ maskImage: `url('${imgDlsRadiation1}')` }} />
-          </div>
-        ) : (
-          <img className="block max-w-none size-full" src={icon} alt={ariaLabel} />
-        )}
+      <div className="size-8">
+        <img className="block size-full object-contain" src={icon} alt={ariaLabel} />
       </div>
     </button>
   );
@@ -106,8 +100,40 @@ function AppsButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-function BottomNavigation({ onTabChange, activeTab }: { onTabChange?: (tabId: string) => void; activeTab?: string }) {
+function BottomNavigation({ onTabChange, activeTab }: { 
+  onTabChange?: (tabId: string) => void; 
+  activeTab?: string;
+}) {
   const [localActiveTab, setLocalActiveTab] = useState<string>("xray-live");
+  const [visibleComponents, setVisibleComponents] = useState<Array<'xrayLive' | 'interventionalWorkspace' | 'hemo' | 'smartNavigator'>>([
+    'xrayLive', 'interventionalWorkspace', 'hemo'
+  ]);
+  const previousComponentsRef = useRef<string>('');
+  
+  // Read from localStorage directly on mount and when needed
+  useEffect(() => {
+    const updateFromLocalStorage = () => {
+      const stored = localStorage.getItem('activeComponents');
+      
+      if (stored && stored !== previousComponentsRef.current) {
+        try {
+          const components = JSON.parse(stored);
+          setVisibleComponents(components);
+          previousComponentsRef.current = stored;
+        } catch (e) {
+          console.error('Failed to parse components:', e);
+        }
+      }
+    };
+
+    // Update immediately
+    updateFromLocalStorage();
+    
+    // Poll localStorage every 1000ms
+    const interval = setInterval(updateFromLocalStorage, 1000);
+    
+    return () => clearInterval(interval);
+  }, []); // No dependencies to avoid loops
   
   // Use prop activeTab if provided, otherwise use local state
   const currentActiveTab = activeTab || localActiveTab;
@@ -125,30 +151,34 @@ function BottomNavigation({ onTabChange, activeTab }: { onTabChange?: (tabId: st
     console.log(`Tool clicked: ${tool}`);
   };
 
+  // Map component names to tab info
+  const componentToTab = {
+    xrayLive: { id: "xray-live", icon: imgIcoCardio, label: "X-ray Live" },
+    interventionalWorkspace: { id: "uniguide", icon: imgIcoIw, label: "UniGuide" },
+    hemo: { id: "hemo", icon: imgIcoCollablive, label: "Hemo" },
+    smartNavigator: { id: "smartnav", icon: imgIcoIw, label: "Smart Navigator" }
+  };
+
+  // Get visible tabs based on visible components
+  const visibleTabs = visibleComponents.map(comp => componentToTab[comp]);
+
   return (
-    <div className="content-start flex flex-wrap gap-0 items-start justify-start relative shrink-0">
-      <AppsButton onClick={handleAppsClick} />
-      <div className="content-stretch flex gap-0.5 items-center justify-start relative shrink-0">
-        <BottomNavButton 
-          icon={imgIcoCardio} 
-          label="X-ray Live" 
-          isActive={currentActiveTab === "xray-live"} 
-          onClick={() => handleTabClick("xray-live")}
-        />
-        <BottomNavButton 
-          icon={imgIcoIw} 
-          label="UniGuide" 
-          isActive={currentActiveTab === "uniguide"}
-          onClick={() => handleTabClick("uniguide")}
-        />
-        <BottomNavButton 
-          icon={imgIcoCollablive} 
-          label="Collaboration Live" 
-          isActive={currentActiveTab === "collaboration"}
-          onClick={() => handleTabClick("collaboration")}
-        />
+    <div className="flex gap-0 items-center justify-between relative shrink-0 w-full">
+      <div className="flex gap-0 items-center flex-1 min-w-0">
+        <AppsButton onClick={handleAppsClick} />
+        <div className="flex gap-0.5 items-center overflow-x-auto">
+          {visibleTabs.map(tab => (
+            <BottomNavButton 
+              key={tab.id}
+              icon={tab.icon} 
+              label={tab.label} 
+              isActive={currentActiveTab === tab.id} 
+              onClick={() => handleTabClick(tab.id)}
+            />
+          ))}
+        </div>
       </div>
-      <div className="content-stretch flex gap-4 items-center justify-start relative shrink-0">
+      <div className="flex gap-4 items-center flex-shrink-0 ml-auto">
         <SmallNavButton 
           icon={imgFluoroscopyImageStore} 
           ariaLabel="Fluoroscopy image store"
@@ -160,10 +190,9 @@ function BottomNavigation({ onTabChange, activeTab }: { onTabChange?: (tabId: st
           onClick={() => handleToolClick("home")}
         />
         <SmallNavButton 
-          icon="" 
-          variant="radiation" 
-          ariaLabel="Radiation settings"
-          onClick={() => handleToolClick("radiation")}
+          icon={DLSHome} 
+          ariaLabel="DLS Home"
+          onClick={() => handleToolClick("dls-home")}
         />
       </div>
     </div>
@@ -171,14 +200,14 @@ function BottomNavigation({ onTabChange, activeTab }: { onTabChange?: (tabId: st
 }
 
 export function TSMInterface() {
+  const location = useLocation();
   const [activeBottomTab, setActiveBottomTab] = useState<string>("xray-live");
   const { isUniGuideActive } = useAngle();
 
+
   // Sync with cross-screen UniGuide activation
   useEffect(() => {
-    console.log('🔄 TSM - isUniGuideActive changed:', isUniGuideActive);
     if (isUniGuideActive) {
-      console.log('✅ TSM - Activating UniGuide tab');
       setActiveBottomTab("uniguide");
     }
   }, [isUniGuideActive]);
@@ -187,7 +216,6 @@ export function TSMInterface() {
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'isUniGuideActive' && e.newValue === 'true') {
-        console.log('📡 TSM - Received UniGuide activation from localStorage');
         setActiveBottomTab("uniguide");
       }
     };
@@ -197,7 +225,6 @@ export function TSMInterface() {
     // Check initial state from localStorage
     const storedUniGuideActive = localStorage.getItem('isUniGuideActive');
     if (storedUniGuideActive === 'true') {
-      console.log('🔄 TSM - Loading UniGuide active state from localStorage');
       setActiveBottomTab("uniguide");
     }
 
@@ -210,12 +237,22 @@ export function TSMInterface() {
     setActiveBottomTab(tabId);
   };
 
-  return (
-    <div className="bg-black content-stretch flex flex-col gap-2.5 items-start justify-start relative w-[1500px] h-[800px]">
-      <div className="content-stretch flex gap-2.5 items-start justify-start relative shrink-0">
-        {activeBottomTab === "uniguide" ? (
-          <UniGuideInterface />
-        ) : (
+  // Render the component based on active tab
+  const renderActiveComponent = () => {
+    
+    // Map tab IDs to components
+    switch (activeBottomTab) {
+      case 'xray-live':
+        return <XrayLive componentSize="fullscreen" hideHeader={true} />;
+      case 'uniguide':
+        return <InterventionalWorkspace componentSize="fullscreen" hideHeader={true} />;
+      case 'hemo':
+        return <Hemo componentSize="fullscreen" hideHeader={true} />;
+      case 'smartnav':
+        return <SmartNavigator componentSize="fullscreen" hideHeader={true} isActive={true} />;
+      default:
+        // Default view
+        return (
           <>
             <TaskMenu />
             <div className="content-stretch flex flex-col gap-2.5 items-start justify-start relative shrink-0">
@@ -223,10 +260,23 @@ export function TSMInterface() {
               <MainContent />
             </div>
           </>
-        )}
+        );
+    }
+  };
+
+  return (
+    <div className="bg-black flex flex-col w-[1200px] h-[800px]">
+      {/* Component area - full width, no gap */}
+      <div className="flex-1 w-full overflow-hidden">
+        {renderActiveComponent()}
       </div>
-      <BottomNavigation onTabChange={handleBottomTabChange} activeTab={activeBottomTab} />
-      <div className="font-['CentraleSans:Medium',_sans-serif] h-5 leading-[0] not-italic relative shrink-0 text-[#959595] text-[12px] text-center w-14">
+      {/* Bottom navigation */}
+      <BottomNavigation 
+        onTabChange={handleBottomTabChange} 
+        activeTab={activeBottomTab}
+      />
+      {/* Footer */}
+      <div className="font-['CentraleSans:Medium',_sans-serif] h-5 leading-[0] not-italic text-[#959595] text-[12px] text-center w-14">
         <p className="leading-[20px]">04</p>
       </div>
     </div>
