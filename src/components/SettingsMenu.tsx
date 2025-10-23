@@ -235,6 +235,11 @@ export function SettingsMenu() {
                 onUpdate={(shortcut) => updateInputShortcut('workflowStepRight', shortcut)}
               />
               <ShortcutEditor
+                label="Workflow Step Activate"
+                shortcut={typeof inputSettings.workflowStepActivate === 'string' ? inputSettings.workflowStepActivate : formatInputShortcut(inputSettings.workflowStepActivate)}
+                onUpdate={(shortcut) => updateInputShortcut('workflowStepActivate', shortcut)}
+              />
+              <ShortcutEditor
                 label="Close Workflow Menu"
                 shortcut={typeof inputSettings.workflowClose === 'string' ? inputSettings.workflowClose : formatInputShortcut(inputSettings.workflowClose)}
                 onUpdate={(shortcut) => updateInputShortcut('workflowClose', shortcut)}

@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import svgPaths from "../../imports/svg-02p7sqlbj5";
 import arrowSvgPaths from "../../imports/svg-xo6dcn4zhp";
 
+import { useSettings } from "@/contexts/SettingsContext";
+
 interface WorkflowStep {
   id: string;
   label: string;
@@ -172,6 +174,7 @@ export function SmartWorkflowsOverlay({
       }
     }
   `;
+  const settings = useSettings();
   const [focusedStepIndex, setFocusedStepIndex] = useState(0);
   const [lastNavigationDirection, setLastNavigationDirection] = useState<'left' | 'right' | null>(null);
   const [isClosing, setIsClosing] = useState(false);
@@ -307,32 +310,29 @@ export function SmartWorkflowsOverlay({
     if (!isVisible) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      console.log(settings.inputSettings);
       switch (event.key) {
-        case "ArrowLeft":
+        case settings.inputSettings.workflowStepLeft.toString():
           event.preventDefault();
           event.stopPropagation();
           moveLeft();
           break;
-        case "ArrowRight":
+        case settings.inputSettings.workflowStepRight.toString():
           event.preventDefault();
           event.stopPropagation();
           moveRight();
           break;
-        case "ArrowUp":
+        case "Escape":
+        case settings.inputSettings.workflowClose.toString():
           event.preventDefault();
           event.stopPropagation();
           handleClose();
           break;
-        case "Enter":
+        case settings.inputSettings.workflowStepActivate.toString():
         case " ":
           event.preventDefault();
           event.stopPropagation();
           handleStepClick(workflowSteps[focusedStepIndex]);
-          break;
-        case "Escape":
-          event.preventDefault();
-          event.stopPropagation();
-          handleClose();
           break;
         case "Home":
           event.preventDefault();
