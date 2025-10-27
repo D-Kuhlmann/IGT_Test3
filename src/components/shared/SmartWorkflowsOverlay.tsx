@@ -344,20 +344,6 @@ export function SmartWorkflowsOverlay({
           event.stopPropagation();
           setFocusedStepIndex(totalSteps - 1);
           break;
-        case "1":
-        case "2":
-        case "3":
-        case "4":
-        case "5":
-        case "6":
-          event.preventDefault();
-          event.stopPropagation();
-          const index = parseInt(event.key) - 1;
-          if (index >= 0 && index < workflowSteps.length) {
-            setFocusedStepIndex(index);
-            handleStepClick(workflowSteps[index]);
-          }
-          break;
       }
     };
 
@@ -377,14 +363,19 @@ export function SmartWorkflowsOverlay({
     };
   }, [isVisible, focusedStepIndex, onClose, onStepSelect]);
 
-  // Reset focus when overlay opens
+  // Set focus to overlay when it opens (without resetting step position)
   useEffect(() => {
     if (isVisible) {
-      const currentStepIndex = workflowSteps.findIndex(
-        (step) => step.id === currentStep,
-      );
-      const initialIndex = currentStepIndex >= 0 ? currentStepIndex : 0;
-      setFocusedStepIndex(initialIndex);
+      // Only set initial focus if this is the first time opening
+      // (focusedStepIndex will be 0 on first mount)
+      if (focusedStepIndex === 0) {
+        const currentStepIndex = workflowSteps.findIndex(
+          (step) => step.id === currentStep,
+        );
+        if (currentStepIndex >= 0) {
+          setFocusedStepIndex(currentStepIndex);
+        }
+      }
 
       setTimeout(() => {
         if (overlayRef.current) {
@@ -392,7 +383,7 @@ export function SmartWorkflowsOverlay({
         }
       }, 100);
     }
-  }, [isVisible, currentStep]);
+  }, [isVisible]);
 
   if (!isVisible && !isClosing) return null;
 

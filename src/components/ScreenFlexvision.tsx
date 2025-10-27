@@ -215,6 +215,9 @@ export function ScreenFlexvision() {
 
   const handleStepSelect = (step: WorkflowStep) => {
     setCurrentWorkflowStep(step.id);
+    // Save to localStorage for TSM sync
+    localStorage.setItem('currentWorkflowStep', step.id);
+    localStorage.setItem('activePreset', activePreset.toString());
     setShowWorkflows(false);
   };
 
@@ -489,7 +492,7 @@ export function ScreenFlexvision() {
   };
   useUnifiedInput({
     smartWorkflows: () => {
-      setShowWorkflows(true);
+      handleShowWorkflows();
     },
     toggleAutomation: () => {
       console.log('Toggle automation triggered');
@@ -843,21 +846,22 @@ export function ScreenFlexvision() {
             const totalComponents = currentLayout.components.length;
             
             currentLayout.components.forEach((config, index) => {
+              // Use only component type and index as key to maintain state across workflow bar open/close
               const componentKey = `${config.component}-${index}`;
               const gridClasses = getSizeClasses(config.size, index, totalComponents);
               const placement = placements[index];
               const componentSize = placement?.adjustedSize || config.size;
               
-              let ComponentToRender;
+              let renderedComponent;
               let focusKey: 'xray' | 'iw' | 'hemo' | 'smartnav' | 'placeholder';
               
               switch (config.component) {
                 case 'xrayLive':
-                  ComponentToRender = () => <XrayLive componentSize={componentSize} />;
+                  renderedComponent = <XrayLive componentSize={componentSize} />;
                   focusKey = 'xray';
                   break;
                 case 'interventionalWorkspace':
-                  ComponentToRender = () => (
+                  renderedComponent = (
                     <InterventionalWorkspace 
                       focusMode={focusMode && focusedComponent === 'iw'}
                       subFocusMode={iwSubFocus}
@@ -869,16 +873,16 @@ export function ScreenFlexvision() {
                   focusKey = 'iw';
                   break;
                 case 'hemo':
-                  ComponentToRender = () => <Hemo componentSize={componentSize} />;
+                  renderedComponent = <Hemo componentSize={componentSize} />;
                   focusKey = 'hemo';
                   break;
                 case 'smartNavigator':
                   // SmartNavigator is always active when rendered
-                  ComponentToRender = () => <SmartNavigator componentSize={componentSize} isActive={true} />;
+                  renderedComponent = <SmartNavigator componentSize={componentSize} isActive={true} />;
                   focusKey = 'smartnav';
                   break;
                 case 'placeholder':
-                  ComponentToRender = () => <Placeholder componentSize={componentSize} />;
+                  renderedComponent = <Placeholder componentSize={componentSize} />;
                   focusKey = 'placeholder';
                   break;
                 default:
@@ -891,7 +895,7 @@ export function ScreenFlexvision() {
                   className={`h-full ${gridClasses} ${getFocusStyles(focusKey).className}`}
                   style={getFocusStyles(focusKey).style}
                 >
-                  <ComponentToRender />
+                  {renderedComponent}
                 </div>
               );
             });

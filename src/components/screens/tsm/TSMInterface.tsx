@@ -10,6 +10,7 @@ import { XrayLive } from "../flexvision/XrayLive";
 import { InterventionalWorkspace } from "../flexvision/InterventionalWorkspace";
 import { Hemo } from "../flexvision/Hemo";
 import { SmartNavigator } from "../flexvision/SmartNavigator";
+import { SmartOrchestratorMenu } from "./SmartOrchestratorMenu";
 import { 
   imgFluoroscopyImageStore,
   imgIcon32DlsHome,
@@ -18,6 +19,8 @@ import {
   imgIcoCollablive
 } from "../../../imports/svg-w95w9";
 import DLSHome from "../../../assets/DLS_Home.png";
+import SmartUIOrchestrator from "../../../assets/SmartUIOrchestrator.png";
+import type { WorkflowStep } from "../../../types";
 
 function BottomNavButton({ 
   icon, 
@@ -75,36 +78,28 @@ function SmallNavButton({
 function AppsButton({ onClick }: { onClick: () => void }) {
   return (
     <button 
-      className="h-20 relative shrink-0 w-32 transition-colors hover:bg-[#3a3a3a] rounded focus:outline-none focus:ring-2 focus:ring-[#2b86b2] focus:ring-inset"
+      className="h-20 relative shrink-0 w-32 transition-colors hover:bg-[#3a3a3a] rounded focus:outline-none focus:ring-2 focus:ring-[#2b86b2] focus:ring-inset flex items-center justify-center"
       onClick={onClick}
-      aria-label="Open apps menu"
+      aria-label="Open Smart UI Orchestrator"
       type="button"
     >
-      <div className="absolute inset-0 overflow-clip">
-        <div className="absolute flex inset-0 items-center justify-center">
-          <div className="flex-none h-20 scale-y-[-100%] w-32">
-            <div className="bg-neutral-900 rounded-tl-[2px] rounded-tr-[2px] size-full" />
-          </div>
-        </div>
-        <div className="absolute left-1/2 size-12 top-3 translate-x-[-50%]">
-          <div className="absolute contents inset-0">
-            <div className="absolute bg-black inset-0 opacity-0" />
-            <div className="absolute bg-white inset-[14.58%_14.58%_52.08%_52.08%] opacity-50 rounded-[3px]" />
-            <div className="absolute bg-white inset-[14.58%_52.08%_52.08%_14.58%] opacity-70 rounded-[3px]" />
-            <div className="absolute bg-white inset-[52.08%_14.58%_14.58%_52.08%] opacity-60 rounded-[3px]" />
-            <div className="absolute bg-white inset-[52.08%_52.08%_14.58%_14.58%] opacity-40 rounded-[3px]" />
-          </div>
-        </div>
+      <div className="size-12">
+        <img className="block size-full object-contain" src={SmartUIOrchestrator} alt="Smart UI Orchestrator" />
       </div>
     </button>
   );
 }
 
-function BottomNavigation({ onTabChange, activeTab }: { 
+function BottomNavigation({ onTabChange, activeTab, currentWorkflowStep, activePreset, onStepSelect, onOrchestratorToggle }: { 
   onTabChange?: (tabId: string) => void; 
   activeTab?: string;
+  currentWorkflowStep?: string;
+  activePreset?: 1 | 2;
+  onStepSelect?: (step: WorkflowStep) => void;
+  onOrchestratorToggle?: () => void;
 }) {
   const [localActiveTab, setLocalActiveTab] = useState<string>("xray-live");
+  const [showOrchestratorMenu, setShowOrchestratorMenu] = useState(false);
   const [visibleComponents, setVisibleComponents] = useState<Array<'xrayLive' | 'interventionalWorkspace' | 'hemo' | 'smartNavigator'>>([
     'xrayLive', 'interventionalWorkspace', 'hemo'
   ]);
@@ -144,11 +139,20 @@ function BottomNavigation({ onTabChange, activeTab }: {
   };
 
   const handleAppsClick = () => {
-    console.log("Apps menu clicked");
+    onOrchestratorToggle?.();
   };
 
   const handleToolClick = (tool: string) => {
     console.log(`Tool clicked: ${tool}`);
+  };
+
+  const handleOrchestratorClose = () => {
+    setShowOrchestratorMenu(false);
+  };
+
+  const handleWorkflowStepSelect = (step: WorkflowStep) => {
+    onStepSelect?.(step);
+    setShowOrchestratorMenu(false);
   };
 
   // Map component names to tab info
@@ -163,45 +167,76 @@ function BottomNavigation({ onTabChange, activeTab }: {
   const visibleTabs = visibleComponents.map(comp => componentToTab[comp]);
 
   return (
-    <div className="flex gap-0 items-center justify-between relative shrink-0 w-full">
-      <div className="flex gap-0 items-center flex-1 min-w-0">
-        <AppsButton onClick={handleAppsClick} />
-        <div className="flex gap-0.5 items-center overflow-x-auto">
-          {visibleTabs.map(tab => (
-            <BottomNavButton 
-              key={tab.id}
-              icon={tab.icon} 
-              label={tab.label} 
-              isActive={currentActiveTab === tab.id} 
-              onClick={() => handleTabClick(tab.id)}
-            />
-          ))}
+    <>
+      <div className="flex gap-0 items-center justify-between relative shrink-0 w-full">
+        <div className="flex gap-0 items-center flex-1 min-w-0">
+          <AppsButton onClick={handleAppsClick} />
+          <div 
+            className="flex gap-0.5 items-center overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing"
+            style={{
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none'
+            }}
+            onMouseDown={(e) => {
+              const ele = e.currentTarget;
+              const startX = e.pageX - ele.offsetLeft;
+              const scrollLeft = ele.scrollLeft;
+              
+              const handleMouseMove = (e: MouseEvent) => {
+                const x = e.pageX - ele.offsetLeft;
+                const walk = (x - startX) * 2;
+                ele.scrollLeft = scrollLeft - walk;
+              };
+              
+              const handleMouseUp = () => {
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+              };
+              
+              document.addEventListener('mousemove', handleMouseMove);
+              document.addEventListener('mouseup', handleMouseUp);
+            }}
+          >
+            {visibleTabs.map(tab => (
+              <BottomNavButton 
+                key={tab.id}
+                icon={tab.icon} 
+                label={tab.label} 
+                isActive={currentActiveTab === tab.id} 
+                onClick={() => handleTabClick(tab.id)}
+              />
+            ))}
+          </div>
+        </div>
+        <div className="flex gap-4 items-center flex-shrink-0 ml-auto">
+          <SmallNavButton 
+            icon={imgFluoroscopyImageStore} 
+            ariaLabel="Fluoroscopy image store"
+            onClick={() => handleToolClick("fluoroscopy")}
+          />
+          <SmallNavButton 
+            icon={imgIcon32DlsHome} 
+            ariaLabel="Home"
+            onClick={() => handleToolClick("home")}
+          />
+          <SmallNavButton 
+            icon={DLSHome} 
+            ariaLabel="DLS Home"
+            onClick={() => handleToolClick("dls-home")}
+          />
         </div>
       </div>
-      <div className="flex gap-4 items-center flex-shrink-0 ml-auto">
-        <SmallNavButton 
-          icon={imgFluoroscopyImageStore} 
-          ariaLabel="Fluoroscopy image store"
-          onClick={() => handleToolClick("fluoroscopy")}
-        />
-        <SmallNavButton 
-          icon={imgIcon32DlsHome} 
-          ariaLabel="Home"
-          onClick={() => handleToolClick("home")}
-        />
-        <SmallNavButton 
-          icon={DLSHome} 
-          ariaLabel="DLS Home"
-          onClick={() => handleToolClick("dls-home")}
-        />
-      </div>
-    </div>
+
+    </>
   );
 }
 
 export function TSMInterface() {
   const location = useLocation();
   const [activeBottomTab, setActiveBottomTab] = useState<string>("xray-live");
+  const [showOrchestratorMenu, setShowOrchestratorMenu] = useState(false);
+  const [currentWorkflowStep, setCurrentWorkflowStep] = useState<string>("");
+  const [activePreset, setActivePreset] = useState<1 | 2>(1);
   const { isUniGuideActive } = useAngle();
 
 
@@ -237,8 +272,67 @@ export function TSMInterface() {
     setActiveBottomTab(tabId);
   };
 
+  const handleWorkflowStepSelect = (step: WorkflowStep) => {
+    setCurrentWorkflowStep(step.id);
+    // Also update FlexVision's workflow step via localStorage
+    localStorage.setItem('currentWorkflowStep', step.id);
+  };
+
+  // Sync workflow step and preset from FlexVision
+  useEffect(() => {
+    const syncWorkflowData = () => {
+      const storedStep = localStorage.getItem('currentWorkflowStep');
+      const storedPreset = localStorage.getItem('activePreset');
+      
+      if (storedStep) {
+        setCurrentWorkflowStep(storedStep);
+      }
+      if (storedPreset) {
+        const preset = parseInt(storedPreset);
+        if (preset === 1 || preset === 2) {
+          setActivePreset(preset);
+        }
+      }
+    };
+
+    syncWorkflowData();
+    const interval = setInterval(syncWorkflowData, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Get active components from localStorage
+  const [visibleComponents, setVisibleComponents] = useState<Array<'xrayLive' | 'interventionalWorkspace' | 'hemo' | 'smartNavigator'>>([]);
+  
+  useEffect(() => {
+    const updateComponents = () => {
+      const stored = localStorage.getItem('activeComponents');
+      if (stored) {
+        try {
+          setVisibleComponents(JSON.parse(stored));
+        } catch (e) {
+          console.error('Failed to parse components:', e);
+        }
+      }
+    };
+    
+    updateComponents();
+    const interval = setInterval(updateComponents, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Render the component based on active tab
   const renderActiveComponent = () => {
+    // Show orchestrator menu if that tab is active
+    if (showOrchestratorMenu) {
+      return (
+        <SmartOrchestratorMenu
+          activeComponents={visibleComponents}
+          currentWorkflowStep={currentWorkflowStep}
+          activePreset={activePreset}
+          onStepSelect={handleWorkflowStepSelect}
+        />
+      );
+    }
     
     // Map tab IDs to components
     switch (activeBottomTab) {
@@ -274,6 +368,10 @@ export function TSMInterface() {
       <BottomNavigation 
         onTabChange={handleBottomTabChange} 
         activeTab={activeBottomTab}
+        currentWorkflowStep={currentWorkflowStep}
+        activePreset={activePreset}
+        onStepSelect={handleWorkflowStepSelect}
+        onOrchestratorToggle={() => setShowOrchestratorMenu(!showOrchestratorMenu)}
       />
       {/* Footer */}
       <div className="font-['CentraleSans:Medium',_sans-serif] h-5 leading-[0] not-italic text-[#959595] text-[12px] text-center w-14">
