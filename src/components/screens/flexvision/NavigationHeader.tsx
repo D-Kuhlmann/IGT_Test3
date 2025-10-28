@@ -6,6 +6,7 @@ import { useDateTime } from "../../../hooks/useDateTime";
 interface NavigationHeaderProps {
   isWorkflowsVisible?: boolean;
   onShowWorkflows?: () => void;
+  onShowPresets?: () => void;
   currentWorkflowStep?: string;
   focusMode?: boolean;
 }
@@ -231,6 +232,7 @@ function RightSide({ date, time }: { date: string; time: string }) {
 export function NavigationHeader({
   isWorkflowsVisible,
   onShowWorkflows,
+  onShowPresets,
   currentWorkflowStep,
   focusMode,
 }: NavigationHeaderProps) {
@@ -253,7 +255,9 @@ export function NavigationHeader({
           <div className="flex items-center gap-12">
             <Left />
             <NavItem icon={<AppsIcon />} label="Applications" />
-            <NavItem icon={<PresetsIcon />} label="Presets" />
+            <button onClick={onShowPresets} className="hover:opacity-80 transition-opacity">
+              <NavItem icon={<PresetsIcon />} label="Presets" />
+            </button>
           </div>
 
           {/* Center: workflows - positioned absolutely to ensure perfect centering */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ViewportHeader } from '../../shared/ViewportHeaders';
 import svgPaths from './svg-paths';
 import CBCT1 from '../../../assets/CBCT1.png';
@@ -20,6 +20,7 @@ import ViewportIndicationLatGreen from '../../../assets/viewportindication-lat-g
 import CArmRotation from '../../../assets/CArmRotation.png';
 import ExposurePress from '../../../assets/Switch - Exposure Press.png';
 import { useSettings, matchesInput } from '../../../contexts/SettingsContext';
+import { useWorkflowSync } from '../../../contexts/WorkflowSyncContext';
 import { UniguideUI } from './UniguideUI';
 import CBCTVideo from '../../../assets/neuro-3D-RA_Frontal (1).mp4';
 
@@ -284,10 +285,11 @@ interface CheckPathStepProps {
 function CheckPathStep({ onPrevious, onContinue }: CheckPathStepProps) {
   const [isRotating, setIsRotating] = useState(false);
   const [rotationComplete, setRotationComplete] = useState(false);
+  const { inputSettings } = useSettings();
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Enter") {
+    if (matchesInput(event, inputSettings.workflowStepActivate)) {
         if (!isRotating && !rotationComplete) {
           setIsRotating(true);
           // After 3 seconds, mark rotation as complete
@@ -304,7 +306,7 @@ function CheckPathStep({ onPrevious, onContinue }: CheckPathStepProps) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isRotating, rotationComplete, onContinue]);
+  }, [isRotating, rotationComplete, onContinue, inputSettings]);
 
   return (
     <div className="flex-1 relative">
@@ -574,9 +576,11 @@ function IsocenterStep({ onPrevious, onContinue }: IsocenterStepProps) {
   const [rightAligning, setRightAligning] = useState(false);
   const [rightAligned, setRightAligned] = useState(false);
 
+  const { inputSettings } = useSettings();
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Enter") {
+      if (matchesInput(event, inputSettings.workflowStepActivate)) {
         if (!isEnterPressed) {
           // First Enter - left viewport ready for acquisition
           setIsEnterPressed(true);
@@ -604,7 +608,7 @@ function IsocenterStep({ onPrevious, onContinue }: IsocenterStepProps) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isEnterPressed, isAcquisitionMade, isAligning, isAligned, rightEnterPressed, rightAcquisitionMade, rightAligning, rightAligned, onContinue]);
+  }, [isEnterPressed, isAcquisitionMade, isAligning, isAligned, rightEnterPressed, rightAcquisitionMade, rightAligning, rightAligned, onContinue, inputSettings]);
 
   const handleCinePedalClick = () => {
     if (isEnterPressed && !isAcquisitionMade) {
@@ -1093,18 +1097,23 @@ export function SmartNavigator({ componentSize = 'large', isActive = false, onCo
   const scale = getContentScale();
 
   // Wizard state
-  const [currentStep, setCurrentStep] = useState(1);
   const [selectedProtocol, setSelectedProtocol] = useState(1);
   const [showSmartBanner, setShowSmartBanner] = useState(true);
   const [focusedProtocol, setFocusedProtocol] = useState(1); // For navigation
   const [selectedCBCTType, setSelectedCBCTType] = useState('helical'); // For step 2 navigation
   const [focusedElement, setFocusedElement] = useState<'helical' | 'circular' | 'previous'>('helical'); // For step 2 navigation
-  const [wizardCompleted, setWizardCompleted] = useState(false); // Track if wizard is completed
-  const [showWizard, setShowWizard] = useState(true); // Control wizard visibility
   const [showVideo, setShowVideo] = useState(false); // Control video playback in Uniguide UI
   
   // Get input settings for navigation
   const { inputSettings } = useSettings();
+  
+  // Get workflow sync for cross-screen synchronization
+  const workflowSync = useWorkflowSync();
+  const { currentStep, setWorkflowStep, setWizardState } = workflowSync;
+  
+  // Use synced wizard state from context
+  const showWizard = workflowSync.wizardVisible !== undefined ? workflowSync.wizardVisible : true;
+  const wizardCompleted = workflowSync.wizardCompleted !== undefined ? workflowSync.wizardCompleted : false;
 
   const STEPS = [
     { id: 1, label: 'Protocol', name: 'Protocol' },
@@ -1125,18 +1134,17 @@ export function SmartNavigator({ componentSize = 'large', isActive = false, onCo
     setSelectedProtocol(protocolId);
     if (currentStep === 1) {
       setTimeout(() => {
-        setCurrentStep(2);
+        setWorkflowStep(2, undefined, 'smart-navigator');
       }, 300);
     }
   };
 
   const handleContinue = () => {
     if (currentStep < STEPS.length) {
-      setCurrentStep(currentStep + 1);
+      setWorkflowStep(currentStep + 1, undefined, 'smart-navigator');
     } else {
       // Final step completed - close wizard and play video
-      setWizardCompleted(true);
-      setShowWizard(false);
+      setWizardState(false, true); // visible=false, completed=true
       setShowVideo(true);
       if (onComplete) {
         onComplete();
@@ -1146,20 +1154,62 @@ export function SmartNavigator({ componentSize = 'large', isActive = false, onCo
 
   const handlePrevious = () => {
     if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+      setWorkflowStep(currentStep - 1, undefined, 'smart-navigator');
     }
   };
 
   const handleCancel = () => {
-    setShowWizard(false);
+    setWizardState(false, wizardCompleted); // Close wizard, keep completion state
   };
 
   const handleOpenWizard = () => {
-    setShowWizard(true);
-    setWizardCompleted(false);
-    setCurrentStep(1);
+    setWizardState(true, false); // Open wizard, not completed
+    setWorkflowStep(1, undefined, 'smart-navigator');
     setShowVideo(false);
   };
+
+  // Reset SmartNavigator state when switching to a different workflow step or preset
+  const prevWorkflowStepIdRef = useRef<string | undefined>(undefined);
+  const prevActivePresetRef = useRef<1 | 2>(workflowSync.activePreset);
+  const wasSmartNavigatorVisibleRef = useRef<boolean>(false);
+  
+  useEffect(() => {
+    const currentWorkflowStepId = workflowSync.workflowStepId;
+    const currentPreset = workflowSync.activePreset;
+    
+    // Determine if SmartNavigator should be visible based on preset
+    // Preset 2 (Neuro) shows SmartNavigator by default, or when on 3d-scan step
+    const isSmartNavigatorVisible = currentPreset === 2 || currentWorkflowStepId === '3d-scan';
+    
+    // Check if workflow step changed OR preset changed
+    const workflowStepChanged = prevWorkflowStepIdRef.current !== currentWorkflowStepId;
+    const presetChanged = prevActivePresetRef.current !== currentPreset;
+    const visibilityChanged = wasSmartNavigatorVisibleRef.current !== isSmartNavigatorVisible;
+    
+    // Reset when:
+    // 1. Workflow step changes (e.g., from "planning" to "review")
+    // 2. Preset changes (e.g., from Cardio to Neuro)
+    // 3. SmartNavigator becomes visible again after being hidden
+    const shouldReset = (workflowStepChanged || presetChanged || (visibilityChanged && isSmartNavigatorVisible)) 
+                        && prevWorkflowStepIdRef.current !== undefined;
+    
+    if (shouldReset) {
+      // Reset to initial state when workflow changes
+      console.log('[SmartNavigator] Resetting state - workflow/preset/visibility changed');
+      setWorkflowStep(1, undefined, 'smart-navigator');
+      setWizardState(true, false); // Reset wizard to visible and not completed
+      setSelectedProtocol(1);
+      setShowSmartBanner(true);
+      setFocusedProtocol(1);
+      setSelectedCBCTType('helical');
+      setFocusedElement('helical');
+      setShowVideo(false);
+    }
+    
+    prevWorkflowStepIdRef.current = currentWorkflowStepId;
+    prevActivePresetRef.current = currentPreset;
+    wasSmartNavigatorVisibleRef.current = isSmartNavigatorVisible;
+  }, [workflowSync.workflowStepId, workflowSync.activePreset, setWorkflowStep, setWizardState]);
 
   // Navigation controls when SmartNavigator is active
   useEffect(() => {
@@ -1178,7 +1228,7 @@ export function SmartNavigator({ componentSize = 'large', isActive = false, onCo
           event.preventDefault();
           event.stopPropagation();
           setFocusedProtocol(prev => prev < PROTOCOLS.length ? prev + 1 : 1);
-        } else if (event.key === 'Enter') {
+        } else if (matchesInput(event, inputSettings.workflowStepActivate)) {
           event.preventDefault();
           event.stopPropagation();
           handleProtocolSelect(focusedProtocol);
@@ -1205,7 +1255,7 @@ export function SmartNavigator({ componentSize = 'large', isActive = false, onCo
           } else if (focusedElement === 'previous') {
             setFocusedElement('helical');
           }
-        } else if (event.key === 'Enter') {
+        } else if (matchesInput(event, inputSettings.workflowStepActivate)) {
           event.preventDefault();
           event.stopPropagation();
           if (focusedElement === 'helical' || focusedElement === 'circular') {
@@ -1218,7 +1268,7 @@ export function SmartNavigator({ componentSize = 'large', isActive = false, onCo
       } else if (currentStep === 5) {
         // Step 5 - Enter key completes wizard
         // Steps 3 (Isocenter) and 4 (Check Path) handle their own Enter key logic internally
-        if (event.key === 'Enter') {
+        if (matchesInput(event, inputSettings.workflowStepActivate)) {
           event.preventDefault();
           event.stopPropagation();
           handleContinue();

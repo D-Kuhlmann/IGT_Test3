@@ -8,8 +8,12 @@ import { StatusBar } from "./shared/StatusBar";
 import { NavigationHeader } from "./screens/flexvision/NavigationHeader";
 import { NavigationMenu } from "./shared/NavigationMenu";
 import { SmartWorkflowsOverlay } from "./shared/SmartWorkflowsOverlay";
+import { PresetsOverlay } from "./shared/PresetsOverlay";
+import { WorkflowStatusIndicator } from "./shared/WorkflowStatusIndicator";
 import { SettingsMenu } from "./SettingsMenu";
 import { useSettings, matchesInput } from '../contexts/SettingsContext';
+import { InputBroadcastProvider, useInputBroadcast } from '../contexts/InputBroadcastContext';
+import { WorkflowSyncProvider, useWorkflowSync } from '../contexts/WorkflowSyncContext';
 import { useUnifiedInput } from '../hooks/useUnifiedInput';
 import { useAngle } from '../contexts/AngleContext';
 import { useDateTime } from '../hooks/useDateTime';
@@ -17,14 +21,17 @@ import { useActiveComponents } from '../contexts/ActiveComponentsContext';
 import { getNextWorkflow, getPreviousWorkflow } from "../config/workflows";
 import type { WorkflowStep } from "../types";
 
-export function ScreenFlexvision() {
+function ScreenFlexvisionInner() {
   const [showWorkflows, setShowWorkflows] = useState(false);
-  const [currentWorkflowStep, setCurrentWorkflowStep] = useState<string>("");
+  const [showPresets, setShowPresets] = useState(false);
+  const inputBroadcast = useInputBroadcast();
+  const workflowSync = useWorkflowSync();
   const [focusMode, setFocusMode] = useState(false);
   const [focusedComponent, setFocusedComponent] = useState<'xray' | 'iw' | 'hemo' | 'smartnav' | 'placeholder'>('xray');
   const [iwSubFocus, setIwSubFocus] = useState<'none' | 'angles'>('none');
   const [selectedAngleIndex, setSelectedAngleIndex] = useState(0);
   const [activePreset, setActivePreset] = useState<1 | 2>(1);
+  const [smartNavResetKey, setSmartNavResetKey] = useState(0);
   const { setSelectedAngle, activateUniGuide } = useAngle();
   const { inputSettings, setIsSettingsOpen } = useSettings();
   const { setActiveComponents, setFocusedComponent: setContextFocusedComponent } = useActiveComponents();
@@ -144,6 +151,7 @@ export function ScreenFlexvision() {
 
   // Get current step layout or default to preset-based layout
   const getCurrentLayout = (): StepLayout => {
+    const currentWorkflowStep = workflowSync.workflowStepId;
     if (currentWorkflowStep && stepLayouts[currentWorkflowStep]) {
       return stepLayouts[currentWorkflowStep];
     }
@@ -169,7 +177,7 @@ export function ScreenFlexvision() {
         };
   };
 
-  const currentLayout = useMemo(() => getCurrentLayout(), [currentWorkflowStep, activePreset]);
+  const currentLayout = useMemo(() => getCurrentLayout(), [workflowSync.workflowStepId, activePreset]);
 
   // Update active components context when layout changes
   useEffect(() => {
@@ -187,7 +195,7 @@ export function ScreenFlexvision() {
     if (storedStr !== newStr) {
       setActiveComponents(activeComps);
     }
-  }, [currentLayout, setActiveComponents, currentWorkflowStep]);
+  }, [currentLayout, setActiveComponents, workflowSync.workflowStepId]);
 
   // Sync focused component with context
   useEffect(() => {
@@ -204,6 +212,53 @@ export function ScreenFlexvision() {
     setContextFocusedComponent(mappedComponent);
   }, [focusedComponent, setContextFocusedComponent]);
 
+  // Sync activePreset with WorkflowSync context
+  useEffect(() => {
+    if (workflowSync.activePreset && workflowSync.activePreset !== activePreset) {
+      setActivePreset(workflowSync.activePreset);
+      console.log(`[FlexVision] Synced preset from WorkflowSync: ${workflowSync.activePreset}`);
+    }
+  }, [workflowSync.activePreset]);
+
+  // Increment reset key when workflow step or preset changes to force SmartNavigator remount
+  const prevWorkflowStepRef = useRef<string | undefined>(undefined);
+  const prevPresetRef = useRef<1 | 2>(activePreset);
+  const isInitialMountRef = useRef(true);
+  
+  useEffect(() => {
+    const currentStep = workflowSync.workflowStepId;
+    const currentPreset = activePreset;
+    
+    console.log(`[FlexVision] Workflow state check - step: "${currentStep}", preset: ${currentPreset}, prevStep: "${prevWorkflowStepRef.current}", prevPreset: ${prevPresetRef.current}, isInitial: ${isInitialMountRef.current}`);
+    
+    // Skip initial mount
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      prevWorkflowStepRef.current = currentStep;
+      prevPresetRef.current = currentPreset;
+      return;
+    }
+    
+    const stepChanged = prevWorkflowStepRef.current !== currentStep;
+    const presetChanged = prevPresetRef.current !== currentPreset;
+    
+    if (stepChanged || presetChanged) {
+      console.log(`[FlexVision] 🔄 RESETTING SmartNavigator - step: "${prevWorkflowStepRef.current}" → "${currentStep}", preset: ${prevPresetRef.current} → ${currentPreset}`);
+      
+      // Reset SmartNavigator step in WorkflowSync to 1
+      workflowSync.setWorkflowStep(1, undefined, 'smart-navigator', true, false);
+      
+      setSmartNavResetKey(prev => {
+        const newKey = prev + 1;
+        console.log(`[FlexVision] Reset key: ${prev} → ${newKey}`);
+        return newKey;
+      });
+    }
+    
+    prevWorkflowStepRef.current = currentStep;
+    prevPresetRef.current = currentPreset;
+  }, [workflowSync.workflowStepId, activePreset]);
+
 
   const handleShowWorkflows = () => {
     setShowWorkflows(true);
@@ -213,16 +268,30 @@ export function ScreenFlexvision() {
     setShowWorkflows(false);
   };
 
+  const handleShowPresets = () => {
+    setShowPresets(true);
+  };
+
+  const handleClosePresets = () => {
+    setShowPresets(false);
+  };
+
+  const handlePresetSelect = (preset: 1 | 2) => {
+    setActivePreset(preset);
+    setShowPresets(false);
+    // Broadcast preset change to all screens
+    workflowSync.setWorkflowStepId(workflowSync.workflowStepId || '', preset);
+    console.log(`Preset ${preset} selected: ${preset === 1 ? 'Cardio' : 'Neuro'}`);
+  };
+
   const handleStepSelect = (step: WorkflowStep) => {
-    setCurrentWorkflowStep(step.id);
-    // Save to localStorage for TSM sync
-    localStorage.setItem('currentWorkflowStep', step.id);
-    localStorage.setItem('activePreset', activePreset.toString());
+    // Use workflow sync to broadcast to all screens
+    workflowSync.setWorkflowStepId(step.id, activePreset);
     setShowWorkflows(false);
   };
 
   const handleWorkflowStepChange = (step: WorkflowStep) => {
-    setCurrentWorkflowStep(step.id);
+    workflowSync.setWorkflowStepId(step.id, activePreset);
   };
 
   // Focus mode navigation - components available based on current layout (excluding statusbar)
@@ -333,6 +402,102 @@ export function ScreenFlexvision() {
     
     setSelectedAngleIndex(newIndex);
   };
+
+  // Listen for broadcasted input events from TSM
+  useEffect(() => {
+    const unsubscribeKeyboard = inputBroadcast.onKeyboardEvent((data) => {
+      console.log('[FlexVision] Received broadcasted keyboard event:', data.key);
+      
+      // Create a synthetic KeyboardEvent to pass to existing handlers
+      const syntheticEvent = new KeyboardEvent('keydown', {
+        key: data.key,
+        code: data.code,
+        ctrlKey: data.ctrlKey,
+        altKey: data.altKey,
+        shiftKey: data.shiftKey,
+        metaKey: data.metaKey,
+        bubbles: true,
+        cancelable: true,
+      });
+      
+      // Dispatch the synthetic event globally so all components can receive it
+      // This allows SmartWorkflowsOverlay and other components to handle the event
+      // Dispatch to both document and window to ensure all listeners receive it
+      document.dispatchEvent(syntheticEvent);
+      window.dispatchEvent(syntheticEvent);
+      console.log('[FlexVision] Dispatched synthetic keyboard event globally');
+      
+      // Also check for specific actions at the screen level
+      if (matchesInput(syntheticEvent, inputSettings.smartWorkflows)) {
+        console.log('[FlexVision] Smart workflows triggered via broadcast');
+        handleShowWorkflows();
+      }
+      
+      if (matchesInput(syntheticEvent, inputSettings.quickSettings)) {
+        console.log('[FlexVision] Quick settings triggered via broadcast');
+        setIsSettingsOpen(true);
+      }
+    });
+
+    const unsubscribeWheel = inputBroadcast.onWheelEvent((data) => {
+      console.log('[FlexVision] Received broadcasted wheel event:', data.deltaY);
+      
+      // Create a synthetic WheelEvent
+      const syntheticEvent = new WheelEvent('wheel', {
+        deltaX: data.deltaX,
+        deltaY: data.deltaY,
+        deltaZ: data.deltaZ,
+        deltaMode: data.deltaMode,
+        ctrlKey: data.ctrlKey,
+        altKey: data.altKey,
+        shiftKey: data.shiftKey,
+        metaKey: data.metaKey,
+        bubbles: true,
+        cancelable: true,
+      });
+      
+      // Dispatch the synthetic event globally
+      document.dispatchEvent(syntheticEvent);
+      window.dispatchEvent(syntheticEvent);
+      console.log('[FlexVision] Dispatched synthetic wheel event globally');
+      
+      // Also check for specific actions at the screen level
+      if (matchesInput(syntheticEvent, inputSettings.workflowStepLeft)) {
+        console.log('[FlexVision] Workflow step left via broadcast');
+      } else if (matchesInput(syntheticEvent, inputSettings.workflowStepRight)) {
+        console.log('[FlexVision] Workflow step right via broadcast');
+      }
+    });
+
+    const unsubscribeMouse = inputBroadcast.onMouseEvent((data) => {
+      console.log('[FlexVision] Received broadcasted mouse event:', data.eventType);
+      
+      // Create a synthetic MouseEvent
+      const syntheticEvent = new MouseEvent(data.eventType, {
+        button: data.button,
+        buttons: data.buttons,
+        clientX: data.clientX,
+        clientY: data.clientY,
+        ctrlKey: data.ctrlKey,
+        altKey: data.altKey,
+        shiftKey: data.shiftKey,
+        metaKey: data.metaKey,
+        bubbles: true,
+        cancelable: true,
+      });
+      
+      // Dispatch the synthetic event globally
+      document.dispatchEvent(syntheticEvent);
+      window.dispatchEvent(syntheticEvent);
+      console.log('[FlexVision] Dispatched synthetic mouse event globally');
+    });
+
+    return () => {
+      unsubscribeKeyboard();
+      unsubscribeWheel();
+      unsubscribeMouse();
+    };
+  }, [inputBroadcast, inputSettings, handleShowWorkflows, setIsSettingsOpen]);
 
   // Handle keyboard, mouse wheel, and mouse click events
   useEffect(() => {
@@ -508,6 +673,7 @@ export function ScreenFlexvision() {
       <div className="relative w-full z-50 shrink-0">
         <NavigationHeader 
           onShowWorkflows={handleShowWorkflows}
+          onShowPresets={handleShowPresets}
           isWorkflowsVisible={showWorkflows}
           focusMode={focusMode}
         />
@@ -521,12 +687,23 @@ export function ScreenFlexvision() {
         isVisible={showWorkflows}
         onClose={handleCloseWorkflows}
         onStepSelect={handleStepSelect}
-        currentStep={currentWorkflowStep}
+        currentStep={workflowSync.workflowStepId}
+        activePreset={activePreset}
+      />
+
+      {/* Presets Overlay */}
+      <PresetsOverlay
+        isVisible={showPresets}
+        onClose={handleClosePresets}
+        onPresetSelect={handlePresetSelect}
         activePreset={activePreset}
       />
 
       {/* Settings Menu */}
       <SettingsMenu />
+      
+      {/* Workflow Status Indicator */}
+      <WorkflowStatusIndicator />
 
       <div className="flex-1 overflow-hidden flex">
         {/* StatusBar - Independent left sidebar */}
@@ -551,7 +728,7 @@ export function ScreenFlexvision() {
             // Clear 3x3 Grid System with Explicit Rules
             const get3x3Layout = () => {
               // Special layout override for 3D scan step
-              if (currentWorkflowStep === '3d-scan') {
+              if (workflowSync.workflowStepId === '3d-scan') {
                 return [
                   // Placeholder 1 - Top left (1x1)
                   { col: 1, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
@@ -801,7 +978,7 @@ export function ScreenFlexvision() {
               return placements;
             };
 
-            const placements = useMemo(() => get3x3Layout(), [currentLayout.components, currentWorkflowStep]);
+            const placements = useMemo(() => get3x3Layout(), [currentLayout.components, workflowSync.workflowStepId]);
 
             const getSizeClasses = (size: string, index: number, totalComponents: number) => {
               const placement = placements[index];
@@ -878,7 +1055,12 @@ export function ScreenFlexvision() {
                   break;
                 case 'smartNavigator':
                   // SmartNavigator is always active when rendered
-                  renderedComponent = <SmartNavigator componentSize={componentSize} isActive={true} />;
+                  // Use key to force remount when workflow step changes, resetting state
+                  renderedComponent = <SmartNavigator 
+                    key={`smartnav-reset-${smartNavResetKey}`}
+                    componentSize={componentSize} 
+                    isActive={true} 
+                  />;
                   focusKey = 'smartnav';
                   break;
                 case 'placeholder':
@@ -907,16 +1089,27 @@ export function ScreenFlexvision() {
       </div>
 
       {/* Workflow step indicator */}
-      {currentWorkflowStep && (
+      {workflowSync.workflowStepId && (
         <div className="absolute bottom-6 left-6 bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 z-20">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
             <span className="text-white text-[14px] font-['CentraleSans:Book',_sans-serif]">
-              Current: {currentWorkflowStep.charAt(0).toUpperCase() + currentWorkflowStep.slice(1).replace('-', ' ')}
+              Current: {workflowSync.workflowStepId.charAt(0).toUpperCase() + workflowSync.workflowStepId.slice(1).replace('-', ' ')}
             </span>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+// Wrapper component with InputBroadcastProvider and WorkflowSyncProvider
+export function ScreenFlexvision() {
+  return (
+    <InputBroadcastProvider screenId="flexvision" isMaster={false}>
+      <WorkflowSyncProvider screenId="flexvision">
+        <ScreenFlexvisionInner />
+      </WorkflowSyncProvider>
+    </InputBroadcastProvider>
   );
 }

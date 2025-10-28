@@ -6,11 +6,13 @@ import { MainContent } from "./MainContent";
 import { UniGuideInterface } from "./UniGuideInterface";
 import { useAngle } from "../../../contexts/AngleContext";
 import { useActiveComponents } from "../../../contexts/ActiveComponentsContext";
+import { useWorkflowSync } from "../../../contexts/WorkflowSyncContext";
 import { XrayLive } from "../flexvision/XrayLive";
 import { InterventionalWorkspace } from "../flexvision/InterventionalWorkspace";
 import { Hemo } from "../flexvision/Hemo";
 import { SmartNavigator } from "../flexvision/SmartNavigator";
 import { SmartOrchestratorMenu } from "./SmartOrchestratorMenu";
+import { WorkflowStatusIndicator } from "../../shared/WorkflowStatusIndicator";
 import { 
   imgFluoroscopyImageStore,
   imgIcon32DlsHome,
@@ -233,12 +235,10 @@ function BottomNavigation({ onTabChange, activeTab, currentWorkflowStep, activeP
 
 export function TSMInterface() {
   const location = useLocation();
-  const [activeBottomTab, setActiveBottomTab] = useState<string>("xray-live");
+  const [activeBottomTab, setActiveBottomTab] = useState('cardio');
+  const workflowSync = useWorkflowSync();
   const [showOrchestratorMenu, setShowOrchestratorMenu] = useState(false);
-  const [currentWorkflowStep, setCurrentWorkflowStep] = useState<string>("");
-  const [activePreset, setActivePreset] = useState<1 | 2>(1);
   const { isUniGuideActive } = useAngle();
-
 
   // Sync with cross-screen UniGuide activation
   useEffect(() => {
@@ -247,58 +247,14 @@ export function TSMInterface() {
     }
   }, [isUniGuideActive]);
 
-  // Listen for localStorage changes for cross-tab communication
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'isUniGuideActive' && e.newValue === 'true') {
-        setActiveBottomTab("uniguide");
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Check initial state from localStorage
-    const storedUniGuideActive = localStorage.getItem('isUniGuideActive');
-    if (storedUniGuideActive === 'true') {
-      setActiveBottomTab("uniguide");
-    }
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-
   const handleBottomTabChange = (tabId: string) => {
     setActiveBottomTab(tabId);
   };
 
   const handleWorkflowStepSelect = (step: WorkflowStep) => {
-    setCurrentWorkflowStep(step.id);
-    // Also update FlexVision's workflow step via localStorage
-    localStorage.setItem('currentWorkflowStep', step.id);
+    // Use workflow sync to broadcast to all screens
+    workflowSync.setWorkflowStepId(step.id, workflowSync.activePreset);
   };
-
-  // Sync workflow step and preset from FlexVision
-  useEffect(() => {
-    const syncWorkflowData = () => {
-      const storedStep = localStorage.getItem('currentWorkflowStep');
-      const storedPreset = localStorage.getItem('activePreset');
-      
-      if (storedStep) {
-        setCurrentWorkflowStep(storedStep);
-      }
-      if (storedPreset) {
-        const preset = parseInt(storedPreset);
-        if (preset === 1 || preset === 2) {
-          setActivePreset(preset);
-        }
-      }
-    };
-
-    syncWorkflowData();
-    const interval = setInterval(syncWorkflowData, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Get active components from localStorage
   const [visibleComponents, setVisibleComponents] = useState<Array<'xrayLive' | 'interventionalWorkspace' | 'hemo' | 'smartNavigator'>>([]);
@@ -327,8 +283,8 @@ export function TSMInterface() {
       return (
         <SmartOrchestratorMenu
           activeComponents={visibleComponents}
-          currentWorkflowStep={currentWorkflowStep}
-          activePreset={activePreset}
+          currentWorkflowStep={workflowSync.workflowStepId || ''}
+          activePreset={workflowSync.activePreset}
           onStepSelect={handleWorkflowStepSelect}
         />
       );
@@ -368,8 +324,8 @@ export function TSMInterface() {
       <BottomNavigation 
         onTabChange={handleBottomTabChange} 
         activeTab={activeBottomTab}
-        currentWorkflowStep={currentWorkflowStep}
-        activePreset={activePreset}
+        currentWorkflowStep={workflowSync.workflowStepId || ''}
+        activePreset={workflowSync.activePreset}
         onStepSelect={handleWorkflowStepSelect}
         onOrchestratorToggle={() => setShowOrchestratorMenu(!showOrchestratorMenu)}
       />
@@ -377,6 +333,9 @@ export function TSMInterface() {
       <div className="font-['CentraleSans:Medium',_sans-serif] h-5 leading-[0] not-italic text-[#959595] text-[12px] text-center w-14">
         <p className="leading-[20px]">04</p>
       </div>
+      
+      {/* Workflow Status Indicator */}
+      <WorkflowStatusIndicator />
     </div>
   );
 }
