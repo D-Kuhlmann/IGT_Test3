@@ -3,6 +3,7 @@ import svgPaths from "../../imports/svg-02p7sqlbj5";
 import arrowSvgPaths from "../../imports/svg-xo6dcn4zhp";
 
 import { useSettings } from "@/contexts/SettingsContext";
+import { useVoiceInputState } from "@/contexts/VoiceInputStateContext";
 
 interface WorkflowStep {
   id: string;
@@ -17,6 +18,8 @@ interface SmartWorkflowsOverlayProps {
   onStepSelect: (step: WorkflowStep) => void;
   currentStep?: string;
   activePreset?: 1 | 2;
+  isVoiceMode?: boolean;
+  voiceTranscript?: string;
 }
 
 // Step Component - reusable for infinite scroll
@@ -149,6 +152,8 @@ export function SmartWorkflowsOverlay({
   onStepSelect,
   currentStep,
   activePreset = 1,
+  isVoiceMode = false,
+  voiceTranscript = '',
 }: SmartWorkflowsOverlayProps) {
   // Add CSS animations for slide effect
   const slideAnimationStyles = `
@@ -175,6 +180,7 @@ export function SmartWorkflowsOverlay({
     }
   `;
   const settings = useSettings();
+  const { feedback } = useVoiceInputState();
   const [focusedStepIndex, setFocusedStepIndex] = useState(0);
   const [lastNavigationDirection, setLastNavigationDirection] = useState<'left' | 'right' | null>(null);
   const [isClosing, setIsClosing] = useState(false);
@@ -507,31 +513,80 @@ export function SmartWorkflowsOverlay({
 
                       {/* Carousel background container with buttons as direct children */}
                       <div className="absolute bg-[#060F1F] h-[80px] left-[25px] opacity-90 rounded-[10px] top-0 w-[900px] overflow-hidden">
-                        {/* Workflow Steps - positioned relative to the blue container */}
-                        <div 
-                          className="flex gap-[15px] h-full items-center absolute transition-transform duration-300 ease-out"
-                          style={{
-                            transform: getTransform(),
-                            left: 0,
-                            top: 0,
-                            width: `${getButtonContainerWidth()}px`, // Exact width for buttons, no extra space
-                            paddingLeft: '20px', // Small padding before first step
-                            paddingRight: '20px' // Small padding after last step
-                          }}
-                        >
-                          {/* Single set of workflow steps */}
-                          {workflowSteps.map((step, stepIndex) => {
-                            return (
-                              <WorkflowStepButton
-                                key={step.id}
-                                step={step}
-                                stepIndex={stepIndex}
-                                isFocused={stepIndex === focusedStepIndex}
-                                onClick={() => handleStepClick(step)}
-                              />
-                            );
-                          })}
-                        </div>
+                        {/* Voice Mode - Show feedback or transcript */}
+                        {isVoiceMode ? (
+                          <div className="flex items-center justify-center h-full w-full px-10">
+                            <div className="text-center w-full">
+                              {/* Show feedback when command is recognized */}
+                              {feedback ? (
+                                <div className="flex flex-col items-center justify-center gap-2">
+                                  <div className="text-green-400 text-2xl font-semibold flex items-center justify-center gap-3">
+                                    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                    </svg>
+                                    {feedback}
+                                  </div>
+                                </div>
+                              ) : (
+                                /* Show listening state when no feedback */
+                                <>
+                                  <div className="flex items-center justify-center gap-3 mb-2">
+                                    {/* Pulsing microphone icon */}
+                                    <div className="relative">
+                                      <svg 
+                                        xmlns="http://www.w3.org/2000/svg" 
+                                        className="h-8 w-8 text-red-500" 
+                                        fill="none" 
+                                        viewBox="0 0 24 24" 
+                                        stroke="currentColor"
+                                      >
+                                        <path 
+                                          strokeLinecap="round" 
+                                          strokeLinejoin="round" 
+                                          strokeWidth={2} 
+                                          d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" 
+                                        />
+                                      </svg>
+                                      {/* Pulsing ring */}
+                                      <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-75"></div>
+                                    </div>
+                                    <span className="text-red-400 text-sm font-medium">Listening...</span>
+                                  </div>
+                                  {/* Voice transcript */}
+                                  <div className="text-white text-xl font-medium min-h-[30px] flex items-center justify-center">
+                                    {voiceTranscript || "Speak a command..."}
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          /* Workflow Steps - positioned relative to the blue container */
+                          <div 
+                            className="flex gap-[15px] h-full items-center absolute transition-transform duration-300 ease-out"
+                            style={{
+                              transform: getTransform(),
+                              left: 0,
+                              top: 0,
+                              width: `${getButtonContainerWidth()}px`, // Exact width for buttons, no extra space
+                              paddingLeft: '20px', // Small padding before first step
+                              paddingRight: '20px' // Small padding after last step
+                            }}
+                          >
+                            {/* Single set of workflow steps */}
+                            {workflowSteps.map((step, stepIndex) => {
+                              return (
+                                <WorkflowStepButton
+                                  key={step.id}
+                                  step={step}
+                                  stepIndex={stepIndex}
+                                  isFocused={stepIndex === focusedStepIndex}
+                                  onClick={() => handleStepClick(step)}
+                                />
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
 

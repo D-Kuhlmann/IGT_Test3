@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useEffect, useCallback, ReactNode } from 'react';
 
 interface InputEvent {
-  type: 'keyboard' | 'mouse' | 'wheel';
+  type: 'keyboard' | 'mouse' | 'wheel' | 'voice' | 'transcript' | 'listening';
   timestamp: number;
   source: 'tsm' | 'flexvision' | 'wmu' | 'flexspots1' | 'flexspots2';
-  data: KeyboardEventData | MouseEventData | WheelEventData;
+  data: KeyboardEventData | MouseEventData | WheelEventData | VoiceEventData | TranscriptEventData | ListeningStateData;
 }
 
 interface KeyboardEventData {
@@ -40,13 +40,33 @@ interface WheelEventData {
   metaKey: boolean;
 }
 
+interface VoiceEventData {
+  eventType: 'keydown' | 'keyup' | 'reset'; // Voice input key press/release or reset after command
+  key: string; // The key code for voice input
+}
+
+interface TranscriptEventData {
+  transcript: string; // The recognized speech text
+  isFinal: boolean; // Whether this is the final transcript
+}
+
+interface ListeningStateData {
+  isListening: boolean; // Whether voice recognition is active
+}
+
 interface InputBroadcastContextType {
   broadcastKeyboardEvent: (event: KeyboardEvent) => void;
   broadcastMouseEvent: (event: MouseEvent) => void;
   broadcastWheelEvent: (event: WheelEvent) => void;
+  broadcastVoiceEvent: (eventType: 'keydown' | 'keyup' | 'reset', key: string) => void;
+  broadcastTranscript: (transcript: string, isFinal: boolean) => void;
+  broadcastListeningState: (isListening: boolean) => void;
   onKeyboardEvent: (handler: (data: KeyboardEventData) => void) => () => void;
   onMouseEvent: (handler: (data: MouseEventData) => void) => () => void;
   onWheelEvent: (handler: (data: WheelEventData) => void) => () => void;
+  onVoiceEvent: (handler: (data: VoiceEventData) => void) => () => void;
+  onTranscript: (handler: (data: TranscriptEventData) => void) => () => void;
+  onListeningState: (handler: (data: ListeningStateData) => void) => () => void;
 }
 
 const InputBroadcastContext = createContext<InputBroadcastContextType | undefined>(undefined);
@@ -64,6 +84,9 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
   const keyboardHandlersRef = React.useRef<Set<(data: KeyboardEventData) => void>>(new Set());
   const mouseHandlersRef = React.useRef<Set<(data: MouseEventData) => void>>(new Set());
   const wheelHandlersRef = React.useRef<Set<(data: WheelEventData) => void>>(new Set());
+  const voiceHandlersRef = React.useRef<Set<(data: VoiceEventData) => void>>(new Set());
+  const transcriptHandlersRef = React.useRef<Set<(data: TranscriptEventData) => void>>(new Set());
+  const listeningHandlersRef = React.useRef<Set<(data: ListeningStateData) => void>>(new Set());
 
   // Initialize BroadcastChannel
   useEffect(() => {
@@ -94,6 +117,21 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
           case 'wheel':
             wheelHandlersRef.current.forEach(handler => {
               handler(inputEvent.data as WheelEventData);
+            });
+            break;
+          case 'voice':
+            voiceHandlersRef.current.forEach(handler => {
+              handler(inputEvent.data as VoiceEventData);
+            });
+            break;
+          case 'transcript':
+            transcriptHandlersRef.current.forEach(handler => {
+              handler(inputEvent.data as TranscriptEventData);
+            });
+            break;
+          case 'listening':
+            listeningHandlersRef.current.forEach(handler => {
+              handler(inputEvent.data as ListeningStateData);
             });
             break;
         }
@@ -213,6 +251,89 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
     };
   }, []);
 
+  // Broadcast voice event (from TSM)
+  const broadcastVoiceEvent = useCallback((eventType: 'keydown' | 'keyup', key: string) => {
+    if (!channelRef.current) return;
+
+    const data: VoiceEventData = {
+      eventType,
+      key,
+    };
+
+    const inputEvent: InputEvent = {
+      type: 'voice',
+      timestamp: Date.now(),
+      source: screenId,
+      data,
+    };
+
+    channelRef.current.postMessage(inputEvent);
+    console.log(`[InputBroadcast] Broadcasted voice event: ${eventType} ${key}`);
+  }, [screenId]);
+
+  // Register voice event handler
+  const onVoiceEvent = useCallback((handler: (data: VoiceEventData) => void) => {
+    voiceHandlersRef.current.add(handler);
+    return () => {
+      voiceHandlersRef.current.delete(handler);
+    };
+  }, []);
+
+  // Broadcast transcript (from screen with microphone)
+  const broadcastTranscript = useCallback((transcript: string, isFinal: boolean) => {
+    if (!channelRef.current) return;
+
+    const data: TranscriptEventData = {
+      transcript,
+      isFinal,
+    };
+
+    const inputEvent: InputEvent = {
+      type: 'transcript',
+      timestamp: Date.now(),
+      source: screenId,
+      data,
+    };
+
+    channelRef.current.postMessage(inputEvent);
+    console.log(`[InputBroadcast] Broadcasted transcript (${isFinal ? 'FINAL' : 'interim'}): "${transcript}"`);
+  }, [screenId]);
+
+  // Register transcript handler
+  const onTranscript = useCallback((handler: (data: TranscriptEventData) => void) => {
+    transcriptHandlersRef.current.add(handler);
+    return () => {
+      transcriptHandlersRef.current.delete(handler);
+    };
+  }, []);
+
+  // Broadcast listening state (from screen with microphone)
+  const broadcastListeningState = useCallback((isListening: boolean) => {
+    if (!channelRef.current) return;
+
+    const data: ListeningStateData = {
+      isListening,
+    };
+
+    const inputEvent: InputEvent = {
+      type: 'listening',
+      timestamp: Date.now(),
+      source: screenId,
+      data,
+    };
+
+    channelRef.current.postMessage(inputEvent);
+    console.log(`[InputBroadcast] Broadcasted listening state: ${isListening}`);
+  }, [screenId]);
+
+  // Register listening state handler
+  const onListeningState = useCallback((handler: (data: ListeningStateData) => void) => {
+    listeningHandlersRef.current.add(handler);
+    return () => {
+      listeningHandlersRef.current.delete(handler);
+    };
+  }, []);
+
   // If this is the master (TSM), capture all input events
   useEffect(() => {
     if (!isMaster) return;
@@ -259,9 +380,15 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
     broadcastKeyboardEvent,
     broadcastMouseEvent,
     broadcastWheelEvent,
+    broadcastVoiceEvent,
+    broadcastTranscript,
+    broadcastListeningState,
     onKeyboardEvent,
     onMouseEvent,
     onWheelEvent,
+    onVoiceEvent,
+    onTranscript,
+    onListeningState,
   };
 
   return (

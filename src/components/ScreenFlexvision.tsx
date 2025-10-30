@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { XrayLive } from './screens/flexvision/XrayLive';
 import { InterventionalWorkspace } from './screens/flexvision/InterventionalWorkspace';
 import { Hemo } from './screens/flexvision/Hemo';
@@ -11,6 +11,8 @@ import { SmartWorkflowsOverlay } from "./shared/SmartWorkflowsOverlay";
 import { PresetsOverlay } from "./shared/PresetsOverlay";
 import { WorkflowStatusIndicator } from "./shared/WorkflowStatusIndicator";
 import { SettingsMenu } from "./SettingsMenu";
+import { useGlobalVoice } from '../contexts/GlobalVoiceContext';
+import { useVoiceInputState } from '../contexts/VoiceInputStateContext';
 import { useSettings, matchesInput } from '../contexts/SettingsContext';
 import { InputBroadcastProvider, useInputBroadcast } from '../contexts/InputBroadcastContext';
 import { WorkflowSyncProvider, useWorkflowSync } from '../contexts/WorkflowSyncContext';
@@ -26,6 +28,8 @@ function ScreenFlexvisionInner() {
   const [showPresets, setShowPresets] = useState(false);
   const inputBroadcast = useInputBroadcast();
   const workflowSync = useWorkflowSync();
+  const { registerHandlers, unregisterHandlers } = useGlobalVoice();
+  const { isListening, transcript, feedback } = useVoiceInputState();
   const [focusMode, setFocusMode] = useState(false);
   const [focusedComponent, setFocusedComponent] = useState<'xray' | 'iw' | 'hemo' | 'smartnav' | 'placeholder'>('xray');
   const [iwSubFocus, setIwSubFocus] = useState<'none' | 'angles'>('none');
@@ -35,6 +39,22 @@ function ScreenFlexvisionInner() {
   const { setSelectedAngle, activateUniGuide } = useAngle();
   const { inputSettings, setIsSettingsOpen } = useSettings();
   const { setActiveComponents, setFocusedComponent: setContextFocusedComponent } = useActiveComponents();
+
+  // Keep overlay open when showing feedback even if not listening
+  const shouldShowVoiceOverlay = isListening || !!feedback;
+
+  // Refs to track latest values for voice handlers
+  const workflowSyncRef = useRef(workflowSync);
+  const activePresetRef = useRef(activePreset);
+  
+  // Keep refs updated
+  useEffect(() => {
+    workflowSyncRef.current = workflowSync;
+  }, [workflowSync]);
+  
+  useEffect(() => {
+    activePresetRef.current = activePreset;
+  }, [activePreset]);
 
   // Component layout configurations for each workflow step
   interface ComponentConfig {
@@ -51,6 +71,14 @@ function ScreenFlexvisionInner() {
   // Define layouts for each step in each preset
   const stepLayouts: Record<string, StepLayout> = {
     // Preset 1 layouts - Standard medical workflow
+    "startup": {
+      gridLayout: 'standard',
+      components: [
+        { component: 'xrayLive', size: 'large' },
+        { component: 'interventionalWorkspace', size: 'medium' },
+        { component: 'hemo', size: 'medium' }
+      ]
+    },
     "review": {
   gridLayout: 'standard',
   components: [
@@ -82,6 +110,20 @@ function ScreenFlexvisionInner() {
         { component: 'xrayLive', size: 'large' },
         { component: 'interventionalWorkspace', size: 'medium' },
         { component: 'hemo', size: 'medium' }
+      ]
+    },
+    "xray": {
+      gridLayout: 'standard',
+      components: [
+        { component: 'xrayLive', size: 'xlarge' },
+        { component: 'hemo', size: 'medium' }
+      ]
+    },
+    "hemo": {
+      gridLayout: 'standard',
+      components: [
+        { component: 'hemo', size: 'xlarge' },
+        { component: 'xrayLive', size: 'medium' }
       ]
     },
     "confirm-dsa": {
@@ -152,10 +194,14 @@ function ScreenFlexvisionInner() {
   // Get current step layout or default to preset-based layout
   const getCurrentLayout = (): StepLayout => {
     const currentWorkflowStep = workflowSync.workflowStepId;
+    console.log(`[getCurrentLayout] Current workflow step: "${currentWorkflowStep}", has layout: ${currentWorkflowStep ? !!stepLayouts[currentWorkflowStep] : false}`);
+    
     if (currentWorkflowStep && stepLayouts[currentWorkflowStep]) {
+      console.log(`[getCurrentLayout] Using step layout for: "${currentWorkflowStep}"`);
       return stepLayouts[currentWorkflowStep];
     }
     
+    console.log(`[getCurrentLayout] Using default preset ${activePreset} layout (no workflow step)`);
     // Default layouts when no workflow step is active
     return activePreset === 1 
       ? {
@@ -289,6 +335,95 @@ function ScreenFlexvisionInner() {
     workflowSync.setWorkflowStepId(step.id, activePreset);
     setShowWorkflows(false);
   };
+
+  // Voice command handlers
+  const handleNextWorkflowVoice = useCallback(() => {
+    const currentWorkflowSync = workflowSyncRef.current;
+    const currentPreset = activePresetRef.current;
+    
+    console.log('[handleNextWorkflowVoice] Current workflowSync state:', {
+      workflowStepId: currentWorkflowSync.workflowStepId,
+      currentStep: currentWorkflowSync.currentStep,
+      activePreset: currentPreset,
+      workflowId: currentWorkflowSync.workflowId
+    });
+    
+    if (!currentWorkflowSync.workflowStepId) {
+      console.log('⚠️ No current workflow step');
+      return;
+    }
+    const nextStep = getNextWorkflow(currentWorkflowSync.workflowStepId);
+    if (nextStep) {
+      console.log('▶️ Going to next workflow:', nextStep.id);
+      currentWorkflowSync.setWorkflowStepId(nextStep.id, currentPreset);
+    } else {
+      console.log('⚠️ No next workflow available');
+    }
+  }, []); // Empty deps - will always use current values via refs
+
+  const handlePreviousWorkflowVoice = useCallback(() => {
+    const currentWorkflowSync = workflowSyncRef.current;
+    const currentPreset = activePresetRef.current;
+    
+    if (!currentWorkflowSync.workflowStepId) {
+      console.log('⚠️ No current workflow step');
+      return;
+    }
+    const previousStep = getPreviousWorkflow(currentWorkflowSync.workflowStepId);
+    if (previousStep) {
+      console.log('◀️ Going to previous workflow:', previousStep.id);
+      currentWorkflowSync.setWorkflowStepId(previousStep.id, currentPreset);
+    } else {
+      console.log('⚠️ No previous workflow available');
+    }
+  }, []); // Empty deps - will always use current values via refs
+
+  const handleRestartWizardVoice = useCallback(() => {
+    console.log('🔄 Restarting Smart Navigator wizard');
+    setSmartNavResetKey(prev => prev + 1);
+  }, []);
+
+  const handleToggleFocusModeVoice = useCallback(() => {
+    console.log('🎯 Toggling focus mode');
+    setFocusMode(prev => !prev);
+  }, []);
+
+  const handlePreset1Voice = useCallback(() => {
+    console.log('1️⃣ Switching to Preset 1 (Cardio)');
+    handlePresetSelect(1);
+  }, []); // Empty deps - will always use current values via closure
+
+  const handlePreset2Voice = useCallback(() => {
+    console.log('2️⃣ Switching to Preset 2 (Neuro)');
+    handlePresetSelect(2);
+  }, []); // Empty deps - will always use current values via closure
+
+  // Register global voice command handlers (only once on mount)
+  useEffect(() => {
+    const handlers = {
+      onNextWorkflow: handleNextWorkflowVoice,
+      onPreviousWorkflow: handlePreviousWorkflowVoice,
+      onRestartWizard: handleRestartWizardVoice,
+      onShowWorkflows: handleShowWorkflows,
+      onHideWorkflows: handleCloseWorkflows,
+      onShowPresets: handleShowPresets,
+      onHidePresets: handleClosePresets,
+      onToggleFocusMode: handleToggleFocusModeVoice,
+      onOpenSettings: () => setIsSettingsOpen(true),
+      onCloseSettings: () => setIsSettingsOpen(false),
+      onPreset1: handlePreset1Voice,
+      onPreset2: handlePreset2Voice,
+    };
+    
+    registerHandlers(handlers);
+
+    // Cleanup on unmount
+    return () => {
+      unregisterHandlers();
+    };
+    // Only register once on mount, handlers will use latest values via closure
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleWorkflowStepChange = (step: WorkflowStep) => {
     workflowSync.setWorkflowStepId(step.id, activePreset);
@@ -681,14 +816,16 @@ function ScreenFlexvisionInner() {
 
 
 
-      {/* Smart Workflows Overlay */}
+      {/* Smart Workflows Overlay - Shows when workflows open OR voice is listening OR showing feedback */}
       <SmartWorkflowsOverlay
         key={`workflow-preset-${activePreset}`}
-        isVisible={showWorkflows}
+        isVisible={showWorkflows || shouldShowVoiceOverlay}
         onClose={handleCloseWorkflows}
         onStepSelect={handleStepSelect}
         currentStep={workflowSync.workflowStepId}
         activePreset={activePreset}
+        isVoiceMode={shouldShowVoiceOverlay}
+        voiceTranscript={transcript}
       />
 
       {/* Presets Overlay */}

@@ -29,6 +29,9 @@ export interface InputSettings {
   workflowStepRight: string | KeyboardShortcut | MouseInput;
   workflowClose: string | KeyboardShortcut | MouseInput;
   workflowStepActivate: string | KeyboardShortcut | MouseInput;
+  // Voice input controls
+  voiceInputToggle: string | KeyboardShortcut | MouseInput;
+  voiceInputEnabled: boolean;
   // Focus mode controls
   focusModeEnabled: boolean;
   focusModeToggle: string | KeyboardShortcut | MouseInput;
@@ -48,6 +51,9 @@ const defaultSettings: InputSettings = {
   workflowStepRight: 'wheel:down',
   workflowClose: 'ArrowUp',
   workflowStepActivate: 'Enter',
+  // Voice input defaults
+  voiceInputToggle: ' ', // Spacebar
+  voiceInputEnabled: true,
   // Focus mode defaults
   focusModeEnabled: true,
   focusModeToggle: 'Enter',

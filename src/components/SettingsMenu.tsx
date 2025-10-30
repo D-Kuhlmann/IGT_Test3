@@ -247,6 +247,34 @@ export function SettingsMenu() {
             </div>
           </div>
 
+          {/* Voice Input Settings */}
+          <div className="mb-6">
+            <h3 className="text-lg font-medium text-white mb-4">Voice Input Settings</h3>
+            
+            {/* Enable/Disable Toggle */}
+            <div className="flex items-center justify-between py-3 px-4 border-b border-gray-700">
+              <div className="flex flex-col">
+                <span className="text-white font-medium">Enable Voice Input</span>
+                <span className="text-gray-400 text-sm">Allow voice commands via keyboard shortcut</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={inputSettings.voiceInputEnabled}
+                  onChange={(e) => updateSetting('voiceInputEnabled', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+
+            <ShortcutEditor
+              label="Voice Input Toggle"
+              shortcut={typeof inputSettings.voiceInputToggle === 'string' ? inputSettings.voiceInputToggle : formatInputShortcut(inputSettings.voiceInputToggle)}
+              onUpdate={(shortcut) => updateInputShortcut('voiceInputToggle', shortcut)}
+            />
+          </div>
+
           {/* Focus Mode Settings */}
           <div className="mb-6">
             <h3 className="text-lg font-medium text-white mb-4">Focus Mode Settings</h3>
