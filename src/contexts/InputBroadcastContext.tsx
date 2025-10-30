@@ -171,7 +171,6 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
     };
 
     channelRef.current.postMessage(inputEvent);
-    console.log('[InputBroadcast] Broadcasted keyboard event:', data.key);
   }, [screenId, isMaster]);
 
   // Broadcast mouse event

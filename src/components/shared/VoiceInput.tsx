@@ -47,6 +47,11 @@ export function VoiceInput({
     browserSupportsSpeechRecognition
   } = useSpeechRecognition();
   
+  // Debug: Log transcript changes
+  useEffect(() => {
+    console.log(`🔍 [${screenId}] useSpeechRecognition transcript updated:`, transcript);
+  }, [transcript, screenId]);
+  
   // Check browser support and microphone permissions on mount
   useEffect(() => {
     if (screenHasMicrophone && !browserSupportsSpeechRecognition) {
@@ -120,14 +125,18 @@ export function VoiceInput({
     }
   }, [listening, voiceState, inputBroadcast, screenId, screenHasMicrophone]);
 
+  // Only update the global transcript state if this screen has the microphone
+  // Otherwise, screens without microphone will overwrite broadcasted transcripts with empty strings
   useEffect(() => {
-    voiceState.setTranscript(transcript);
-    if (transcript) {
-      console.log(`🎤 [${screenId}] 📝 Transcript changed to: "${transcript}"`);
-    } else {
-      console.log(`🎤 [${screenId}] 📝 Transcript cleared`);
+    if (screenHasMicrophone) {
+      voiceState.setTranscript(transcript);
+      if (transcript) {
+        console.log(`🎤 [${screenId}] 📝 Transcript changed to: "${transcript}"`);
+      } else {
+        console.log(`🎤 [${screenId}] 📝 Transcript cleared`);
+      }
     }
-  }, [transcript, voiceState, screenId]);
+  }, [transcript, voiceState, screenId, screenHasMicrophone]);
 
   // Track listening state with ref to avoid dependency issues
   const listeningRef = useRef(false);

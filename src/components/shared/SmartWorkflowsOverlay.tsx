@@ -155,6 +155,11 @@ export function SmartWorkflowsOverlay({
   isVoiceMode = false,
   voiceTranscript = '',
 }: SmartWorkflowsOverlayProps) {
+  // Debug: Log voiceTranscript prop
+  useEffect(() => {
+    console.log('🎭 [SmartWorkflowsOverlay] voiceTranscript prop:', voiceTranscript);
+  }, [voiceTranscript]);
+
   // Add CSS animations for slide effect
   const slideAnimationStyles = `
     @keyframes slideDown {

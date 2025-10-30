@@ -10,11 +10,12 @@ import { useInputBroadcast } from '../contexts/InputBroadcastContext';
 export function GlobalVoiceCommandHandler() {
   const location = useLocation();
   const voiceContext = useGlobalVoice();
-  const { setFeedback, setTranscript, isKeyPressed } = useVoiceInputState();
+  const { setFeedback, setTranscript, isKeyPressed, setIsListening } = useVoiceInputState();
   const { resetTranscript } = useSpeechRecognition();
   const inputBroadcast = useInputBroadcast();
   const feedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastProcessedTranscriptRef = useRef<string>('');
+  const commandActionRef = useRef<(() => void) | null>(null);
 
   // Determine screen ID based on current route
   const getScreenId = (): 'tsm' | 'flexvision' | 'wmu' | 'flexspots1' | 'flexspots2' => {
@@ -47,14 +48,14 @@ export function GlobalVoiceCommandHandler() {
     processVoiceCommand(transcript);
   };
 
-  // Feedback handler - stops listening but keeps panel open for 2 seconds
-  const handleFeedback = (message: string) => {
+  // Feedback handler - stops listening, delays command execution and feedback
+  const handleFeedback = (message: string, action: () => void) => {
     // Clear any existing timeout
     if (feedbackTimeoutRef.current) {
       clearTimeout(feedbackTimeoutRef.current);
     }
 
-    // Stop listening but keep the panel visible
+    // Stop listening but keep the panel visible with the transcript
     console.log('⏹️ Stopping voice input after command match...');
     SpeechRecognition.stopListening();
 
@@ -62,30 +63,42 @@ export function GlobalVoiceCommandHandler() {
     console.log('📡 Broadcasting voice reset to clear transcript on WMU...');
     inputBroadcast.broadcastVoiceEvent('reset', '');
 
-    // Show feedback
-    setFeedback(message);
-    console.log('✅ Feedback shown:', message);
-    
-    // Clear transcript immediately so next command starts fresh
-    console.log('🔄 Clearing transcript after successful command...');
-    setTranscript('');
-    resetTranscript();
-    lastProcessedTranscriptRef.current = ''; // Reset for next command
-    
-    // After 2 seconds: check if key is still pressed
+    // Store the action to execute after delay
+    commandActionRef.current = action;
+
+    // Wait 800ms to let user see their input, then execute command and show feedback
     feedbackTimeoutRef.current = setTimeout(() => {
-      console.log('🔄 Clearing feedback...');
-      setFeedback(null);
-      
-      // Check if user is still holding the key
-      if (isKeyPressed) {
-        console.log('🔴 Key still pressed - restarting voice recognition for next command...');
-        SpeechRecognition.startListening({ continuous: true, language: 'en-US' });
-      } else {
-        console.log('⏹️ Key released - closing panel');
-        // Panel will close automatically since no listening and no feedback
+      console.log('⚡ Executing command action...');
+      // Execute the actual command (e.g., go to next workflow)
+      if (commandActionRef.current) {
+        commandActionRef.current();
+        commandActionRef.current = null;
       }
-    }, 2000);
+
+      console.log('✅ Showing feedback:', message);
+      setFeedback(message);
+      
+      // Clear transcript after showing feedback
+      console.log('🔄 Clearing transcript after showing feedback...');
+      setTranscript('');
+      resetTranscript();
+      lastProcessedTranscriptRef.current = ''; // Reset for next command
+      
+      // After 2 more seconds: clear feedback and check if key is still pressed
+      feedbackTimeoutRef.current = setTimeout(() => {
+        console.log('🔄 Clearing feedback...');
+        setFeedback(null);
+        
+        // Check if user is still holding the key
+        if (isKeyPressed) {
+          console.log('🔴 Key still pressed - restarting voice recognition for next command...');
+          SpeechRecognition.startListening({ continuous: true, language: 'en-US' });
+        } else {
+          console.log('⏹️ Key released - closing panel');
+          // Panel will close automatically since no listening and no feedback
+        }
+      }, 2000);
+    }, 800); // 800ms delay to show the user's input before executing command and showing feedback
   };
 
   // Use the global voice handlers from context
@@ -111,6 +124,7 @@ export function GlobalVoiceCommandHandler() {
       console.log('📥 [GlobalVoiceCommandHandler] Received broadcasted transcript:', data.transcript);
       
       // Update global transcript state so FlexVision can show it
+      console.log('🔄 [GlobalVoiceCommandHandler] Setting transcript in VoiceInputState:', data.transcript);
       setTranscript(data.transcript);
       
       // Process the command
@@ -126,11 +140,11 @@ export function GlobalVoiceCommandHandler() {
       console.log('📥 [GlobalVoiceCommandHandler] Received broadcasted listening state:', data.isListening);
       
       // Update global listening state so FlexVision overlay appears
-      // Note: This is handled by VoiceInputStateContext, but we could add additional logic here if needed
+      setIsListening(data.isListening);
     });
 
     return unsubscribe;
-  }, [inputBroadcast]);
+  }, [inputBroadcast, setIsListening]);
 
   return (
     <VoiceInput 

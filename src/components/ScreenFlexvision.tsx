@@ -40,8 +40,13 @@ function ScreenFlexvisionInner() {
   const { inputSettings, setIsSettingsOpen } = useSettings();
   const { setActiveComponents, setFocusedComponent: setContextFocusedComponent } = useActiveComponents();
 
-  // Keep overlay open when showing feedback even if not listening
-  const shouldShowVoiceOverlay = isListening || !!feedback;
+  // Debug: Log transcript updates on FlexVision
+  useEffect(() => {
+    console.log('📺 [FlexVision] Transcript from VoiceInputState:', transcript);
+  }, [transcript]);
+
+  // Keep overlay open when listening, showing feedback, or when there's a transcript to display
+  const shouldShowVoiceOverlay = isListening || !!feedback || !!transcript;
 
   // Refs to track latest values for voice handlers
   const workflowSyncRef = useRef(workflowSync);
