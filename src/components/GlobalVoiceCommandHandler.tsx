@@ -16,6 +16,8 @@ export function GlobalVoiceCommandHandler() {
   const feedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastProcessedTranscriptRef = useRef<string>('');
   const commandActionRef = useRef<(() => void) | null>(null);
+  const commandSuccessfulRef = useRef<boolean>(false);
+  const lastTranscriptRef = useRef<string>('');
 
   // Determine screen ID based on current route
   const getScreenId = (): 'tsm' | 'flexvision' | 'wmu' | 'flexspots1' | 'flexspots2' => {
@@ -43,9 +45,15 @@ export function GlobalVoiceCommandHandler() {
     
     // Store the transcript we're about to process
     lastProcessedTranscriptRef.current = transcript;
+    lastTranscriptRef.current = transcript;
     
     // Process the command (will call handleFeedback if command matches)
-    processVoiceCommand(transcript);
+    const wasSuccessful = processVoiceCommand(transcript);
+    commandSuccessfulRef.current = wasSuccessful;
+    
+    if (!wasSuccessful) {
+      console.log('⚠️ Command not recognized, waiting for key release to show feedback');
+    }
   };
 
   // Feedback handler - stops listening, delays command execution and feedback
@@ -141,10 +149,32 @@ export function GlobalVoiceCommandHandler() {
       
       // Update global listening state so FlexVision overlay appears
       setIsListening(data.isListening);
+      
+      // If listening stopped and we have a transcript but no successful command, show failure feedback
+      if (!data.isListening && lastTranscriptRef.current && !commandSuccessfulRef.current) {
+        console.log('❌ Listening stopped without successful command, showing failure feedback');
+        
+        // Show failure feedback for 1.5 seconds then close
+        setFeedback('Command not recognized');
+        
+        setTimeout(() => {
+          setFeedback(null);
+          setTranscript('');
+          resetTranscript();
+          lastTranscriptRef.current = '';
+          lastProcessedTranscriptRef.current = '';
+        }, 1500);
+      }
+      
+      // Reset tracking when listening starts
+      if (data.isListening) {
+        commandSuccessfulRef.current = false;
+        lastTranscriptRef.current = '';
+      }
     });
 
     return unsubscribe;
-  }, [inputBroadcast, setIsListening]);
+  }, [inputBroadcast, setIsListening, setFeedback, setTranscript, resetTranscript]);
 
   return (
     <VoiceInput 
