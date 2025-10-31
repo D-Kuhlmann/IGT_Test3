@@ -38,8 +38,6 @@ export function VoiceInput({
   // Auto-detect if this screen has microphone based on screenId
   const screenHasMicrophone = hasMicrophone ?? (screenId === 'wmu' || screenId === 'flexspots1' || screenId === 'flexspots2');
   
-  console.log(`🎤 [VoiceInput] Screen: ${screenId}, hasMicrophone: ${screenHasMicrophone}`);
-  
   const {
     transcript,
     listening,
@@ -47,27 +45,21 @@ export function VoiceInput({
     browserSupportsSpeechRecognition
   } = useSpeechRecognition();
   
-  // Debug: Log transcript changes
-  useEffect(() => {
-    console.log(`🔍 [${screenId}] useSpeechRecognition transcript updated:`, transcript);
-  }, [transcript, screenId]);
-  
   // Check browser support and microphone permissions on mount
   useEffect(() => {
     if (screenHasMicrophone && !browserSupportsSpeechRecognition) {
-      console.error('❌ [MIC] Browser does not support Speech Recognition API');
+      // Browser does not support Speech Recognition API
     } else if (screenHasMicrophone) {
-      console.log('✅ [MIC] Browser supports Speech Recognition API');
+      // Browser supports Speech Recognition API
       
       // Check microphone permissions
       if (navigator.permissions && navigator.permissions.query) {
         navigator.permissions.query({ name: 'microphone' as PermissionName }).then((result) => {
-          console.log('🎤 [MIC] Microphone permission status:', result.state);
           if (result.state === 'denied') {
-            console.error('❌ [MIC] Microphone permission is DENIED. Please allow microphone access.');
+            // Microphone permission is DENIED
           }
         }).catch(err => {
-          console.warn('⚠️ [MIC] Could not check microphone permission:', err);
+          // Could not check microphone permission
         });
       }
     }
@@ -80,17 +72,14 @@ export function VoiceInput({
   // Only broadcast if this screen has the microphone
   useEffect(() => {
     if (screenHasMicrophone && transcript) {
-      console.log(`📡 [${screenId}] Broadcasting NON-EMPTY transcript: "${transcript}"`);
       inputBroadcast.broadcastTranscript(transcript, true);
     } else if (screenHasMicrophone && !transcript) {
-      console.log(`📡 [${screenId}] Transcript is empty, not broadcasting`);
     }
   }, [transcript, inputBroadcast, screenHasMicrophone, screenId]);
 
   // Call onTranscript callback whenever transcript changes (but only once per unique transcript)
   useEffect(() => {
     if (transcript && onTranscript && transcript !== lastSentTranscriptRef.current) {
-      console.log('🎤 Voice Input:', transcript);
       lastSentTranscriptRef.current = transcript;
       onTranscript(transcript);
     }
@@ -113,9 +102,7 @@ export function VoiceInput({
       voiceState.setIsListening(listening);
       
       if (listening) {
-        console.log(`✅ [${screenId}] Listening state: FALSE → TRUE (Started listening)`);
       } else {
-        console.log(`⚠️ [${screenId}] Listening state: TRUE → FALSE (Stopped listening${wasListening ? ' - WHY?' : ''})`);
       }
       
       // Only broadcast if this screen has the microphone
@@ -131,9 +118,7 @@ export function VoiceInput({
     if (screenHasMicrophone) {
       voiceState.setTranscript(transcript);
       if (transcript) {
-        console.log(`🎤 [${screenId}] 📝 Transcript changed to: "${transcript}"`);
       } else {
-        console.log(`🎤 [${screenId}] 📝 Transcript cleared`);
       }
     }
   }, [transcript, voiceState, screenId, screenHasMicrophone]);
@@ -143,12 +128,8 @@ export function VoiceInput({
 
   // Push-to-talk keyboard control for voice input
   useEffect(() => {
-    console.log(`🔄 [${screenId.toUpperCase()}] VoiceInput useEffect running...`);
-    console.log(`🔄 [${screenId.toUpperCase()}] voiceInputEnabled: ${inputSettings.voiceInputEnabled}`);
-    console.log(`🔄 [${screenId.toUpperCase()}] screenHasMicrophone: ${screenHasMicrophone}`);
     
     if (!inputSettings.voiceInputEnabled) {
-      console.log('⚠️ Voice input is DISABLED in settings');
       return;
     }
 
@@ -157,7 +138,6 @@ export function VoiceInput({
       const handleKeyDown = (e: KeyboardEvent) => {
         if (matchesInput(e, inputSettings.voiceInputToggle)) {
           e.preventDefault();
-          console.log('📡 [TSM] Broadcasting voice keydown...');
           inputBroadcast.broadcastVoiceEvent('keydown', e.code);
           voiceState.setIsKeyPressed(true);
         }
@@ -166,7 +146,6 @@ export function VoiceInput({
       const handleKeyUp = (e: KeyboardEvent) => {
         if (matchesInput(e, inputSettings.voiceInputToggle)) {
           e.preventDefault();
-          console.log('📡 [TSM] Broadcasting voice keyup...');
           inputBroadcast.broadcastVoiceEvent('keyup', e.code);
           voiceState.setIsKeyPressed(false);
         }
@@ -180,24 +159,16 @@ export function VoiceInput({
       };
     } else if (screenHasMicrophone) {
       // WMU/FlexSpots: Has microphone - listen for TSM broadcasts and start voice recognition
-      console.log(`🎤 [${screenId.toUpperCase()}] This screen has the microphone - will listen for TSM broadcasts`);
-      console.log(`🎤 [${screenId.toUpperCase()}] Subscribing to voice events...`);
       
       const unsubscribe = inputBroadcast.onVoiceEvent((data) => {
-        console.log(`📥 [${screenId.toUpperCase()}] Received voice event:`, data);
         if (data.eventType === 'keydown') {
           // Only start if not already listening (prevents repeat keydown events)
           if (!listeningRef.current) {
-            console.log('📥 [MIC] Received voice keydown from TSM - starting recognition...');
             voiceState.setIsKeyPressed(true);
-            console.log('🔴 [MIC] Starting voice recognition (broadcast from TSM)...');
             
             // Check if window has focus
             if (document.hasFocus()) {
-              console.log('✅ [MIC] Window has focus - can use microphone');
             } else {
-              console.warn('⚠️ [MIC] Window does NOT have focus - Speech Recognition may not work!');
-              console.warn('💡 [MIC] User should click on this window or we need to request focus');
               // Try to focus the window (may not work due to browser restrictions)
               window.focus();
             }
@@ -207,18 +178,13 @@ export function VoiceInput({
               
               // Reset transcript at the START of a new voice session
               resetTranscript();
-              console.log('🔄 [MIC] Transcript reset for new voice session');
               
               // Start listening first, then add debug listeners without overwriting library's handlers
               SpeechRecognition.startListening({ continuous, language });
-              console.log('✅ [MIC] SpeechRecognition.startListening() called');
-              console.log(`🎤 [MIC] Continuous: ${continuous}, Language: ${language}`);
-              console.log('🎤 [MIC] Waiting for speech input...');
               
               // Add debug listeners AFTER starting (don't overwrite existing handlers)
               const recognition = (SpeechRecognition as any).getRecognition?.();
               if (recognition) {
-                console.log('🔍 [MIC] Got native recognition instance - adding debug listeners');
                 
                 // Save existing handlers
                 const originalOnStart = recognition.onstart;
@@ -228,43 +194,33 @@ export function VoiceInput({
                 
                 // Add our debug logging WITHOUT overwriting
                 recognition.addEventListener('start', () => {
-                  console.log('🎙️ [NATIVE] Speech Recognition STARTED');
                 });
                 
                 recognition.addEventListener('end', () => {
-                  console.log('🔴 [NATIVE] Speech Recognition ENDED');
                   listeningRef.current = false;
                 });
                 
                 recognition.addEventListener('error', (event: any) => {
-                  console.error('❌ [NATIVE] Speech Recognition ERROR:', event.error, event);
                   if (event.error === 'not-allowed') {
-                    console.error('🚫 [MIC] Microphone access denied! Check permissions.');
                   } else if (event.error === 'no-speech') {
-                    console.warn('🔇 [MIC] No speech detected');
                   }
                   listeningRef.current = false;
                 });
                 
                 recognition.addEventListener('result', (event: any) => {
-                  console.log('✅ [NATIVE] Speech Recognition RESULT:', event);
                   const last = event.results.length - 1;
                   const text = event.results[last][0].transcript;
-                  console.log('📝 [NATIVE] Transcript:', text);
                 });
               }
               
               onStart?.();
             } catch (error) {
-              console.error('❌ [MIC] Error starting SpeechRecognition:', error);
               listeningRef.current = false;
             }
           } else {
-            console.log('📥 [MIC] Received voice keydown from TSM - already listening, ignoring');
           }
         } else if (data.eventType === 'reset') {
           // Reset command - stop and restart recognition to clear transcript
-          console.log('📥 [MIC] Received RESET from command success - restarting with clean transcript');
           if (listeningRef.current) {
             // Stop current session
             SpeechRecognition.stopListening();
@@ -273,17 +229,14 @@ export function VoiceInput({
             
             // Restart immediately if key is still pressed
             if (voiceState.isKeyPressed) {
-              console.log('🔄 [MIC] Key still pressed - restarting recognition with clean slate...');
               setTimeout(() => {
                 listeningRef.current = true;
                 resetTranscript();
                 SpeechRecognition.startListening({ continuous, language });
-                console.log('✅ [MIC] Recognition restarted - ready for next command');
               }, 100); // Small delay to ensure stop completes
             }
           }
         } else if (data.eventType === 'keyup') {
-          console.log('📥 [MIC] Received voice keyup from TSM');
           voiceState.setIsKeyPressed(false);
           
           // Check feedback using the global state
@@ -291,21 +244,17 @@ export function VoiceInput({
           
           // Only stop on release if no feedback is being shown
           if (listeningRef.current && !hasFeedback) {
-            console.log('⏹️ [MIC] Stopping voice recognition (broadcast from TSM)...');
             listeningRef.current = false;
             SpeechRecognition.stopListening();
             onStop?.();
           } else if (hasFeedback) {
-            console.log('⏸️ [MIC] Feedback active - waiting for feedback to clear');
           }
         }
       });
 
-      console.log(`✅ [${screenId.toUpperCase()}] Successfully subscribed to voice events`);
       return unsubscribe;
     } else {
       // FlexVision: No microphone - just listen for broadcasts (don't start voice recognition)
-      console.log(`📺 [${screenId.toUpperCase()}] This screen has no microphone - will only listen for transcript broadcasts`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screenId, screenHasMicrophone, inputSettings.voiceInputToggle, inputSettings.voiceInputEnabled, inputBroadcast]);
@@ -313,11 +262,9 @@ export function VoiceInput({
   // Toggle voice recognition on/off
   const handleVoiceToggle = () => {
     if (listening) {
-      console.log('⏹️ Stopping voice recognition...');
       SpeechRecognition.stopListening();
       onStop?.();
     } else {
-      console.log('🔴 Starting voice recognition...');
       resetTranscript();
       SpeechRecognition.startListening({ continuous, language });
       onStart?.();

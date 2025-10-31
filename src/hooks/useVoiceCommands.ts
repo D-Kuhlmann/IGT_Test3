@@ -54,7 +54,6 @@ export function useVoiceCommands({
   // Process voice input and execute matching commands
   const processVoiceCommand = useCallback((transcript: string): boolean => {
     const text = transcript.toLowerCase().trim();
-    console.log('🔍 Processing voice command:', text);
 
     // Helper function to check if command should be executed
     const shouldExecuteCommand = (commandName: string): boolean => {
@@ -65,7 +64,6 @@ export function useVoiceCommands({
         
         // If it's the same command within cooldown period, skip it
         if (command === commandName && timeSinceLastCommand < COMMAND_COOLDOWN_MS) {
-          console.log(`⏭️ Skipping duplicate command "${commandName}" (cooldown: ${timeSinceLastCommand}ms / ${COMMAND_COOLDOWN_MS}ms)`);
           return false;
         }
       }
@@ -83,7 +81,6 @@ export function useVoiceCommands({
       text.includes('continue workflow')
     )) {
       if (shouldExecuteCommand('next-workflow')) {
-        console.log('✅ Command: Next Workflow');
         onFeedback?.('Next step initiated', () => onNextWorkflow());
         return true;
       }
@@ -97,7 +94,6 @@ export function useVoiceCommands({
       text.includes('back to previous')
     )) {
       if (shouldExecuteCommand('previous-workflow')) {
-        console.log('✅ Command: Previous Workflow');
         onFeedback?.('Previous step initiated', () => onPreviousWorkflow());
         return true;
       }
@@ -111,7 +107,6 @@ export function useVoiceCommands({
       text.includes('start over')
     )) {
       if (shouldExecuteCommand('restart-wizard')) {
-        console.log('✅ Command: Restart Wizard');
         onFeedback?.('Wizard restarted', () => onRestartWizard());
         return true;
       }
@@ -125,7 +120,6 @@ export function useVoiceCommands({
       text.includes('display workflows')
     )) {
       if (shouldExecuteCommand('show-workflows')) {
-        console.log('✅ Command: Show Workflows');
         onFeedback?.('Workflows opened', () => onShowWorkflows());
         return true;
       }
@@ -137,7 +131,6 @@ export function useVoiceCommands({
       text.includes('close workflows')
     )) {
       if (shouldExecuteCommand('hide-workflows')) {
-        console.log('✅ Command: Hide Workflows');
         onFeedback?.('Workflows closed', () => onHideWorkflows());
         return true;
       }
@@ -151,7 +144,6 @@ export function useVoiceCommands({
       text.includes('display presets')
     )) {
       if (shouldExecuteCommand('show-presets')) {
-        console.log('✅ Command: Show Presets');
         onFeedback?.('Presets opened', () => onShowPresets());
         return true;
       }
@@ -163,7 +155,6 @@ export function useVoiceCommands({
       text.includes('close presets')
     )) {
       if (shouldExecuteCommand('hide-presets')) {
-        console.log('✅ Command: Hide Presets');
         onFeedback?.('Presets closed', () => onHidePresets());
         return true;
       }
@@ -178,7 +169,6 @@ export function useVoiceCommands({
       text.includes('disable focus')
     )) {
       if (shouldExecuteCommand('toggle-focus-mode')) {
-        console.log('✅ Command: Toggle Focus Mode');
         onFeedback?.('Focus mode toggled', () => onToggleFocusMode());
         return true;
       }
@@ -192,7 +182,6 @@ export function useVoiceCommands({
       text.includes('settings menu')
     )) {
       if (shouldExecuteCommand('open-settings')) {
-        console.log('✅ Command: Open Settings');
         onFeedback?.('Settings opened', () => onOpenSettings());
         return true;
       }
@@ -205,7 +194,6 @@ export function useVoiceCommands({
       text.includes('exit settings')
     )) {
       if (shouldExecuteCommand('close-settings')) {
-        console.log('✅ Command: Close Settings');
         onFeedback?.('Settings closed', () => onCloseSettings());
         return true;
       }
@@ -219,7 +207,6 @@ export function useVoiceCommands({
       text.includes('first preset')
     )) {
       if (shouldExecuteCommand('preset-1')) {
-        console.log('✅ Command: Preset 1');
         onFeedback?.('Preset 1 activated', () => onPreset1());
         return true;
       }
@@ -232,14 +219,12 @@ export function useVoiceCommands({
       text.includes('second preset')
     )) {
       if (shouldExecuteCommand('preset-2')) {
-        console.log('✅ Command: Preset 2');
         onFeedback?.('Preset 2 activated', () => onPreset2());
         return true;
       }
       return true;
     }
 
-    console.log('❌ No matching command found for:', text);
     return false;
   }, [
     onNextWorkflow,

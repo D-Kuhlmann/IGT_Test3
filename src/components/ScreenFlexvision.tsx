@@ -40,9 +40,38 @@ function ScreenFlexvisionInner() {
   const { inputSettings, setIsSettingsOpen } = useSettings();
   const { setActiveComponents, setFocusedComponent: setContextFocusedComponent } = useActiveComponents();
 
+  // Workflow steps mapping for header display
+  const workflowStepsPreset1: WorkflowStep[] = [
+    { id: "review", label: "Review", category: "Review" },
+    { id: "ultrasound", label: "Access", category: "Access" },
+    { id: "ccta-planning", label: "Baseline DSA", category: "Planning" },
+    { id: "ivus-acquisition", label: "IVUS Acquisition", category: "Treatment" },
+    { id: "start", label: "Confirm DSA", category: "Planning" },
+    { id: "finalise", label: "Finalise", category: "Treatment" },
+  ];
+
+  const workflowStepsPreset2: WorkflowStep[] = [
+    { id: "start", label: "Start", category: "Start" },
+    { id: "access", label: "Access", category: "Access" },
+    { id: "3d-scan", label: "3D Scan", category: "3D Scan" },
+    { id: "planning", label: "Planning", category: "Planning" },
+    { id: "treatment", label: "Treatment", category: "Treatment" },
+  ];
+
+  // Get current workflow step label for header
+  const getCurrentWorkflowStepLabel = (): string | undefined => {
+    const stepId = workflowSync.workflowStepId;
+    if (!stepId) return undefined;
+    
+    const steps = activePreset === 1 ? workflowStepsPreset1 : workflowStepsPreset2;
+    const step = steps.find(s => s.id === stepId);
+    return step?.label;
+  };
+
+  const currentWorkflowStepLabel = getCurrentWorkflowStepLabel();
+
   // Debug: Log transcript updates on FlexVision
   useEffect(() => {
-    console.log('📺 [FlexVision] Transcript from VoiceInputState:', transcript);
   }, [transcript]);
 
   // Keep overlay open when listening, showing feedback, or when there's a transcript to display
@@ -199,14 +228,11 @@ function ScreenFlexvisionInner() {
   // Get current step layout or default to preset-based layout
   const getCurrentLayout = (): StepLayout => {
     const currentWorkflowStep = workflowSync.workflowStepId;
-    console.log(`[getCurrentLayout] Current workflow step: "${currentWorkflowStep}", has layout: ${currentWorkflowStep ? !!stepLayouts[currentWorkflowStep] : false}`);
     
     if (currentWorkflowStep && stepLayouts[currentWorkflowStep]) {
-      console.log(`[getCurrentLayout] Using step layout for: "${currentWorkflowStep}"`);
       return stepLayouts[currentWorkflowStep];
     }
     
-    console.log(`[getCurrentLayout] Using default preset ${activePreset} layout (no workflow step)`);
     // Default layouts when no workflow step is active
     return activePreset === 1 
       ? {
@@ -267,7 +293,6 @@ function ScreenFlexvisionInner() {
   useEffect(() => {
     if (workflowSync.activePreset && workflowSync.activePreset !== activePreset) {
       setActivePreset(workflowSync.activePreset);
-      console.log(`[FlexVision] Synced preset from WorkflowSync: ${workflowSync.activePreset}`);
     }
   }, [workflowSync.activePreset]);
 
@@ -280,7 +305,6 @@ function ScreenFlexvisionInner() {
     const currentStep = workflowSync.workflowStepId;
     const currentPreset = activePreset;
     
-    console.log(`[FlexVision] Workflow state check - step: "${currentStep}", preset: ${currentPreset}, prevStep: "${prevWorkflowStepRef.current}", prevPreset: ${prevPresetRef.current}, isInitial: ${isInitialMountRef.current}`);
     
     // Skip initial mount
     if (isInitialMountRef.current) {
@@ -294,14 +318,12 @@ function ScreenFlexvisionInner() {
     const presetChanged = prevPresetRef.current !== currentPreset;
     
     if (stepChanged || presetChanged) {
-      console.log(`[FlexVision] 🔄 RESETTING SmartNavigator - step: "${prevWorkflowStepRef.current}" → "${currentStep}", preset: ${prevPresetRef.current} → ${currentPreset}`);
       
       // Reset SmartNavigator step in WorkflowSync to 1
       workflowSync.setWorkflowStep(1, undefined, 'smart-navigator', true, false);
       
       setSmartNavResetKey(prev => {
         const newKey = prev + 1;
-        console.log(`[FlexVision] Reset key: ${prev} → ${newKey}`);
         return newKey;
       });
     }
@@ -332,7 +354,6 @@ function ScreenFlexvisionInner() {
     setShowPresets(false);
     // Broadcast preset change to all screens
     workflowSync.setWorkflowStepId(workflowSync.workflowStepId || '', preset);
-    console.log(`Preset ${preset} selected: ${preset === 1 ? 'Cardio' : 'Neuro'}`);
   };
 
   const handleStepSelect = (step: WorkflowStep) => {
@@ -346,23 +367,13 @@ function ScreenFlexvisionInner() {
     const currentWorkflowSync = workflowSyncRef.current;
     const currentPreset = activePresetRef.current;
     
-    console.log('[handleNextWorkflowVoice] Current workflowSync state:', {
-      workflowStepId: currentWorkflowSync.workflowStepId,
-      currentStep: currentWorkflowSync.currentStep,
-      activePreset: currentPreset,
-      workflowId: currentWorkflowSync.workflowId
-    });
-    
     if (!currentWorkflowSync.workflowStepId) {
-      console.log('⚠️ No current workflow step');
       return;
     }
     const nextStep = getNextWorkflow(currentWorkflowSync.workflowStepId);
     if (nextStep) {
-      console.log('▶️ Going to next workflow:', nextStep.id);
       currentWorkflowSync.setWorkflowStepId(nextStep.id, currentPreset);
     } else {
-      console.log('⚠️ No next workflow available');
     }
   }, []); // Empty deps - will always use current values via refs
 
@@ -371,35 +382,28 @@ function ScreenFlexvisionInner() {
     const currentPreset = activePresetRef.current;
     
     if (!currentWorkflowSync.workflowStepId) {
-      console.log('⚠️ No current workflow step');
       return;
     }
     const previousStep = getPreviousWorkflow(currentWorkflowSync.workflowStepId);
     if (previousStep) {
-      console.log('◀️ Going to previous workflow:', previousStep.id);
       currentWorkflowSync.setWorkflowStepId(previousStep.id, currentPreset);
     } else {
-      console.log('⚠️ No previous workflow available');
     }
   }, []); // Empty deps - will always use current values via refs
 
   const handleRestartWizardVoice = useCallback(() => {
-    console.log('🔄 Restarting Smart Navigator wizard');
     setSmartNavResetKey(prev => prev + 1);
   }, []);
 
   const handleToggleFocusModeVoice = useCallback(() => {
-    console.log('🎯 Toggling focus mode');
     setFocusMode(prev => !prev);
   }, []);
 
   const handlePreset1Voice = useCallback(() => {
-    console.log('1️⃣ Switching to Preset 1 (Cardio)');
     handlePresetSelect(1);
   }, []); // Empty deps - will always use current values via closure
 
   const handlePreset2Voice = useCallback(() => {
-    console.log('2️⃣ Switching to Preset 2 (Neuro)');
     handlePresetSelect(2);
   }, []); // Empty deps - will always use current values via closure
 
@@ -496,15 +500,12 @@ function ScreenFlexvisionInner() {
         // Enter IW sub-focus mode for saved angles
         setIwSubFocus('angles');
         setSelectedAngleIndex(0);
-        console.log('Entering IW angles focus mode');
       } else {
-        console.log(`Activating ${focusedComponent} component`);
         // TODO: Add specific activation logic for other components
       }
     } else if (focusMode && iwSubFocus === 'angles') {
       // Select the currently focused angle
       const angleId = String(selectedAngleIndex + 1); // Convert index to angle ID (1-4)
-      console.log(`Selecting angle ${angleId} via Enter key`);
       // Trigger angle selection - this should activate the angle and switch to TSM
       handleAngleSelection(angleId);
     }
@@ -520,11 +521,9 @@ function ScreenFlexvisionInner() {
     
     const angleImage = angleImages[angleId as keyof typeof angleImages];
     if (angleImage) {
-      console.log('✅ FlexVision - Angle selected:', angleId, 'Image:', angleImage);
       setSelectedAngle(angleId as any);
       activateUniGuide();
     } else {
-      console.log('❌ FlexVision - No image found for angleId:', angleId);
     }
   };
 
@@ -546,7 +545,6 @@ function ScreenFlexvisionInner() {
   // Listen for broadcasted input events from TSM
   useEffect(() => {
     const unsubscribeKeyboard = inputBroadcast.onKeyboardEvent((data) => {
-      console.log('[FlexVision] Received broadcasted keyboard event:', data.key);
       
       // Create a synthetic KeyboardEvent to pass to existing handlers
       const syntheticEvent = new KeyboardEvent('keydown', {
@@ -565,22 +563,18 @@ function ScreenFlexvisionInner() {
       // Dispatch to both document and window to ensure all listeners receive it
       document.dispatchEvent(syntheticEvent);
       window.dispatchEvent(syntheticEvent);
-      console.log('[FlexVision] Dispatched synthetic keyboard event globally');
       
       // Also check for specific actions at the screen level
       if (matchesInput(syntheticEvent, inputSettings.smartWorkflows)) {
-        console.log('[FlexVision] Smart workflows triggered via broadcast');
         handleShowWorkflows();
       }
       
       if (matchesInput(syntheticEvent, inputSettings.quickSettings)) {
-        console.log('[FlexVision] Quick settings triggered via broadcast');
         setIsSettingsOpen(true);
       }
     });
 
     const unsubscribeWheel = inputBroadcast.onWheelEvent((data) => {
-      console.log('[FlexVision] Received broadcasted wheel event:', data.deltaY);
       
       // Create a synthetic WheelEvent
       const syntheticEvent = new WheelEvent('wheel', {
@@ -599,18 +593,14 @@ function ScreenFlexvisionInner() {
       // Dispatch the synthetic event globally
       document.dispatchEvent(syntheticEvent);
       window.dispatchEvent(syntheticEvent);
-      console.log('[FlexVision] Dispatched synthetic wheel event globally');
       
       // Also check for specific actions at the screen level
       if (matchesInput(syntheticEvent, inputSettings.workflowStepLeft)) {
-        console.log('[FlexVision] Workflow step left via broadcast');
       } else if (matchesInput(syntheticEvent, inputSettings.workflowStepRight)) {
-        console.log('[FlexVision] Workflow step right via broadcast');
       }
     });
 
     const unsubscribeMouse = inputBroadcast.onMouseEvent((data) => {
-      console.log('[FlexVision] Received broadcasted mouse event:', data.eventType);
       
       // Create a synthetic MouseEvent
       const syntheticEvent = new MouseEvent(data.eventType, {
@@ -629,7 +619,6 @@ function ScreenFlexvisionInner() {
       // Dispatch the synthetic event globally
       document.dispatchEvent(syntheticEvent);
       window.dispatchEvent(syntheticEvent);
-      console.log('[FlexVision] Dispatched synthetic mouse event globally');
     });
 
     return () => {
@@ -739,12 +728,10 @@ function ScreenFlexvisionInner() {
         case '1':
           event.preventDefault();
           setActivePreset(1);
-          console.log('Switched to Preset 1: XrayLive + InterventionalWorkspace + Hemo');
           break;
         case '2':
           event.preventDefault();
           setActivePreset(2);
-          console.log('Switched to Preset 2: Hemo + Placeholder + SmartNavigator');
           break;
       }
     };
@@ -800,7 +787,6 @@ function ScreenFlexvisionInner() {
       handleShowWorkflows();
     },
     toggleAutomation: () => {
-      console.log('Toggle automation triggered');
     },
     quickSettings: () => {
       setIsSettingsOpen(true);
@@ -816,6 +802,7 @@ function ScreenFlexvisionInner() {
           onShowPresets={handleShowPresets}
           isWorkflowsVisible={showWorkflows}
           focusMode={focusMode}
+          currentWorkflowStep={currentWorkflowStepLabel}
         />
       </div>
 
@@ -1064,7 +1051,6 @@ function ScreenFlexvisionInner() {
                       if (position) {
                         sizeDef = fallbackDef;
                         finalSize = fallbackSize;
-                        console.log(`SmartNavigator placed as ${finalSize} (${sizeDef.width}x${sizeDef.height}) at position ${position.col+1},${position.row+1}`);
                         break;
                       }
                     }
@@ -1097,16 +1083,6 @@ function ScreenFlexvisionInner() {
                     variant: (adjustedSize === 'xlarge' || adjustedSize === 'medium') ? 
                       (sizeDef.width > sizeDef.height ? 'horizontal' : 'vertical') : null
                   };
-                  
-                  // Debug logging for SmartNavigator
-                  if (component.component === 'smartNavigator') {
-                    console.log(`✅ SmartNavigator placed successfully:`, {
-                      position: `${position.col + 1},${position.row + 1}`,
-                      size: `${sizeDef.width}x${sizeDef.height}`,
-                      finalSize,
-                      gridClasses: `col-start-${position.col + 1} row-start-${position.row + 1} col-span-${sizeDef.width} row-span-${sizeDef.height}`
-                    });
-                  }
                 } else {
                   // Emergency fallback - place in first available cell
                   placements[index] = {

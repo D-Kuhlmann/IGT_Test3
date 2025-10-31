@@ -137,9 +137,7 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
         }
       };
 
-      console.log(`[InputBroadcast] ${screenId} initialized ${isMaster ? '(MASTER)' : '(SLAVE)'}`);
     } else {
-      console.warn('[InputBroadcast] BroadcastChannel API not supported');
     }
 
     return () => {
@@ -197,7 +195,6 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
     };
 
     channelRef.current.postMessage(inputEvent);
-    console.log('[InputBroadcast] Broadcasted mouse event:', data.eventType);
   }, [screenId, isMaster]);
 
   // Broadcast wheel event
@@ -223,7 +220,6 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
     };
 
     channelRef.current.postMessage(inputEvent);
-    console.log('[InputBroadcast] Broadcasted wheel event:', data.deltaY);
   }, [screenId, isMaster]);
 
   // Register keyboard event handler
@@ -267,7 +263,6 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
     };
 
     channelRef.current.postMessage(inputEvent);
-    console.log(`[InputBroadcast] Broadcasted voice event: ${eventType} ${key}`);
   }, [screenId]);
 
   // Register voice event handler
@@ -295,7 +290,6 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
     };
 
     channelRef.current.postMessage(inputEvent);
-    console.log(`[InputBroadcast] Broadcasted transcript (${isFinal ? 'FINAL' : 'interim'}): "${transcript}"`);
   }, [screenId]);
 
   // Register transcript handler
@@ -322,7 +316,6 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
     };
 
     channelRef.current.postMessage(inputEvent);
-    console.log(`[InputBroadcast] Broadcasted listening state: ${isListening}`);
   }, [screenId]);
 
   // Register listening state handler
@@ -364,7 +357,6 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
     document.addEventListener('dblclick', handleDblClick, true);
     document.addEventListener('wheel', handleWheel, { passive: true, capture: true });
 
-    console.log('[InputBroadcast] Master event listeners attached');
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown, true);

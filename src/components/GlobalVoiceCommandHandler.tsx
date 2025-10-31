@@ -39,7 +39,6 @@ export function GlobalVoiceCommandHandler() {
     
     // Ignore if we already processed this exact transcript
     if (transcript === lastProcessedTranscriptRef.current) {
-      console.log('⏭️ Skipping duplicate transcript:', transcript);
       return;
     }
     
@@ -52,7 +51,6 @@ export function GlobalVoiceCommandHandler() {
     commandSuccessfulRef.current = wasSuccessful;
     
     if (!wasSuccessful) {
-      console.log('⚠️ Command not recognized, waiting for key release to show feedback');
     }
   };
 
@@ -64,11 +62,9 @@ export function GlobalVoiceCommandHandler() {
     }
 
     // Stop listening but keep the panel visible with the transcript
-    console.log('⏹️ Stopping voice input after command match...');
     SpeechRecognition.stopListening();
 
     // Broadcast reset event to WMU to restart recognition with clean transcript
-    console.log('📡 Broadcasting voice reset to clear transcript on WMU...');
     inputBroadcast.broadcastVoiceEvent('reset', '');
 
     // Store the action to execute after delay
@@ -76,36 +72,30 @@ export function GlobalVoiceCommandHandler() {
 
     // Wait 800ms to let user see their input, then execute command and show feedback
     feedbackTimeoutRef.current = setTimeout(() => {
-      console.log('⚡ Executing command action...');
       // Execute the actual command (e.g., go to next workflow)
       if (commandActionRef.current) {
         commandActionRef.current();
         commandActionRef.current = null;
       }
 
-      console.log('✅ Showing feedback:', message);
       setFeedback(message);
       
       // Clear transcript after showing feedback
-      console.log('🔄 Clearing transcript after showing feedback...');
       setTranscript('');
       resetTranscript();
       lastProcessedTranscriptRef.current = ''; // Reset for next command
       
-      // After 2 more seconds: clear feedback and check if key is still pressed
+      // After 3 more seconds: clear feedback and check if key is still pressed
       feedbackTimeoutRef.current = setTimeout(() => {
-        console.log('🔄 Clearing feedback...');
         setFeedback(null);
         
         // Check if user is still holding the key
         if (isKeyPressed) {
-          console.log('🔴 Key still pressed - restarting voice recognition for next command...');
           SpeechRecognition.startListening({ continuous: true, language: 'en-US' });
         } else {
-          console.log('⏹️ Key released - closing panel');
           // Panel will close automatically since no listening and no feedback
         }
-      }, 2000);
+      }, 3000);
     }, 800); // 800ms delay to show the user's input before executing command and showing feedback
   };
 
@@ -129,10 +119,8 @@ export function GlobalVoiceCommandHandler() {
   // Listen for broadcasted transcripts from other screens (e.g., screen with microphone)
   useEffect(() => {
     const unsubscribe = inputBroadcast.onTranscript((data) => {
-      console.log('📥 [GlobalVoiceCommandHandler] Received broadcasted transcript:', data.transcript);
       
       // Update global transcript state so FlexVision can show it
-      console.log('🔄 [GlobalVoiceCommandHandler] Setting transcript in VoiceInputState:', data.transcript);
       setTranscript(data.transcript);
       
       // Process the command
@@ -145,16 +133,14 @@ export function GlobalVoiceCommandHandler() {
   // Listen for broadcasted listening state from other screens
   useEffect(() => {
     const unsubscribe = inputBroadcast.onListeningState((data) => {
-      console.log('📥 [GlobalVoiceCommandHandler] Received broadcasted listening state:', data.isListening);
       
       // Update global listening state so FlexVision overlay appears
       setIsListening(data.isListening);
       
       // If listening stopped and we have a transcript but no successful command, show failure feedback
       if (!data.isListening && lastTranscriptRef.current && !commandSuccessfulRef.current) {
-        console.log('❌ Listening stopped without successful command, showing failure feedback');
         
-        // Show failure feedback for 1.5 seconds then close
+        // Show failure feedback for 3 seconds then close
         setFeedback('Command not recognized');
         
         setTimeout(() => {
@@ -163,7 +149,7 @@ export function GlobalVoiceCommandHandler() {
           resetTranscript();
           lastTranscriptRef.current = '';
           lastProcessedTranscriptRef.current = '';
-        }, 1500);
+        }, 3000);
       }
       
       // Reset tracking when listening starts

@@ -61,9 +61,7 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
         }
         setWizardVisible(state.wizardVisible);
         setWizardCompleted(state.wizardCompleted);
-        console.log(`[WorkflowSync] ${screenId} loaded state:`, state);
       } catch (error) {
-        console.warn('[WorkflowSync] Failed to parse stored state:', error);
       }
     }
 
@@ -73,7 +71,6 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
 
       channelRef.current.onmessage = (event: MessageEvent<WorkflowState>) => {
         const state = event.data;
-        console.log(`[WorkflowSync] ${screenId} received state:`, state);
         
         // Update local state
         setCurrentStep(state.currentStep);
@@ -90,7 +87,6 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       };
 
-      console.log(`[WorkflowSync] ${screenId} initialized`);
     }
 
     return () => {
@@ -126,7 +122,6 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     // Broadcast to other screens
     if (channelRef.current) {
       channelRef.current.postMessage(state);
-      console.log(`[WorkflowSync] ${screenId} broadcasted state:`, state);
     }
   }, [screenId, workflowStepId, activePreset, wizardVisible, wizardCompleted]);
 
@@ -153,7 +148,6 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     // Broadcast to other screens
     if (channelRef.current) {
       channelRef.current.postMessage(state);
-      console.log(`[WorkflowSync] ${screenId} broadcasted workflow step:`, stepId);
     }
   }, [screenId, currentStep, currentSubStep, workflowId, activePreset]);
 
@@ -180,7 +174,6 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     // Broadcast to other screens
     if (channelRef.current) {
       channelRef.current.postMessage(state);
-      console.log(`[WorkflowSync] ${screenId} broadcasted wizard state:`, { visible, completed });
     }
   }, [screenId, currentStep, currentSubStep, workflowId, workflowStepId, activePreset]);
 

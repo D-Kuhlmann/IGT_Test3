@@ -157,7 +157,6 @@ export function SmartWorkflowsOverlay({
 }: SmartWorkflowsOverlayProps) {
   // Debug: Log voiceTranscript prop
   useEffect(() => {
-    console.log('🎭 [SmartWorkflowsOverlay] voiceTranscript prop:', voiceTranscript);
   }, [voiceTranscript]);
 
   // Add CSS animations for slide effect
@@ -181,6 +180,26 @@ export function SmartWorkflowsOverlay({
       to {
         transform: translateY(-100%);
         opacity: 0;
+      }
+    }
+    
+    @keyframes progressBar {
+      from {
+        width: 0%;
+      }
+      to {
+        width: 100%;
+      }
+    }
+    
+    @keyframes micBorderPulse {
+      0%, 100% {
+        border-color: rgba(59, 130, 246, 0.6);
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+      }
+      50% {
+        border-color: rgba(59, 130, 246, 1);
+        box-shadow: 0 0 8px 2px rgba(59, 130, 246, 0.5);
       }
     }
   `;
@@ -321,7 +340,6 @@ export function SmartWorkflowsOverlay({
     if (!isVisible) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      console.log(settings.inputSettings);
       switch (event.key) {
         case settings.inputSettings.workflowStepLeft.toString():
           event.preventDefault();
@@ -445,139 +463,192 @@ export function SmartWorkflowsOverlay({
                 <div className="flex flex-row items-center justify-center relative w-full h-full">
                   <div className="box-border content-stretch flex gap-[25px] items-center justify-center px-[25px] py-0 relative w-full h-full">
                     
-                    {/* Stars Icon */}
-                    <div className="h-[50px] relative shrink-0 w-[56.571px]">
-                      <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 57 50">
-                        <g id="Knob-Stars">
-                          <path d="M36.6045 11.1777C36.6045 11.1777 42.6021 11.9393 43.6626 12.2595C44.3577 12.4606 45.0528 12.9801 45.3809 14.142C45.6732 15.3039 46.3683 21.875 46.3683 21.875L46.8068 21.875C46.8068 21.875 47.5019 15.3039 47.7942 14.142C48.0015 13.2129 48.6643 12.4867 49.5124 12.2595C50.5729 11.9393 56.5706 11.1777 56.5706 11.1777L56.5706 10.6973C56.5706 10.6973 50.5729 9.93573 49.5124 9.61547C48.6711 9.3734 48.0151 8.6528 47.7942 7.73296C47.5019 6.57107 46.8068 7.67259e-08 46.8068 7.67259e-08L46.3683 7.34284e-08C46.3683 7.34284e-08 45.6732 6.57107 45.3809 7.73296C45.1735 8.66211 44.5107 9.3883 43.6626 9.61547C42.6021 9.93573 36.6045 10.6973 36.6045 10.6973L36.6045 11.1777Z" fill="var(--fill-0, white)" />
-                          <path d="M-1.38464e-07 31.6627C-1.38464e-07 31.6627 12.9949 32.9682 15.2927 33.5172C16.7987 33.862 18.3048 34.7526 19.0155 36.7444C19.6488 38.7362 21.1549 50.0009 21.1549 50.0009L22.1049 50.0009C22.1049 50.0009 23.611 38.7362 24.2444 36.7444C24.6936 35.1516 26.1297 33.9067 27.9672 33.5172C30.265 32.9682 43.2598 31.6627 43.2598 31.6627L43.2598 30.8391C43.2598 30.8391 30.265 29.5336 27.9672 28.9845C26.1444 28.5696 24.7231 27.3343 24.2444 25.7574C23.611 23.7656 22.1049 12.5009 22.1049 12.5009L21.1549 12.5009C21.1549 12.5009 19.6488 23.7656 19.0155 25.7574C18.5662 27.3502 17.1301 28.5951 15.2927 28.9845C12.9949 29.5336 -1.32513e-07 30.8391 -1.32513e-07 30.8391L-1.38464e-07 31.6627Z" fill="var(--fill-0, white)" />
-                        </g>
-                      </svg>
-                    </div>
-
-                    {/* Procedure Info */}
-                    <div className="grid-cols-[max-content] grid-rows-[max-content] inline-grid leading-[0] place-items-start relative shrink-0">
-                      <div className="[grid-area:1_/_1] font-['CentraleSans:Bold',_sans-serif] ml-[79.488px] mt-[34px] not-italic relative text-[23px] text-[rgba(255,255,255,0.8)] w-[174.88px]">
-                        <p className="leading-[22px]">PTA Procedure</p>
-                      </div>
-                      <div className="[grid-area:1_/_1] h-[48px] ml-0 mt-[4px] relative w-[50.874px]">
-                        <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 51 48">
-                          <path d={svgPaths.p1dc44680} fill="var(--fill-0, white)" />
+                    {/* Stars Icon - Hide when in voice mode */}
+                    {!isVoiceMode && (
+                      <div className="h-[40px] relative shrink-0 w-[45px]">
+                        <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 57 50">
+                          <g id="Knob-Stars">
+                            <path d="M36.6045 11.1777C36.6045 11.1777 42.6021 11.9393 43.6626 12.2595C44.3577 12.4606 45.0528 12.9801 45.3809 14.142C45.6732 15.3039 46.3683 21.875 46.3683 21.875L46.8068 21.875C46.8068 21.875 47.5019 15.3039 47.7942 14.142C48.0015 13.2129 48.6643 12.4867 49.5124 12.2595C50.5729 11.9393 56.5706 11.1777 56.5706 11.1777L56.5706 10.6973C56.5706 10.6973 50.5729 9.93573 49.5124 9.61547C48.6711 9.3734 48.0151 8.6528 47.7942 7.73296C47.5019 6.57107 46.8068 7.67259e-08 46.8068 7.67259e-08L46.3683 7.34284e-08C46.3683 7.34284e-08 45.6732 6.57107 45.3809 7.73296C45.1735 8.66211 44.5107 9.3883 43.6626 9.61547C42.6021 9.93573 36.6045 10.6973 36.6045 10.6973L36.6045 11.1777Z" fill="var(--fill-0, white)" />
+                            <path d="M-1.38464e-07 31.6627C-1.38464e-07 31.6627 12.9949 32.9682 15.2927 33.5172C16.7987 33.862 18.3048 34.7526 19.0155 36.7444C19.6488 38.7362 21.1549 50.0009 21.1549 50.0009L22.1049 50.0009C22.1049 50.0009 23.611 38.7362 24.2444 36.7444C24.6936 35.1516 26.1297 33.9067 27.9672 33.5172C30.265 32.9682 43.2598 31.6627 43.2598 31.6627L43.2598 30.8391C43.2598 30.8391 30.265 29.5336 27.9672 28.9845C26.1444 28.5696 24.7231 27.3343 24.2444 25.7574C23.611 23.7656 22.1049 12.5009 22.1049 12.5009L21.1549 12.5009C21.1549 12.5009 19.6488 23.7656 19.0155 25.7574C18.5662 27.3502 17.1301 28.5951 15.2927 28.9845C12.9949 29.5336 -1.32513e-07 30.8391 -1.32513e-07 30.8391L-1.38464e-07 31.6627Z" fill="var(--fill-0, white)" />
+                          </g>
                         </svg>
                       </div>
-                      <div className="[grid-area:1_/_1] font-['CentraleSans:Book',_sans-serif] ml-[77.332px] mt-0 not-italic relative text-[18px] text-[rgba(214,214,214,0.8)] w-[178.06px]">
-                        <p className="leading-[22px]">Peripheral Vascular</p>
+                    )}
+
+                    {/* Voice Icon - Show microphone when listening, stars for success, warning for error */}
+                    {isVoiceMode && (
+                      <div className="flex items-center justify-center relative shrink-0">
+                        {feedback ? (
+                          feedback.toLowerCase().includes('not recognized') || 
+                          feedback.toLowerCase().includes('not found') ||
+                          feedback.toLowerCase().includes('failed') ? (
+                            // Show warning icon for error feedback
+                            <div className="h-[40px] w-[45px]">
+                              <svg className="block size-full text-yellow-400" fill="currentColor" viewBox="0 0 20 20" preserveAspectRatio="xMidYMid meet">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          ) : (
+                            // Show stars icon for success feedback
+                            <div className="h-[40px] w-[45px]">
+                              <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 57 50">
+                                <g id="Knob-Stars">
+                                  <path d="M36.6045 11.1777C36.6045 11.1777 42.6021 11.9393 43.6626 12.2595C44.3577 12.4606 45.0528 12.9801 45.3809 14.142C45.6732 15.3039 46.3683 21.875 46.3683 21.875L46.8068 21.875C46.8068 21.875 47.5019 15.3039 47.7942 14.142C48.0015 13.2129 48.6643 12.4867 49.5124 12.2595C50.5729 11.9393 56.5706 11.1777 56.5706 11.1777L56.5706 10.6973C56.5706 10.6973 50.5729 9.93573 49.5124 9.61547C48.6711 9.3734 48.0151 8.6528 47.7942 7.73296C47.5019 6.57107 46.8068 7.67259e-08 46.8068 7.67259e-08L46.3683 7.34284e-08C46.3683 7.34284e-08 45.6732 6.57107 45.3809 7.73296C45.1735 8.66211 44.5107 9.3883 43.6626 9.61547C42.6021 9.93573 36.6045 10.6973 36.6045 10.6973L36.6045 11.1777Z" fill="var(--fill-0, white)" />
+                                  <path d="M-1.38464e-07 31.6627C-1.38464e-07 31.6627 12.9949 32.9682 15.2927 33.5172C16.7987 33.862 18.3048 34.7526 19.0155 36.7444C19.6488 38.7362 21.1549 50.0009 21.1549 50.0009L22.1049 50.0009C22.1049 50.0009 23.611 38.7362 24.2444 36.7444C24.6936 35.1516 26.1297 33.9067 27.9672 33.5172C30.265 32.9682 43.2598 31.6627 43.2598 31.6627L43.2598 30.8391C43.2598 30.8391 30.265 29.5336 27.9672 28.9845C26.1444 28.5696 24.7231 27.3343 24.2444 25.7574C23.611 23.7656 22.1049 12.5009 22.1049 12.5009L21.1549 12.5009C21.1549 12.5009 19.6488 23.7656 19.0155 25.7574C18.5662 27.3502 17.1301 28.5951 15.2927 28.9845C12.9949 29.5336 -1.32513e-07 30.8391 -1.32513e-07 30.8391L-1.38464e-07 31.6627Z" fill="var(--fill-0, white)" />
+                                </g>
+                              </svg>
+                            </div>
+                          )
+                        ) : (
+                          // Show stars icon when listening
+                          <div className="h-[40px] w-[45px]">
+                            <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 57 50">
+                              <g id="Knob-Stars">
+                                <path d="M36.6045 11.1777C36.6045 11.1777 42.6021 11.9393 43.6626 12.2595C44.3577 12.4606 45.0528 12.9801 45.3809 14.142C45.6732 15.3039 46.3683 21.875 46.3683 21.875L46.8068 21.875C46.8068 21.875 47.5019 15.3039 47.7942 14.142C48.0015 13.2129 48.6643 12.4867 49.5124 12.2595C50.5729 11.9393 56.5706 11.1777 56.5706 11.1777L56.5706 10.6973C56.5706 10.6973 50.5729 9.93573 49.5124 9.61547C48.6711 9.3734 48.0151 8.6528 47.7942 7.73296C47.5019 6.57107 46.8068 7.67259e-08 46.8068 7.67259e-08L46.3683 7.34284e-08C46.3683 7.34284e-08 45.6732 6.57107 45.3809 7.73296C45.1735 8.66211 44.5107 9.3883 43.6626 9.61547C42.6021 9.93573 36.6045 10.6973 36.6045 10.6973L36.6045 11.1777Z" fill="var(--fill-0, white)" />
+                                <path d="M-1.38464e-07 31.6627C-1.38464e-07 31.6627 12.9949 32.9682 15.2927 33.5172C16.7987 33.862 18.3048 34.7526 19.0155 36.7444C19.6488 38.7362 21.1549 50.0009 21.1549 50.0009L22.1049 50.0009C22.1049 50.0009 23.611 38.7362 24.2444 36.7444C24.6936 35.1516 26.1297 33.9067 27.9672 33.5172C30.265 32.9682 43.2598 31.6627 43.2598 31.6627L43.2598 30.8391C43.2598 30.8391 30.265 29.5336 27.9672 28.9845C26.1444 28.5696 24.7231 27.3343 24.2444 25.7574C23.611 23.7656 22.1049 12.5009 22.1049 12.5009L21.1549 12.5009C21.1549 12.5009 19.6488 23.7656 19.0155 25.7574C18.5662 27.3502 17.1301 28.5951 15.2927 28.9845C12.9949 29.5336 -1.32513e-07 30.8391 -1.32513e-07 30.8391L-1.38464e-07 31.6627Z" fill="var(--fill-0, white)" />
+                              </g>
+                            </svg>
+                          </div>
+                        )}
                       </div>
-                    </div>
+                    )}
+
+                    {/* Procedure Info - Hide when in voice mode */}
+                    {!isVoiceMode && (
+                      <div className="grid-cols-[max-content] grid-rows-[max-content] inline-grid leading-[0] place-items-start relative shrink-0">
+                        <div className="[grid-area:1_/_1] font-['CentraleSans:Bold',_sans-serif] ml-[79.488px] mt-[34px] not-italic relative text-[23px] text-[rgba(255,255,255,0.8)] w-[174.88px]">
+                          <p className="leading-[22px]">PTA Procedure</p>
+                        </div>
+                        <div className="[grid-area:1_/_1] h-[48px] ml-0 mt-[4px] relative w-[50.874px]">
+                          <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 51 48">
+                            <path d={svgPaths.p1dc44680} fill="var(--fill-0, white)" />
+                          </svg>
+                        </div>
+                        <div className="[grid-area:1_/_1] font-['CentraleSans:Book',_sans-serif] ml-[77.332px] mt-0 not-italic relative text-[18px] text-[rgba(214,214,214,0.8)] w-[178.06px]">
+                          <p className="leading-[22px]">Peripheral Vascular</p>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Carousel Container */}
                     <div className="h-[80px] relative shrink-0 w-[950px]">
-                      {/* Left Arrow Button */}
-                      <div className="absolute bottom-[41.94%] flex items-center justify-center left-0 right-[98.64%] top-[36.56%] z-10">
-                        <button 
-                          className={`flex-none h-[12.719px] transform rotate-90 w-[20px] transition-opacity duration-300 cursor-pointer ${
-                            lastNavigationDirection === 'left' ? 'opacity-100' : 'opacity-40 hover:opacity-70'
-                          }`}
-                          onClick={moveLeft}
-                          aria-label="Previous workflow step"
-                        >
-                          <div className="relative size-full">
-                            <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 20 13">
-                              <path 
-                                clipRule="evenodd" 
-                                d={arrowSvgPaths.p35974100} 
-                                fill="var(--fill-0, #E9E3DA)" 
-                                fillRule="evenodd" 
-                              />
-                            </svg>
-                          </div>
-                        </button>
-                      </div>
+                      {/* Left Arrow Button - Hide when in voice mode */}
+                      {!isVoiceMode && (
+                        <div className="absolute bottom-[41.94%] flex items-center justify-center left-0 right-[98.64%] top-[36.56%] z-10">
+                          <button 
+                            className={`flex-none h-[12.719px] transform rotate-90 w-[20px] transition-opacity duration-300 cursor-pointer ${
+                              lastNavigationDirection === 'left' ? 'opacity-100' : 'opacity-40 hover:opacity-70'
+                            }`}
+                            onClick={moveLeft}
+                            aria-label="Previous workflow step"
+                          >
+                            <div className="relative size-full">
+                              <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 20 13">
+                                <path 
+                                  clipRule="evenodd" 
+                                  d={arrowSvgPaths.p35974100} 
+                                  fill="var(--fill-0, #E9E3DA)" 
+                                  fillRule="evenodd" 
+                                />
+                              </svg>
+                            </div>
+                          </button>
+                        </div>
+                      )}
 
-                      {/* Right Arrow Button */}
-                      <div className="absolute bottom-[41.94%] flex items-center justify-center left-[98.64%] right-0 top-[36.56%] z-10">
-                        <button 
-                          className={`flex-none h-[12.719px] transform rotate-90 scale-y-[-100%] w-[20px] transition-opacity duration-300 cursor-pointer ${
-                            lastNavigationDirection === 'right' ? 'opacity-100' : 'opacity-40 hover:opacity-70'
-                          }`}
-                          onClick={moveRight}
-                          aria-label="Next workflow step"
-                        >
-                          <div className="relative size-full">
-                            <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 20 13">
-                              <path 
-                                clipRule="evenodd" 
-                                d={arrowSvgPaths.p35974100} 
-                                fill="var(--fill-0, #E9E3DA)" 
-                                fillRule="evenodd" 
-                              />
-                            </svg>
-                          </div>
-                        </button>
-                      </div>
+                      {/* Right Arrow Button - Hide when in voice mode */}
+                      {!isVoiceMode && (
+                        <div className="absolute bottom-[41.94%] flex items-center justify-center left-[98.64%] right-0 top-[36.56%] z-10">
+                          <button 
+                            className={`flex-none h-[12.719px] transform rotate-90 scale-y-[-100%] w-[20px] transition-opacity duration-300 cursor-pointer ${
+                              lastNavigationDirection === 'right' ? 'opacity-100' : 'opacity-40 hover:opacity-70'
+                            }`}
+                            onClick={moveRight}
+                            aria-label="Next workflow step"
+                          >
+                            <div className="relative size-full">
+                              <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 20 13">
+                                <path 
+                                  clipRule="evenodd" 
+                                  d={arrowSvgPaths.p35974100} 
+                                  fill="var(--fill-0, #E9E3DA)" 
+                                  fillRule="evenodd" 
+                                />
+                              </svg>
+                            </div>
+                          </button>
+                        </div>
+                      )}
 
                       {/* Carousel background container with buttons as direct children */}
-                      <div className="absolute bg-[#060F1F] h-[80px] left-[25px] opacity-90 rounded-[10px] top-0 w-[900px] overflow-hidden">
+                      <div 
+                        className={`absolute h-[80px] left-[25px] rounded-[10px] top-0 w-[900px] overflow-hidden transition-all duration-300 ${
+                          isVoiceMode && feedback && 
+                          !feedback.toLowerCase().includes('not recognized') && 
+                          !feedback.toLowerCase().includes('not found') &&
+                          !feedback.toLowerCase().includes('failed')
+                            ? 'bg-[rgba(34,197,94,0.2)] border-2 border-green-500 opacity-90'
+                            : isVoiceMode && feedback
+                            ? 'bg-[#060F1F] border-2 border-yellow-400 opacity-90'
+                            : 'bg-[#060F1F] opacity-90'
+                        }`}
+                        style={
+                          isVoiceMode && !feedback 
+                            ? { 
+                                border: '2px solid rgba(59, 130, 246, 0.6)',
+                                animation: 'micBorderPulse 2s ease-in-out infinite'
+                              }
+                            : undefined
+                        }
+                      >
                         {/* Voice Mode - Show feedback or transcript */}
                         {isVoiceMode ? (
-                          <div className="flex items-center justify-center h-full w-full px-10">
-                            <div className="text-center w-full">
-                              {/* Show feedback when command is recognized */}
-                              {feedback ? (
-                                <div className="flex flex-col items-center justify-center gap-2">
-                                  {/* Check if feedback is an error/warning message */}
-                                  {feedback.toLowerCase().includes('not recognized') || 
-                                   feedback.toLowerCase().includes('not found') ||
-                                   feedback.toLowerCase().includes('failed') ? (
-                                    // Warning/Error feedback - Yellow with warning icon
-                                    <div className="text-yellow-400 text-2xl font-semibold flex items-center justify-center gap-3">
-                                      <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                      </svg>
-                                      {feedback}
-                                    </div>
-                                  ) : (
-                                    // Success feedback - Green with checkmark
-                                    <div className="text-green-400 text-2xl font-semibold flex items-center justify-center gap-3">
-                                      <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                      </svg>
-                                      {feedback}
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                /* Show listening state when no feedback */
-                                <>
-                                  <div className="flex items-center justify-center gap-3 mb-2">
-                                    {/* Pulsing microphone icon */}
-                                    <div className="relative">
-                                      <svg 
-                                        xmlns="http://www.w3.org/2000/svg" 
-                                        className="h-8 w-8 text-red-500" 
-                                        fill="none" 
-                                        viewBox="0 0 24 24" 
-                                        stroke="currentColor"
-                                      >
-                                        <path 
-                                          strokeLinecap="round" 
-                                          strokeLinejoin="round" 
-                                          strokeWidth={2} 
-                                          d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" 
-                                        />
-                                      </svg>
-                                      {/* Pulsing ring */}
-                                      <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-75"></div>
-                                    </div>
-                                    <span className="text-red-400 text-sm font-medium">Listening...</span>
+                          <div className="relative h-full w-full">
+                            <div className="flex items-center justify-center h-full w-full px-10">
+                              <div className="text-center w-full">
+                                {/* Show feedback when command is recognized */}
+                                {feedback ? (
+                                  <div className="flex flex-col items-center justify-center gap-2">
+                                    {/* Check if feedback is an error/warning message */}
+                                    {feedback.toLowerCase().includes('not recognized') || 
+                                     feedback.toLowerCase().includes('not found') ||
+                                     feedback.toLowerCase().includes('failed') ? (
+                                      // Warning/Error feedback - Yellow text (warning icon is on the left)
+                                      <div className="text-yellow-400 text-2xl font-semibold">
+                                        {feedback}
+                                      </div>
+                                    ) : (
+                                      // Success feedback - White text (stars icon and green border/background show success)
+                                      <div className="text-white text-2xl font-semibold">
+                                        {feedback}
+                                      </div>
+                                    )}
                                   </div>
-                                  {/* Voice transcript */}
-                                  <div className="text-white text-xl font-medium min-h-[30px] flex items-center justify-center">
-                                    {voiceTranscript || "Speak a command..."}
+                                ) : (
+                                  /* Show transcript when listening */
+                                  <div className="flex items-center justify-center gap-3">
+                                    {/* Voice transcript - Normal weight for input, bold for placeholder */}
+                                    <div className={`text-white text-2xl min-h-[30px] flex items-center justify-center ${
+                                      voiceTranscript ? '' : 'font-semibold'
+                                    }`}>
+                                      {voiceTranscript || "Speak a command..."}
+                                    </div>
                                   </div>
-                                </>
-                              )}
+                                )}
+                              </div>
                             </div>
+                            
+                            {/* Animated progress bar - only show when feedback is displayed */}
+                            {feedback && (
+                              <div className="absolute bottom-0 left-0 right-0 h-[10px] bg-[#616161] rounded-b-[10px]">
+                                <div 
+                                  className="h-full bg-[#D9D9D9] rounded-bl-[10px]"
+                                  style={{
+                                    animation: 'progressBar 3s linear forwards'
+                                  }}
+                                />
+                              </div>
+                            )}
                           </div>
                         ) : (
                           /* Workflow Steps - positioned relative to the blue container */
