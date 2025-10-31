@@ -208,13 +208,14 @@ function SmartUIIndicator({ isActive = true, focusMode = false, isWorkflowsVisib
         <div 
           className="relative w-10 h-10 rounded-full flex items-center justify-center z-10 border border-white overflow-hidden"
           style={{
-            background: focusMode
+            backgroundImage: focusMode
               ? 'linear-gradient(135deg, #9333EA 0%, #C084FC 25%, #9333EA 50%, #C084FC 75%, #9333EA 100%)'
               : currentWorkflowStep 
                 ? isWorkflowsVisible
                   ? 'linear-gradient(135deg, #27316F 0%, #2E9BC8 25%, #27316F 50%, #2E9BC8 75%, #27316F 100%)'
                   : 'linear-gradient(45deg, #27316F 20%, #2E9BC8 140%)'
-                : '#6B7280',
+                : 'none',
+            backgroundColor: currentWorkflowStep ? 'transparent' : '#6B7280',
             backgroundSize: (focusMode || (isWorkflowsVisible && currentWorkflowStep)) ? '400% 400%' : '100% 100%',
             boxShadow: focusMode
               ? '0 2px 8px rgba(147, 51, 234, 0.5)'
@@ -228,7 +229,7 @@ function SmartUIIndicator({ isActive = true, focusMode = false, isWorkflowsVisib
             <div 
               className="absolute inset-0 rounded-full"
               style={{
-                background: 'linear-gradient(135deg, #9333EA 0%, #C084FC 25%, #9333EA 50%, #C084FC 75%, #9333EA 100%)',
+                backgroundImage: 'linear-gradient(135deg, #9333EA 0%, #C084FC 25%, #9333EA 50%, #C084FC 75%, #9333EA 100%)',
                 backgroundSize: '400% 400%',
                 animation: 'purpleGradientShift 8s ease-in-out infinite'
               }}
@@ -240,7 +241,7 @@ function SmartUIIndicator({ isActive = true, focusMode = false, isWorkflowsVisib
             <div 
               className="absolute inset-0 rounded-full"
               style={{
-                background: 'linear-gradient(135deg, #27316F 0%, #2E9BC8 25%, #27316F 50%, #2E9BC8 75%, #27316F 100%)',
+                backgroundImage: 'linear-gradient(135deg, #27316F 0%, #2E9BC8 25%, #27316F 50%, #2E9BC8 75%, #27316F 100%)',
                 backgroundSize: '400% 400%',
                 animation: 'gradientShift 8s ease-in-out infinite'
               }}
@@ -268,7 +269,7 @@ function SmartUIIndicator({ isActive = true, focusMode = false, isWorkflowsVisib
               key={animationKey}
               className="absolute rounded-md"
               style={{
-                background: 'linear-gradient(135deg, #2E9BC8 0%, #27316F 50%, #2E9BC8 100%)',
+                backgroundImage: 'linear-gradient(135deg, #2E9BC8 0%, #27316F 50%, #2E9BC8 100%)',
                 backgroundSize: '200% 200%',
                 animation: 'textGradientFade 3s ease-out forwards',
                 zIndex: -1,

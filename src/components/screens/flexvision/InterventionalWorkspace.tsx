@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ViewportHeader } from '../../shared/ViewportHeaders';
 import { getFormattedPatientName, getPatientId, getCurrentDate, getFormattedDOB, getPatientAge, getFormattedTime } from '../../../data/patientData';
-import { useSettings } from '../../../contexts/SettingsContext';
+import { useSettings, matchesInput } from '../../../contexts/SettingsContext';
 import { useAngle } from '../../../contexts/AngleContext';
 import svgPaths from "../../../imports/svg-lsvrftrq7x";
 import imgCoronal from "figma:asset/4c8bbf83fe02a6ff097b8e4c2200db41b8b53782.png";
@@ -649,19 +649,42 @@ function TaskGuidancePanel({ subFocusMode, selectedAngleIndex, onAngleSelect }: 
               { id: "3", name: "Angle 3", rotation: "Rot 0° Ang 45°" },
               { id: "4", name: "Angle 4", rotation: "Rot -90° Ang 30°" }
             ].map((angle, index) => {
-              const isFocused = subFocusMode === 'angles' && selectedAngleIndex === index;
-              const isSelectedFromContext = selectedAngle?.id === angle.id;
-              const isSelected = isFocused || isSelectedFromContext;
-              // Apply gradient background for focus mode (before activation) or solid color for activated angles
-              const focusStyles = isSelected ? (
-                isFocused && !isSelectedFromContext ? {
-                  background: `linear-gradient(125deg, ${inputSettings.focusBorderColor1} 0%, ${inputSettings.focusBorderColor2} 75%, ${inputSettings.focusBorderColor2} 100%)`,
-                  borderColor: 'transparent'
-                } : {
-                  backgroundColor: '#2b86b2',
-                  borderColor: '#2b86b2'
+              const isCurrentlyNavigating = subFocusMode === 'angles' && selectedAngleIndex === index;
+              const isActivated = selectedAngle?.id === angle.id;
+              
+              // Blue border for currently navigating (before activation)
+              // Blue fill for activated angle (already confirmed)
+              // Both can be visible at the same time if navigating over an activated angle
+              const focusStyles = (() => {
+                if (isActivated && isCurrentlyNavigating) {
+                  // Activated AND currently navigating - show both blue fill + outline
+                  return {
+                    backgroundColor: '#2b86b2',
+                    outline: '3px solid #41c9fe',
+                    outlineOffset: '-3px',
+                    boxShadow: '0 0 0 5px rgba(65, 201, 254, 0.4)',
+                    borderRadius: '4px'
+                  };
+                } else if (isActivated) {
+                  // Only activated - blue fill
+                  return {
+                    backgroundColor: '#2b86b2',
+                    borderRadius: '4px'
+                  };
+                } else if (isCurrentlyNavigating) {
+                  // Only navigating - blue border only
+                  return {
+                    outline: '3px solid #41c9fe',
+                    outlineOffset: '-3px',
+                    boxShadow: '0 0 0 5px rgba(65, 201, 254, 0.3)',
+                    backgroundColor: 'rgba(65, 201, 254, 0.15)',
+                    borderRadius: '4px'
+                  };
+                } else {
+                  // Default state
+                  return {};
                 }
-              ) : {};
+              })();
               
               // Use import icon for first two angles, C-arm icon for others
               const isImportAngle = index < 2;
@@ -672,17 +695,16 @@ function TaskGuidancePanel({ subFocusMode, selectedAngleIndex, onAngleSelect }: 
               return (
                 <button 
                   key={index} 
-                  className="content-stretch flex h-12 items-start justify-start relative shrink-0 w-full transition-colors hover:bg-[rgba(255,255,255,0.05)] focus:outline-2 focus:outline-blue-500"
+                  className="content-stretch flex h-12 items-start justify-start relative shrink-0 w-full transition-colors hover:bg-[rgba(255,255,255,0.05)]"
+                  style={focusStyles}
                   onClick={() => {
                     console.log('Button clicked - angle:', angle.id);
                     onAngleSelect?.(angle.id);
                   }}
-                  onFocus={() => console.log('Button focused - angle:', angle.id)}
-                  onBlur={() => console.log('Button blurred - angle:', angle.id)}
                   type="button"
                   tabIndex={0}
                 >
-                  <div className="box-border content-stretch flex gap-2 h-12 items-center justify-start px-3 py-2 relative shrink-0 w-full" style={focusStyles}>
+                  <div className="box-border content-stretch flex gap-2 h-12 items-center justify-start px-3 py-2 relative shrink-0 w-full">
                     <div className="basis-0 content-stretch flex gap-3 grow items-center justify-start min-h-px min-w-px relative shrink-0">
                       <div className="relative shrink-0 size-6">
                         <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 32 32">
@@ -734,6 +756,52 @@ export function InterventionalWorkspace({
   hideHeader = false
 }: InterventionalWorkspaceProps) {
   const { selectedAngle, setSelectedAngle, activateUniGuide } = useAngle();
+  const { inputSettings } = useSettings();
+  const [currentAngleIndex, setCurrentAngleIndex] = useState(selectedAngleIndex);
+  
+  // Sync internal angle index with prop
+  useEffect(() => {
+    setCurrentAngleIndex(selectedAngleIndex);
+  }, [selectedAngleIndex]);
+  
+  // Keyboard navigation when component is selected (has blue border)
+  useEffect(() => {
+    if (!focusMode) return; // Only handle keyboard when selected
+    
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Navigate to next angle (don't activate, just highlight)
+      if (matchesInput(event, inputSettings.workflowStepRight)) {
+        event.preventDefault();
+        event.stopPropagation();
+        const newIndex = (currentAngleIndex + 1) % 4; // 4 angles total
+        setCurrentAngleIndex(newIndex);
+        // Don't call onAngleSelect - just navigate, don't activate
+        return;
+      }
+      
+      // Navigate to previous angle (don't activate, just highlight)
+      if (matchesInput(event, inputSettings.workflowStepLeft)) {
+        event.preventDefault();
+        event.stopPropagation();
+        const newIndex = (currentAngleIndex - 1 + 4) % 4; // 4 angles total
+        setCurrentAngleIndex(newIndex);
+        // Don't call onAngleSelect - just navigate, don't activate
+        return;
+      }
+      
+      // Activate current angle (Enter key)
+      if (matchesInput(event, inputSettings.workflowStepActivate)) {
+        event.preventDefault();
+        event.stopPropagation();
+        const angleId = (currentAngleIndex + 1).toString(); // Angles are 1-indexed
+        handleAngleActivation(angleId);
+        return;
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [focusMode, currentAngleIndex, inputSettings, onAngleSelect]);
   
   // Map angle IDs to their corresponding images
   const angleImages = {
@@ -787,7 +855,7 @@ export function InterventionalWorkspace({
         <div className="absolute left-0 top-0 bottom-0 w-64">
           <TaskGuidancePanel 
             subFocusMode={subFocusMode} 
-            selectedAngleIndex={selectedAngleIndex}
+            selectedAngleIndex={currentAngleIndex}
             onAngleSelect={handleAngleActivation}
           />
         </div>
