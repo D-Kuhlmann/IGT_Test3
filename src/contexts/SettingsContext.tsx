@@ -57,9 +57,9 @@ const defaultSettings: InputSettings = {
   // Focus mode defaults
   focusModeEnabled: true,
   focusModeToggle: 'Enter',
-  focusModeNavigation: 'wheel:down',
-  focusModeNavigationReverse: 'wheel:up',
-  focusModeActivation: 'click:left',
+  focusModeNavigation: 'ArrowRight',
+  focusModeNavigationReverse: 'ArrowLeft',
+  focusModeActivation: 'Enter',
   focusModeExit: 'Escape',
   focusBorderColor1: '#9ED5FF',
   focusBorderColor2: '#5A75FF',

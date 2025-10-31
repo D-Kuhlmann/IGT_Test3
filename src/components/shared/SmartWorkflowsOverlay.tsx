@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import svgPaths from "../../imports/svg-02p7sqlbj5";
 import arrowSvgPaths from "../../imports/svg-xo6dcn4zhp";
 
@@ -20,6 +20,7 @@ interface SmartWorkflowsOverlayProps {
   activePreset?: 1 | 2;
   isVoiceMode?: boolean;
   voiceTranscript?: string;
+  onActivateFocusMode?: (stepId: string) => void;
 }
 
 // Step Component - reusable for infinite scroll
@@ -28,11 +29,13 @@ function WorkflowStepButton({
   stepIndex,
   isFocused,
   onClick,
+  hasFocusMode = false,
 }: {
   step: WorkflowStep;
   stepIndex: number;
   isFocused: boolean;
   onClick: () => void;
+  hasFocusMode?: boolean;
 }) {
   // Get icon based on step label
   const getStepIcon = () => {
@@ -114,21 +117,6 @@ function WorkflowStepButton({
       className="content-stretch flex gap-[16px] items-center relative shrink-0 p-2 rounded-lg transition-all duration-300 min-w-[120px] bg-transparent hover:bg-white/5"
       onClick={onClick}
     >
-      {/* Connecting Line - hidden for first step */}
-      {stepIndex > 0 && (
-        <div className="flex h-[58px] items-center justify-center relative shrink-0 w-[15px]">
-          <div className="flex-none rotate-[270deg]">
-            <div className="h-[15px] relative w-[58px]">
-              <div className="absolute inset-[46.67%_-0.86%]">
-                <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 60 1">
-                  <path d="M59 0.500001H1" stroke="var(--stroke-0, #BEBEBE)" strokeLinecap="square" />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Icon */}
       <div className={`relative shrink-0 size-[40px] transition-opacity duration-300 ${
         isFocused ? 'opacity-100' : 'opacity-30'
@@ -142,6 +130,18 @@ function WorkflowStepButton({
       }`}>
         <p className="leading-[24px] whitespace-pre">{step.label}</p>
       </div>
+
+      {/* Focus mode indicator line */}
+      {hasFocusMode && (
+        <div 
+          className={`absolute bottom-0 left-0 right-0 h-[3px] bg-purple-500 transition-opacity duration-300 ${
+            isFocused ? 'opacity-100' : 'opacity-30'
+          }`}
+          style={{
+            marginTop: '8px'
+          }}
+        />
+      )}
     </button>
   );
 }
@@ -154,6 +154,7 @@ export function SmartWorkflowsOverlay({
   activePreset = 1,
   isVoiceMode = false,
   voiceTranscript = '',
+  onActivateFocusMode,
 }: SmartWorkflowsOverlayProps) {
   // Debug: Log voiceTranscript prop
   useEffect(() => {
@@ -232,6 +233,11 @@ export function SmartWorkflowsOverlay({
 
 
   const totalSteps = workflowSteps.length;
+
+  // Steps that allow focus mode activation
+  const focusModeEnabledSteps = activePreset === 1 
+    ? ['finalise'] // Preset 1: only finalise step
+    : ['access']; // Preset 2: only access step
 
   // Reset focus when preset changes
   useEffect(() => {
@@ -340,39 +346,74 @@ export function SmartWorkflowsOverlay({
     if (!isVisible) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      switch (event.key) {
-        case settings.inputSettings.workflowStepLeft.toString():
-          event.preventDefault();
-          event.stopPropagation();
-          moveLeft();
-          break;
-        case settings.inputSettings.workflowStepRight.toString():
-          event.preventDefault();
-          event.stopPropagation();
-          moveRight();
-          break;
-        case "Escape":
-        case settings.inputSettings.workflowClose.toString():
-          event.preventDefault();
-          event.stopPropagation();
-          handleClose();
-          break;
-        case settings.inputSettings.workflowStepActivate.toString():
-        case " ":
-          event.preventDefault();
-          event.stopPropagation();
-          handleStepClick(workflowSteps[focusedStepIndex]);
-          break;
-        case "Home":
-          event.preventDefault();
-          event.stopPropagation();
-          setFocusedStepIndex(0);
-          break;
-        case "End":
-          event.preventDefault();
-          event.stopPropagation();
-          setFocusedStepIndex(totalSteps - 1);
-          break;
+      // Check for left navigation
+      if (event.key === settings.inputSettings.workflowStepLeft || event.key === settings.inputSettings.workflowStepLeft.toString()) {
+        event.preventDefault();
+        event.stopPropagation();
+        moveLeft();
+        return;
+      }
+      
+      // Check for right navigation
+      if (event.key === settings.inputSettings.workflowStepRight || event.key === settings.inputSettings.workflowStepRight.toString()) {
+        event.preventDefault();
+        event.stopPropagation();
+        moveRight();
+        return;
+      }
+      
+      // Check for close/escape
+      if (event.key === "Escape" || event.key === settings.inputSettings.workflowClose || event.key === settings.inputSettings.workflowClose.toString()) {
+        event.preventDefault();
+        event.stopPropagation();
+        handleClose();
+        return;
+      }
+      
+      // Check for focus mode activation (Enter key)
+      if (event.key === "Enter" || event.key === settings.inputSettings.focusModeToggle || event.key === settings.inputSettings.focusModeToggle.toString()) {
+        event.preventDefault();
+        event.stopPropagation();
+        const focusedStep = workflowSteps[focusedStepIndex];
+        console.log('Focus mode key pressed on step:', focusedStep.id, 'Focus mode enabled steps:', focusModeEnabledSteps);
+        // Only activate focus mode if this step supports it
+        if (focusModeEnabledSteps.includes(focusedStep.id) && onActivateFocusMode) {
+          console.log('Activating focus mode for step:', focusedStep.id);
+          onActivateFocusMode(focusedStep.id);
+          handleClose(); // Close overlay after activating focus mode
+        } else {
+          console.log('Step does not support focus mode, ignoring Enter key');
+          // Do nothing - Enter key only works on focus mode enabled steps
+        }
+        return;
+      }
+      
+      // Check for normal step selection (Space or workflowStepActivate if different from Enter)
+      if (event.key === " " || 
+          (event.key === settings.inputSettings.workflowStepActivate && event.key !== "Enter") || 
+          (event.key === settings.inputSettings.workflowStepActivate.toString() && event.key !== "Enter")) {
+        event.preventDefault();
+        event.stopPropagation();
+        const focusedStep = workflowSteps[focusedStepIndex];
+        console.log('Select step key pressed, selecting step:', focusedStep.id);
+        handleStepClick(focusedStep);
+        return;
+      }
+      
+      // Check for Home
+      if (event.key === "Home") {
+        event.preventDefault();
+        event.stopPropagation();
+        setFocusedStepIndex(0);
+        return;
+      }
+      
+      // Check for End
+      if (event.key === "End") {
+        event.preventDefault();
+        event.stopPropagation();
+        setFocusedStepIndex(totalSteps - 1);
+        return;
       }
     };
 
@@ -666,13 +707,29 @@ export function SmartWorkflowsOverlay({
                             {/* Single set of workflow steps */}
                             {workflowSteps.map((step, stepIndex) => {
                               return (
-                                <WorkflowStepButton
-                                  key={step.id}
-                                  step={step}
-                                  stepIndex={stepIndex}
-                                  isFocused={stepIndex === focusedStepIndex}
-                                  onClick={() => handleStepClick(step)}
-                                />
+                                <React.Fragment key={step.id}>
+                                  {/* Separator line before each step except the first */}
+                                  {stepIndex > 0 && (
+                                    <div className="flex h-[58px] items-center justify-center relative shrink-0 w-[15px]">
+                                      <div className="flex-none rotate-[270deg]">
+                                        <div className="h-[15px] relative w-[58px]">
+                                          <div className="absolute inset-[46.67%_-0.86%]">
+                                            <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 60 1">
+                                              <path d="M59 0.500001H1" stroke="var(--stroke-0, #BEBEBE)" strokeLinecap="square" />
+                                            </svg>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                  <WorkflowStepButton
+                                    step={step}
+                                    stepIndex={stepIndex}
+                                    isFocused={stepIndex === focusedStepIndex}
+                                    onClick={() => handleStepClick(step)}
+                                    hasFocusMode={focusModeEnabledSteps.includes(step.id)}
+                                  />
+                                </React.Fragment>
                               );
                             })}
                           </div>

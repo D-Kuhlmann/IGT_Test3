@@ -32,6 +32,7 @@ function ScreenFlexvisionInner() {
   const { isListening, transcript, feedback } = useVoiceInputState();
   const [focusMode, setFocusMode] = useState(false);
   const [focusedComponent, setFocusedComponent] = useState<'xray' | 'iw' | 'hemo' | 'smartnav' | 'placeholder'>('xray');
+  const [selectedComponent, setSelectedComponent] = useState<'xray' | 'iw' | 'hemo' | 'smartnav' | 'placeholder' | null>(null);
   const [iwSubFocus, setIwSubFocus] = useState<'none' | 'angles'>('none');
   const [selectedAngleIndex, setSelectedAngleIndex] = useState(0);
   const [activePreset, setActivePreset] = useState<1 | 2>(1);
@@ -332,6 +333,23 @@ function ScreenFlexvisionInner() {
     prevPresetRef.current = currentPreset;
   }, [workflowSync.workflowStepId, activePreset]);
 
+  // Auto-select component based on workflow step
+  useEffect(() => {
+    const currentStep = workflowSync.workflowStepId;
+    
+    // Map workflow steps to default selected components
+    const stepComponentMap: Record<string, 'xray' | 'iw' | 'hemo' | 'smartnav' | null> = {
+      '3d-scan': 'smartnav', // In 3D scan, select SmartNavigator
+      // Add more mappings as needed
+    };
+    
+    const defaultComponent = stepComponentMap[currentStep || ''];
+    if (defaultComponent) {
+      console.log(`Auto-selecting component ${defaultComponent} for step ${currentStep}`);
+      setSelectedComponent(defaultComponent);
+    }
+  }, [workflowSync.workflowStepId]);
+
 
   const handleShowWorkflows = () => {
     setShowWorkflows(true);
@@ -359,6 +377,18 @@ function ScreenFlexvisionInner() {
   const handleStepSelect = (step: WorkflowStep) => {
     // Use workflow sync to broadcast to all screens
     workflowSync.setWorkflowStepId(step.id, activePreset);
+    setShowWorkflows(false);
+  };
+
+  // Handle focus mode activation from workflow overlay
+  const handleActivateFocusMode = (stepId: string) => {
+    // First, select the workflow step
+    workflowSync.setWorkflowStepId(stepId, activePreset);
+    
+    // Then activate focus mode
+    setFocusMode(true);
+    setFocusedComponent(components[0] as any);
+    setIwSubFocus('none');
     setShowWorkflows(false);
   };
 
@@ -495,23 +525,22 @@ function ScreenFlexvisionInner() {
   };
 
   const activateComponent = () => {
+    console.log('activateComponent called', { focusMode, iwSubFocus, focusedComponent, selectedAngleIndex });
     if (focusMode && iwSubFocus === 'none') {
-      if (focusedComponent === 'iw') {
-        // Enter IW sub-focus mode for saved angles
-        setIwSubFocus('angles');
-        setSelectedAngleIndex(0);
-      } else {
-        // TODO: Add specific activation logic for other components
-      }
+      // Select the currently focused component and exit focus mode
+      console.log('Selecting component and exiting focus mode:', focusedComponent);
+      setSelectedComponent(focusedComponent);
+      setFocusMode(false);
     } else if (focusMode && iwSubFocus === 'angles') {
-      // Select the currently focused angle
-      const angleId = String(selectedAngleIndex + 1); // Convert index to angle ID (1-4)
-      // Trigger angle selection - this should activate the angle and switch to TSM
+      // This should not happen anymore, but keep for safety
+      const angleId = String(selectedAngleIndex + 1);
+      console.log('Selecting angle:', angleId);
       handleAngleSelection(angleId);
     }
   };
 
   const handleAngleSelection = (angleId: string) => {
+    console.log('handleAngleSelection called with angleId:', angleId);
     // Map angle images
     const angleImages = {
       "1": "/src/assets/ImageAngles/Angle1.png",
@@ -521,9 +550,16 @@ function ScreenFlexvisionInner() {
     
     const angleImage = angleImages[angleId as keyof typeof angleImages];
     if (angleImage) {
+      console.log('Setting angle and activating UniGuide');
       setSelectedAngle(angleId as any);
       activateUniGuide();
+      
+      // Exit focus mode and angle selection
+      setFocusMode(false);
+      setIwSubFocus('none');
+      console.log('Exited focus mode and angle selection');
     } else {
+      console.log('No angle image found for angleId:', angleId);
     }
   };
 
@@ -639,23 +675,26 @@ function ScreenFlexvisionInner() {
         return; // Let SmartNavigator handle the events
       }
       
-      if (matchesInput(event, inputSettings.focusModeToggle)) {
-        if (focusMode) {
-          // Activate the currently focused component
-          activateComponent();
-        } else {
-          // Enter focus mode
-          setFocusMode(true);
-        }
+      // Component activation in focus mode (Enter key / workflowStepActivate)
+      if (focusMode && matchesInput(event, inputSettings.workflowStepActivate)) {
+        console.log('workflowStepActivate key pressed in focus mode', { key: event.key, iwSubFocus });
+        event.preventDefault();
+        event.stopPropagation();
+        activateComponent();
       } else if (matchesInput(event, inputSettings.focusModeExit) && focusMode) {
-        if (iwSubFocus === 'angles') {
-          // Exit angle focus mode, return to component focus
-          setIwSubFocus('none');
-        } else {
-          // Exit focus mode entirely
-          setFocusMode(false);
-          setIwSubFocus('none');
-        }
+        // Exit focus mode entirely
+        setFocusMode(false);
+        setIwSubFocus('none');
+      } else if (focusMode && matchesInput(event, inputSettings.focusModeNavigation)) {
+        // Navigate forward (right arrow) - only for component navigation
+        event.preventDefault();
+        event.stopPropagation();
+        navigateComponents('prev');
+      } else if (focusMode && matchesInput(event, inputSettings.focusModeNavigationReverse)) {
+        // Navigate backward (left arrow) - only for component navigation
+        event.preventDefault();
+        event.stopPropagation();
+        navigateComponents('next');
       }
     };
 
@@ -672,12 +711,7 @@ function ScreenFlexvisionInner() {
       if (focusMode && matchesInput(event, inputSettings.focusModeNavigation)) {
         event.preventDefault();
         event.stopPropagation();
-        
-        if (iwSubFocus === 'angles') {
-          navigateAngles('next');
-        } else {
-          navigateComponents('next');
-        }
+        navigateComponents('next');
         navigationTriggered = true;
       }
       
@@ -685,12 +719,7 @@ function ScreenFlexvisionInner() {
       if (focusMode && matchesInput(event, inputSettings.focusModeNavigationReverse)) {
         event.preventDefault();
         event.stopPropagation();
-        
-        if (iwSubFocus === 'angles') {
-          navigateAngles('prev');
-        } else {
-          navigateComponents('prev');
-        }
+        navigateComponents('prev');
         navigationTriggered = true;
       }
       
@@ -745,42 +774,44 @@ function ScreenFlexvisionInner() {
 
   // Get focus styles for components
   const getFocusStyles = (componentType: 'xray' | 'iw' | 'hemo' | 'smartnav' | 'placeholder') => {
-    if (!inputSettings.focusModeEnabled || !focusMode) {
+    // Check if this component is selected (blue border)
+    const isSelected = selectedComponent === componentType;
+    
+    // Check if in focus mode and this component is focused (animated gradient border)
+    const isFocused = inputSettings.focusModeEnabled && focusMode && 
+                      focusedComponent === componentType && 
+                      iwSubFocus === 'none'; // Hide component focus when in angle selection
+    
+    if (isFocused) {
+      // Focus mode: animated gradient border
+      return {
+        className: "border-2 border-solid",
+        style: {
+          borderColor: 'transparent',
+          borderImage: `linear-gradient(125deg, ${inputSettings.focusBorderColor1} 0%, ${inputSettings.focusBorderColor2} 75%, ${inputSettings.focusBorderColor2} 100%) 1`,
+          boxShadow: `
+            -4px 0 8px ${inputSettings.focusBorderColor1}60,
+            4px 0 8px ${inputSettings.focusBorderColor2}60,
+            0 -4px 8px ${inputSettings.focusBorderColor2}60,
+            0 4px 8px ${inputSettings.focusBorderColor2}60
+          `
+        }
+      };
+    } else if (isSelected) {
+      // Selected component: solid cyan border (same as SmartNavigator wizard steps)
+      return {
+        className: "border-2 border-solid border-[#41c9fe] border-opacity-70",
+        style: {
+          boxShadow: '0 0 12px rgba(65, 201, 254, 0.3)'
+        }
+      };
+    } else {
+      // Default: dark gray border
       return {
         className: "border-2 border-[#3b3b3b] border-solid",
         style: {}
       };
     }
-    
-    // When in angle selection mode, hide all component borders (internal focus takes priority)
-    if (iwSubFocus === 'angles') {
-      return {
-        className: "border-2 border-[#3b3b3b] border-solid",
-        style: {}
-      };
-    }
-    
-    // Show focus border only on the currently focused component
-    if (focusedComponent !== componentType) {
-      return {
-        className: "border-2 border-[#3b3b3b] border-solid",
-        style: {}
-      };
-    }
-    
-    return {
-      className: "border-2 border-solid",
-      style: {
-        borderColor: 'transparent',
-        borderImage: `linear-gradient(125deg, ${inputSettings.focusBorderColor1} 0%, ${inputSettings.focusBorderColor2} 75%, ${inputSettings.focusBorderColor2} 100%) 1`,
-        boxShadow: `
-          -4px 0 8px ${inputSettings.focusBorderColor1}60,
-          4px 0 8px ${inputSettings.focusBorderColor2}60,
-          0 -4px 8px ${inputSettings.focusBorderColor2}60,
-          0 4px 8px ${inputSettings.focusBorderColor2}60
-        `
-      }
-    };
   };
   useUnifiedInput({
     smartWorkflows: () => {
@@ -818,6 +849,7 @@ function ScreenFlexvisionInner() {
         activePreset={activePreset}
         isVoiceMode={shouldShowVoiceOverlay}
         voiceTranscript={transcript}
+        onActivateFocusMode={handleActivateFocusMode}
       />
 
       {/* Presets Overlay */}
@@ -1158,8 +1190,8 @@ function ScreenFlexvisionInner() {
                 case 'interventionalWorkspace':
                   renderedComponent = (
                     <InterventionalWorkspace 
-                      focusMode={focusMode && focusedComponent === 'iw'}
-                      subFocusMode={iwSubFocus}
+                      focusMode={selectedComponent === 'iw'}
+                      subFocusMode={'none'}
                       selectedAngleIndex={selectedAngleIndex}
                       onAngleSelect={handleAngleSelection}
                       componentSize={componentSize}

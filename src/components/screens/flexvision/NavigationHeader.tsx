@@ -115,14 +115,32 @@ function SmartUIIndicator({ isActive = true, focusMode = false, isWorkflowsVisib
     }
   }, [currentWorkflowStep]);
   
-  // Hide indicator when focus mode is active
-  if (focusMode) {
-    return null;
-  }
-  
   // Animated gradient keyframes
   const gradientAnimation = `
     @keyframes gradientShift {
+      0% {
+        background-position: 0% 50%;
+        transform: rotate(0deg);
+      }
+      25% {
+        background-position: 50% 0%;
+        transform: rotate(90deg);
+      }
+      50% {
+        background-position: 100% 50%;
+        transform: rotate(180deg);
+      }
+      75% {
+        background-position: 50% 100%;
+        transform: rotate(270deg);
+      }
+      100% {
+        background-position: 0% 50%;
+        transform: rotate(360deg);
+      }
+    }
+    
+    @keyframes purpleGradientShift {
       0% {
         background-position: 0% 50%;
         transform: rotate(0deg);
@@ -190,19 +208,35 @@ function SmartUIIndicator({ isActive = true, focusMode = false, isWorkflowsVisib
         <div 
           className="relative w-10 h-10 rounded-full flex items-center justify-center z-10 border border-white overflow-hidden"
           style={{
-            background: currentWorkflowStep 
-              ? isWorkflowsVisible
-                ? 'linear-gradient(135deg, #27316F 0%, #2E9BC8 25%, #27316F 50%, #2E9BC8 75%, #27316F 100%)'
-                : 'linear-gradient(45deg, #27316F 20%, #2E9BC8 140%)'
-              : '#6B7280',
-            backgroundSize: isWorkflowsVisible && currentWorkflowStep ? '400% 400%' : '100% 100%',
-            boxShadow: currentWorkflowStep 
-              ? '0 2px 8px rgba(39, 49, 111, 0.3)' 
-              : '0 2px 8px rgba(107, 114, 128, 0.3)'
+            background: focusMode
+              ? 'linear-gradient(135deg, #9333EA 0%, #C084FC 25%, #9333EA 50%, #C084FC 75%, #9333EA 100%)'
+              : currentWorkflowStep 
+                ? isWorkflowsVisible
+                  ? 'linear-gradient(135deg, #27316F 0%, #2E9BC8 25%, #27316F 50%, #2E9BC8 75%, #27316F 100%)'
+                  : 'linear-gradient(45deg, #27316F 20%, #2E9BC8 140%)'
+                : '#6B7280',
+            backgroundSize: (focusMode || (isWorkflowsVisible && currentWorkflowStep)) ? '400% 400%' : '100% 100%',
+            boxShadow: focusMode
+              ? '0 2px 8px rgba(147, 51, 234, 0.5)'
+              : currentWorkflowStep 
+                ? '0 2px 8px rgba(39, 49, 111, 0.3)' 
+                : '0 2px 8px rgba(107, 114, 128, 0.3)'
           }}
         >
+          {/* Animated gradient overlay for focus mode */}
+          {focusMode && (
+            <div 
+              className="absolute inset-0 rounded-full"
+              style={{
+                background: 'linear-gradient(135deg, #9333EA 0%, #C084FC 25%, #9333EA 50%, #C084FC 75%, #9333EA 100%)',
+                backgroundSize: '400% 400%',
+                animation: 'purpleGradientShift 8s ease-in-out infinite'
+              }}
+            />
+          )}
+          
           {/* Animated gradient overlay when workflows visible */}
-          {isWorkflowsVisible && currentWorkflowStep && (
+          {!focusMode && isWorkflowsVisible && currentWorkflowStep && (
             <div 
               className="absolute inset-0 rounded-full"
               style={{
@@ -223,7 +257,7 @@ function SmartUIIndicator({ isActive = true, focusMode = false, isWorkflowsVisib
       </div>
       
       {/* Current workflow step label - positioned absolutely to the right of indicator */}
-      {currentWorkflowStep && (
+      {currentWorkflowStep && !focusMode && (
         <div 
           className="absolute left-[calc(100%+12px)] whitespace-nowrap font-['CentraleSans:Medium',_sans-serif] text-[18px] text-white leading-none flex items-center"
           style={{ height: '40px' }}
@@ -256,6 +290,16 @@ function SmartUIIndicator({ isActive = true, focusMode = false, isWorkflowsVisib
           >
             {currentWorkflowStep}
           </span>
+        </div>
+      )}
+
+      {/* Focus Mode label - positioned absolutely to the right of indicator */}
+      {focusMode && (
+        <div 
+          className="absolute left-[calc(100%+12px)] whitespace-nowrap font-['CentraleSans:Medium',_sans-serif] text-[18px] text-white leading-none flex items-center"
+          style={{ height: '40px' }}
+        >
+          <span className="relative z-10 px-2">Focus Mode</span>
         </div>
       )}
     </div>
