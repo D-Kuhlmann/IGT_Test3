@@ -91,11 +91,19 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
   // Initialize BroadcastChannel
   useEffect(() => {
     if (typeof BroadcastChannel !== 'undefined') {
+      console.log(`[InputBroadcast] Creating BroadcastChannel for screenId: ${screenId}, isMaster: ${isMaster}`);
       channelRef.current = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
 
       // Listen for messages from other tabs/windows
       channelRef.current.onmessage = (event: MessageEvent<InputEvent>) => {
         const inputEvent = event.data;
+        
+        console.log(`[InputBroadcast] Received message:`, {
+          type: inputEvent.type,
+          source: inputEvent.source,
+          ourScreenId: screenId,
+          willProcess: inputEvent.source !== screenId
+        });
         
         // Don't process events from ourselves
         if (inputEvent.source === screenId) {
@@ -105,6 +113,7 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
         // Dispatch to appropriate handlers
         switch (inputEvent.type) {
           case 'keyboard':
+            console.log(`[InputBroadcast] Dispatching keyboard event to ${keyboardHandlersRef.current.size} handler(s)`);
             keyboardHandlersRef.current.forEach(handler => {
               handler(inputEvent.data as KeyboardEventData);
             });
@@ -151,6 +160,13 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
   const broadcastKeyboardEvent = useCallback((event: KeyboardEvent) => {
     if (!channelRef.current || !isMaster) return;
 
+    console.log('[InputBroadcast] Broadcasting keyboard event:', {
+      key: event.key,
+      code: event.code,
+      channelExists: !!channelRef.current,
+      isMaster
+    });
+
     const data: KeyboardEventData = {
       key: event.key,
       code: event.code,
@@ -169,6 +185,7 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
     };
 
     channelRef.current.postMessage(inputEvent);
+    console.log('[InputBroadcast] Keyboard event broadcasted successfully');
   }, [screenId, isMaster]);
 
   // Broadcast mouse event
@@ -224,8 +241,10 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
 
   // Register keyboard event handler
   const onKeyboardEvent = useCallback((handler: (data: KeyboardEventData) => void) => {
+    console.log(`[InputBroadcast] Registering keyboard handler. Total handlers: ${keyboardHandlersRef.current.size} -> ${keyboardHandlersRef.current.size + 1}`);
     keyboardHandlersRef.current.add(handler);
     return () => {
+      console.log(`[InputBroadcast] Unregistering keyboard handler. Total handlers: ${keyboardHandlersRef.current.size} -> ${keyboardHandlersRef.current.size - 1}`);
       keyboardHandlersRef.current.delete(handler);
     };
   }, []);
@@ -330,27 +349,145 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
   useEffect(() => {
     if (!isMaster) return;
 
+    console.log('[InputBroadcast] Setting up MASTER keyboard listener for TSM');
+    
+    let keydownCount = 0;
     const handleKeyDown = (event: KeyboardEvent) => {
-      broadcastKeyboardEvent(event);
+      keydownCount++;
+      console.log(`[InputBroadcast] TSM captured keydown event (count: ${keydownCount}):`, {
+        key: event.key,
+        code: event.code,
+        target: event.target,
+        eventPhase: event.eventPhase,
+        timeStamp: event.timeStamp
+      });
+      
+      // Broadcast directly here instead of calling the callback
+      // This avoids dependency issues
+      if (!channelRef.current) return;
+
+      const data: KeyboardEventData = {
+        key: event.key,
+        code: event.code,
+        ctrlKey: event.ctrlKey,
+        altKey: event.altKey,
+        shiftKey: event.shiftKey,
+        metaKey: event.metaKey,
+        repeat: event.repeat,
+      };
+
+      const inputEvent: InputEvent = {
+        type: 'keyboard',
+        timestamp: Date.now(),
+        source: screenId,
+        data,
+      };
+
+      console.log('[InputBroadcast] Broadcasting keyboard event');
+      channelRef.current.postMessage(inputEvent);
     };
 
     const handleClick = (event: MouseEvent) => {
-      broadcastMouseEvent(event);
+      if (!channelRef.current) return;
+
+      const data: MouseEventData = {
+        button: event.button,
+        buttons: event.buttons,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        ctrlKey: event.ctrlKey,
+        altKey: event.altKey,
+        shiftKey: event.shiftKey,
+        metaKey: event.metaKey,
+        eventType: event.type as 'click' | 'auxclick' | 'dblclick',
+      };
+
+      const inputEvent: InputEvent = {
+        type: 'mouse',
+        timestamp: Date.now(),
+        source: screenId,
+        data,
+      };
+
+      channelRef.current.postMessage(inputEvent);
     };
 
     const handleAuxClick = (event: MouseEvent) => {
-      broadcastMouseEvent(event);
+      if (!channelRef.current) return;
+
+      const data: MouseEventData = {
+        button: event.button,
+        buttons: event.buttons,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        ctrlKey: event.ctrlKey,
+        altKey: event.altKey,
+        shiftKey: event.shiftKey,
+        metaKey: event.metaKey,
+        eventType: event.type as 'click' | 'auxclick' | 'dblclick',
+      };
+
+      const inputEvent: InputEvent = {
+        type: 'mouse',
+        timestamp: Date.now(),
+        source: screenId,
+        data,
+      };
+
+      channelRef.current.postMessage(inputEvent);
     };
 
     const handleDblClick = (event: MouseEvent) => {
-      broadcastMouseEvent(event);
+      if (!channelRef.current) return;
+
+      const data: MouseEventData = {
+        button: event.button,
+        buttons: event.buttons,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        ctrlKey: event.ctrlKey,
+        altKey: event.altKey,
+        shiftKey: event.shiftKey,
+        metaKey: event.metaKey,
+        eventType: event.type as 'click' | 'auxclick' | 'dblclick',
+      };
+
+      const inputEvent: InputEvent = {
+        type: 'mouse',
+        timestamp: Date.now(),
+        source: screenId,
+        data,
+      };
+
+      channelRef.current.postMessage(inputEvent);
     };
 
     const handleWheel = (event: WheelEvent) => {
-      broadcastWheelEvent(event);
+      if (!channelRef.current) return;
+
+      const data: WheelEventData = {
+        deltaX: event.deltaX,
+        deltaY: event.deltaY,
+        deltaZ: event.deltaZ,
+        deltaMode: event.deltaMode,
+        ctrlKey: event.ctrlKey,
+        altKey: event.altKey,
+        shiftKey: event.shiftKey,
+        metaKey: event.metaKey,
+      };
+
+      const inputEvent: InputEvent = {
+        type: 'wheel',
+        timestamp: Date.now(),
+        source: screenId,
+        data,
+      };
+
+      channelRef.current.postMessage(inputEvent);
     };
 
     // Capture events at the document level
+    console.log('[InputBroadcast] Adding document event listeners for TSM');
     document.addEventListener('keydown', handleKeyDown, true);
     document.addEventListener('click', handleClick, true);
     document.addEventListener('auxclick', handleAuxClick, true);
@@ -359,13 +496,14 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
 
 
     return () => {
+      console.log('[InputBroadcast] Cleaning up MASTER keyboard listener for TSM');
       document.removeEventListener('keydown', handleKeyDown, true);
       document.removeEventListener('click', handleClick, true);
       document.removeEventListener('auxclick', handleAuxClick, true);
       document.removeEventListener('dblclick', handleDblClick, true);
       document.removeEventListener('wheel', handleWheel, true);
     };
-  }, [isMaster, broadcastKeyboardEvent, broadcastMouseEvent, broadcastWheelEvent]);
+  }, [isMaster, screenId]); // Only depend on isMaster and screenId, not the callback functions
 
   const value: InputBroadcastContextType = {
     broadcastKeyboardEvent,

@@ -14,7 +14,7 @@ import { SettingsMenu } from "./SettingsMenu";
 import { useGlobalVoice } from '../contexts/GlobalVoiceContext';
 import { useVoiceInputState } from '../contexts/VoiceInputStateContext';
 import { useSettings, matchesInput } from '../contexts/SettingsContext';
-import { InputBroadcastProvider, useInputBroadcast } from '../contexts/InputBroadcastContext';
+import { useInputBroadcast } from '../contexts/InputBroadcastContext';
 import { WorkflowSyncProvider, useWorkflowSync } from '../contexts/WorkflowSyncContext';
 import { useUnifiedInput } from '../hooks/useUnifiedInput';
 import { useAngle } from '../contexts/AngleContext';
@@ -580,7 +580,20 @@ function ScreenFlexvisionInner() {
 
   // Listen for broadcasted input events from TSM
   useEffect(() => {
+    console.log('[FlexVision] Setting up broadcast listeners...');
+    
+    let callCount = 0;
     const unsubscribeKeyboard = inputBroadcast.onKeyboardEvent((data) => {
+      callCount++;
+      console.log(`[FlexVision] ✅ RECEIVED KEYBOARD EVENT FROM TSM (call #${callCount}):`, {
+        key: data.key,
+        code: data.code,
+        shiftKey: data.shiftKey,
+        ctrlKey: data.ctrlKey,
+        altKey: data.altKey,
+        metaKey: data.metaKey,
+        repeat: data.repeat
+      });
       
       // Create a synthetic KeyboardEvent to pass to existing handlers
       const syntheticEvent = new KeyboardEvent('keydown', {
@@ -594,6 +607,8 @@ function ScreenFlexvisionInner() {
         cancelable: true,
       });
       
+      console.log('[FlexVision] Dispatching synthetic event to document and window');
+      
       // Dispatch the synthetic event globally so all components can receive it
       // This allows SmartWorkflowsOverlay and other components to handle the event
       // Dispatch to both document and window to ensure all listeners receive it
@@ -602,10 +617,12 @@ function ScreenFlexvisionInner() {
       
       // Also check for specific actions at the screen level
       if (matchesInput(syntheticEvent, inputSettings.smartWorkflows)) {
+        console.log('[FlexVision] Smart workflows toggle from broadcast');
         handleShowWorkflows();
       }
       
       if (matchesInput(syntheticEvent, inputSettings.quickSettings)) {
+        console.log('[FlexVision] Quick settings toggle from broadcast');
         setIsSettingsOpen(true);
       }
     });
@@ -658,6 +675,7 @@ function ScreenFlexvisionInner() {
     });
 
     return () => {
+      console.log('[FlexVision] Cleaning up broadcast listeners');
       unsubscribeKeyboard();
       unsubscribeWheel();
       unsubscribeMouse();
@@ -1253,13 +1271,11 @@ function ScreenFlexvisionInner() {
   );
 }
 
-// Wrapper component with InputBroadcastProvider and WorkflowSyncProvider
+// Wrapper component with WorkflowSyncProvider
 export function ScreenFlexvision() {
   return (
-    <InputBroadcastProvider screenId="flexvision" isMaster={false}>
-      <WorkflowSyncProvider screenId="flexvision">
-        <ScreenFlexvisionInner />
-      </WorkflowSyncProvider>
-    </InputBroadcastProvider>
+    <WorkflowSyncProvider screenId="flexvision">
+      <ScreenFlexvisionInner />
+    </WorkflowSyncProvider>
   );
 }
