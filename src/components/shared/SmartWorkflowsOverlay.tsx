@@ -129,19 +129,33 @@ function WorkflowStepButton({
         isFocused ? 'opacity-100' : 'opacity-30'
       }`}>
         <p className="leading-[24px] whitespace-pre">{step.label}</p>
+        
+        {/* Focus mode indicator chevron - positioned relative to text */}
+        {hasFocusMode && (
+          <div 
+            className={`absolute -bottom-6 left-0 right-0 transition-opacity duration-300 ${
+              isFocused ? 'opacity-100' : 'opacity-30'
+            }`}
+          >
+            <svg 
+              width="100%" 
+              height="12" 
+              viewBox="0 0 32 12" 
+              fill="none" 
+              xmlns="http://www.w3.org/2000/svg"
+              className="stroke-purple-500"
+              preserveAspectRatio="none"
+            >
+              <path 
+                d="M2 2L16 10L30 2" 
+                strokeWidth="2.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+        )}
       </div>
-
-      {/* Focus mode indicator line */}
-      {hasFocusMode && (
-        <div 
-          className={`absolute bottom-0 left-0 right-0 h-[3px] bg-purple-500 transition-opacity duration-300 ${
-            isFocused ? 'opacity-100' : 'opacity-30'
-          }`}
-          style={{
-            marginTop: '8px'
-          }}
-        />
-      )}
     </button>
   );
 }

@@ -247,6 +247,23 @@ export function SettingsMenu() {
             </div>
           </div>
 
+          {/* Smart Navigator Settings */}
+          <div className="mb-6">
+            <h3 className="text-lg font-medium text-white mb-4">Smart Navigator Settings</h3>
+            <div className="space-y-3">
+              <ShortcutEditor
+                label="Previous Step"
+                shortcut={typeof inputSettings.navigatorPreviousStep === 'string' ? inputSettings.navigatorPreviousStep : formatInputShortcut(inputSettings.navigatorPreviousStep)}
+                onUpdate={(shortcut) => updateInputShortcut('navigatorPreviousStep', shortcut)}
+              />
+              <ShortcutEditor
+                label="CINE Button"
+                shortcut={typeof inputSettings.navigatorCineButton === 'string' ? inputSettings.navigatorCineButton : formatInputShortcut(inputSettings.navigatorCineButton)}
+                onUpdate={(shortcut) => updateInputShortcut('navigatorCineButton', shortcut)}
+              />
+            </div>
+          </div>
+
           {/* Voice Input Settings */}
           <div className="mb-6">
             <h3 className="text-lg font-medium text-white mb-4">Voice Input Settings</h3>
@@ -273,6 +290,35 @@ export function SettingsMenu() {
               shortcut={typeof inputSettings.voiceInputToggle === 'string' ? inputSettings.voiceInputToggle : formatInputShortcut(inputSettings.voiceInputToggle)}
               onUpdate={(shortcut) => updateInputShortcut('voiceInputToggle', shortcut)}
             />
+
+            {/* Activation Delay Slider */}
+            <div className="py-3 px-4 border-b border-gray-700">
+              <div className="flex flex-col mb-2">
+                <span className="text-white font-medium">Activation Delay</span>
+                <span className="text-gray-400 text-sm">Time to hold button before voice activates (milliseconds)</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <input
+                  type="range"
+                  min="0"
+                  max="3000"
+                  step="100"
+                  value={inputSettings.voiceActivationDelay}
+                  onChange={(e) => updateSetting('voiceActivationDelay', parseInt(e.target.value))}
+                  className="flex-1 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  max="5000"
+                  step="100"
+                  value={inputSettings.voiceActivationDelay}
+                  onChange={(e) => updateSetting('voiceActivationDelay', parseInt(e.target.value) || 0)}
+                  className="w-20 px-2 py-1 bg-gray-700 text-white border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                />
+                <span className="text-gray-400 text-sm">ms</span>
+              </div>
+            </div>
           </div>
 
           {/* Focus Mode Settings */}

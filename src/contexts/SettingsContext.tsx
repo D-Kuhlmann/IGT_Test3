@@ -29,9 +29,13 @@ export interface InputSettings {
   workflowStepRight: string | KeyboardShortcut | MouseInput;
   workflowClose: string | KeyboardShortcut | MouseInput;
   workflowStepActivate: string | KeyboardShortcut | MouseInput;
+  // Smart Navigator controls
+  navigatorPreviousStep: string | KeyboardShortcut | MouseInput;
+  navigatorCineButton: string | KeyboardShortcut | MouseInput;
   // Voice input controls
   voiceInputToggle: string | KeyboardShortcut | MouseInput;
   voiceInputEnabled: boolean;
+  voiceActivationDelay: number; // Milliseconds to hold before voice activates
   // Focus mode controls
   focusModeEnabled: boolean;
   focusModeToggle: string | KeyboardShortcut | MouseInput;
@@ -51,9 +55,13 @@ const defaultSettings: InputSettings = {
   workflowStepRight: 'wheel:down',
   workflowClose: 'ArrowUp',
   workflowStepActivate: 'Enter',
+  // Smart Navigator defaults
+  navigatorPreviousStep: 'q',
+  navigatorCineButton: 'u',
   // Voice input defaults
   voiceInputToggle: ' ', // Spacebar
   voiceInputEnabled: true,
+  voiceActivationDelay: 1000, // 1 second default
   // Focus mode defaults
   focusModeEnabled: true,
   focusModeToggle: 'Enter',

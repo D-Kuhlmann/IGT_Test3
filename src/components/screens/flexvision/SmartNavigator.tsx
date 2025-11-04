@@ -580,6 +580,19 @@ function IsocenterStep({ onPrevious, onContinue }: IsocenterStepProps) {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // CINE button (U key by default) - triggers acquisition
+      if (matchesInput(event, inputSettings.navigatorCineButton)) {
+        event.preventDefault();
+        if (isEnterPressed && !isAcquisitionMade) {
+          // Left viewport acquisition
+          handleCinePedalClick();
+        } else if (rightEnterPressed && !rightAcquisitionMade) {
+          // Right viewport acquisition
+          handleRightCinePedalClick();
+        }
+        return;
+      }
+
       if (matchesInput(event, inputSettings.workflowStepActivate)) {
         if (!isEnterPressed) {
           // First Enter - left viewport ready for acquisition
@@ -1218,6 +1231,14 @@ export function SmartNavigator({ componentSize = 'large', isActive = false, onCo
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Global navigation: Previous step (Q key by default)
+      if (matchesInput(event, inputSettings.navigatorPreviousStep)) {
+        event.preventDefault();
+        event.stopPropagation();
+        handlePrevious();
+        return;
+      }
+
       if (currentStep === 1) {
         // Protocol selection navigation
         if (matchesInput(event, inputSettings.workflowStepLeft)) {

@@ -6,6 +6,7 @@ import { useVoiceCommands } from '../hooks/useVoiceCommands';
 import { useGlobalVoice } from '../contexts/GlobalVoiceContext';
 import { useVoiceInputState } from '../contexts/VoiceInputStateContext';
 import { useInputBroadcast } from '../contexts/InputBroadcastContext';
+import { useSettings } from '../contexts/SettingsContext';
 
 export function GlobalVoiceCommandHandler() {
   const location = useLocation();
@@ -13,6 +14,7 @@ export function GlobalVoiceCommandHandler() {
   const { setFeedback, setTranscript, isKeyPressed, setIsListening } = useVoiceInputState();
   const { resetTranscript } = useSpeechRecognition();
   const inputBroadcast = useInputBroadcast();
+  const { inputSettings } = useSettings();
   const feedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastProcessedTranscriptRef = useRef<string>('');
   const commandActionRef = useRef<(() => void) | null>(null);
@@ -89,9 +91,23 @@ export function GlobalVoiceCommandHandler() {
       feedbackTimeoutRef.current = setTimeout(() => {
         setFeedback(null);
         
+        // Close all menus after feedback is complete
+        const closeAllMenusEvent = new CustomEvent('closeAllMenus');
+        window.dispatchEvent(closeAllMenusEvent);
+        
         // Check if user is still holding the key
         if (isKeyPressed) {
-          SpeechRecognition.startListening({ continuous: true, language: 'en-US' });
+          // Clear transcript before restarting to hide the overlay
+          setTranscript('');
+          resetTranscript();
+          lastTranscriptRef.current = '';
+          
+          // Manually set listening state to keep panel visible during restart
+          setIsListening(true);
+          
+          // Broadcast keydown to trigger proper voice activation through VoiceInput component
+          // Use a generic key code since we're just triggering the restart
+          inputBroadcast.broadcastVoiceEvent('keydown', 'VoiceRestart');
         } else {
           // Panel will close automatically since no listening and no feedback
         }

@@ -125,6 +125,9 @@ export function VoiceInput({
 
   // Track listening state with ref to avoid dependency issues
   const listeningRef = useRef(false);
+  
+  // Timer ref for delayed voice activation (1 second hold required)
+  const voiceActivationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Push-to-talk keyboard control for voice input
   useEffect(() => {
@@ -163,60 +166,66 @@ export function VoiceInput({
       const unsubscribe = inputBroadcast.onVoiceEvent((data) => {
         if (data.eventType === 'keydown') {
           // Only start if not already listening (prevents repeat keydown events)
-          if (!listeningRef.current) {
+          if (!listeningRef.current && !voiceActivationTimerRef.current) {
             voiceState.setIsKeyPressed(true);
             
-            // Check if window has focus
-            if (document.hasFocus()) {
-            } else {
-              // Try to focus the window (may not work due to browser restrictions)
-              window.focus();
-            }
+            console.log('Voice activation timer starting with delay:', inputSettings.voiceActivationDelay, 'ms');
             
-            try {
-              listeningRef.current = true;
-              
-              // Reset transcript at the START of a new voice session
-              resetTranscript();
-              
-              // Start listening first, then add debug listeners without overwriting library's handlers
-              SpeechRecognition.startListening({ continuous, language });
-              
-              // Add debug listeners AFTER starting (don't overwrite existing handlers)
-              const recognition = (SpeechRecognition as any).getRecognition?.();
-              if (recognition) {
-                
-                // Save existing handlers
-                const originalOnStart = recognition.onstart;
-                const originalOnEnd = recognition.onend;
-                const originalOnError = recognition.onerror;
-                const originalOnResult = recognition.onresult;
-                
-                // Add our debug logging WITHOUT overwriting
-                recognition.addEventListener('start', () => {
-                });
-                
-                recognition.addEventListener('end', () => {
-                  listeningRef.current = false;
-                });
-                
-                recognition.addEventListener('error', (event: any) => {
-                  if (event.error === 'not-allowed') {
-                  } else if (event.error === 'no-speech') {
-                  }
-                  listeningRef.current = false;
-                });
-                
-                recognition.addEventListener('result', (event: any) => {
-                  const last = event.results.length - 1;
-                  const text = event.results[last][0].transcript;
-                });
+            // Start timer - voice will activate after configured delay
+            voiceActivationTimerRef.current = setTimeout(() => {
+              console.log('Voice activation timer completed - starting voice input');
+              // Check if window has focus
+              if (document.hasFocus()) {
+              } else {
+                // Try to focus the window (may not work due to browser restrictions)
+                window.focus();
               }
               
-              onStart?.();
-            } catch (error) {
-              listeningRef.current = false;
-            }
+              try {
+                listeningRef.current = true;
+                
+                // Reset transcript at the START of a new voice session
+                resetTranscript();
+                
+                // Start listening first, then add debug listeners without overwriting library's handlers
+                SpeechRecognition.startListening({ continuous, language });
+                
+                // Add debug listeners AFTER starting (don't overwrite existing handlers)
+                const recognition = (SpeechRecognition as any).getRecognition?.();
+                if (recognition) {
+                  
+                  // Save existing handlers
+                  const originalOnStart = recognition.onstart;
+                  const originalOnEnd = recognition.onend;
+                  const originalOnError = recognition.onerror;
+                  const originalOnResult = recognition.onresult;
+                  
+                  // Add our debug logging WITHOUT overwriting
+                  recognition.addEventListener('start', () => {
+                  });
+                  
+                  recognition.addEventListener('end', () => {
+                    listeningRef.current = false;
+                  });
+                  
+                  recognition.addEventListener('error', (event: any) => {
+                    if (event.error === 'not-allowed') {
+                    } else if (event.error === 'no-speech') {
+                    }
+                    listeningRef.current = false;
+                  });
+                  
+                  recognition.addEventListener('result', (event: any) => {
+                    const last = event.results.length - 1;
+                    const text = event.results[last][0].transcript;
+                  });
+                }
+                
+                onStart?.();
+              } catch (error) {
+                listeningRef.current = false;
+              }
+            }, inputSettings.voiceActivationDelay); // Use configurable delay
           } else {
           }
         } else if (data.eventType === 'reset') {
@@ -237,7 +246,17 @@ export function VoiceInput({
             }
           }
         } else if (data.eventType === 'keyup') {
+          // Clear the activation timer if button released before 1 second
+          if (voiceActivationTimerRef.current) {
+            clearTimeout(voiceActivationTimerRef.current);
+            voiceActivationTimerRef.current = null;
+          }
+          
           voiceState.setIsKeyPressed(false);
+          
+          // Close all menus when voice button is released
+          const closeAllMenusEvent = new CustomEvent('closeAllMenus');
+          window.dispatchEvent(closeAllMenusEvent);
           
           // Check feedback using the global state
           const hasFeedback = voiceState.feedback !== null && voiceState.feedback !== '';
@@ -252,12 +271,19 @@ export function VoiceInput({
         }
       });
 
-      return unsubscribe;
+      return () => {
+        // Clean up timer on unmount
+        if (voiceActivationTimerRef.current) {
+          clearTimeout(voiceActivationTimerRef.current);
+          voiceActivationTimerRef.current = null;
+        }
+        unsubscribe();
+      };
     } else {
       // FlexVision: No microphone - just listen for broadcasts (don't start voice recognition)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [screenId, screenHasMicrophone, inputSettings.voiceInputToggle, inputSettings.voiceInputEnabled, inputBroadcast]);
+  }, [screenId, screenHasMicrophone, inputSettings.voiceInputToggle, inputSettings.voiceInputEnabled, inputSettings.voiceActivationDelay, inputBroadcast]);
 
   // Toggle voice recognition on/off
   const handleVoiceToggle = () => {

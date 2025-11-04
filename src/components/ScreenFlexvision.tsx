@@ -29,7 +29,7 @@ function ScreenFlexvisionInner() {
   const inputBroadcast = useInputBroadcast();
   const workflowSync = useWorkflowSync();
   const { registerHandlers, unregisterHandlers } = useGlobalVoice();
-  const { isListening, transcript, feedback } = useVoiceInputState();
+  const { isListening, transcript, feedback, isKeyPressed } = useVoiceInputState();
   const [focusMode, setFocusMode] = useState(false);
   const [focusedComponent, setFocusedComponent] = useState<'xray' | 'iw' | 'hemo' | 'smartnav' | 'placeholder'>('xray');
   const [selectedComponent, setSelectedComponent] = useState<'xray' | 'iw' | 'hemo' | 'smartnav' | 'placeholder' | null>(null);
@@ -75,8 +75,8 @@ function ScreenFlexvisionInner() {
   useEffect(() => {
   }, [transcript]);
 
-  // Keep overlay open when listening, showing feedback, or when there's a transcript to display
-  const shouldShowVoiceOverlay = isListening || !!feedback || !!transcript;
+  // Keep overlay open when listening, showing feedback, when there's a transcript to display, or when key is still pressed
+  const shouldShowVoiceOverlay = isListening || !!feedback || !!transcript || isKeyPressed;
 
   // Refs to track latest values for voice handlers
   const workflowSyncRef = useRef(workflowSync);
@@ -463,6 +463,20 @@ function ScreenFlexvisionInner() {
     // Only register once on mount, handlers will use latest values via closure
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Listen for closeAllMenus event from voice input
+  useEffect(() => {
+    const handleCloseAllMenus = () => {
+      setShowWorkflows(false);
+      setShowPresets(false);
+      setIsSettingsOpen(false);
+    };
+
+    window.addEventListener('closeAllMenus', handleCloseAllMenus);
+    return () => {
+      window.removeEventListener('closeAllMenus', handleCloseAllMenus);
+    };
+  }, [setIsSettingsOpen]);
 
   const handleWorkflowStepChange = (step: WorkflowStep) => {
     workflowSync.setWorkflowStepId(step.id, activePreset);
