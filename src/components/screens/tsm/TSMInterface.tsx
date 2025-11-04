@@ -315,7 +315,7 @@ export function TSMInterface() {
   };
 
   return (
-    <div className="bg-black flex flex-col w-[1200px] h-[800px]">
+    <div className="bg-black flex flex-col w-screen h-screen overflow-hidden">
       {/* Component area - full width, no gap */}
       <div className="flex-1 w-full overflow-hidden">
         {renderActiveComponent()}
