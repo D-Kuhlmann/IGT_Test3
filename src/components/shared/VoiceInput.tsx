@@ -169,14 +169,10 @@ export function VoiceInput({
           if (!listeningRef.current && !voiceActivationTimerRef.current) {
             voiceState.setIsKeyPressed(true);
             
-            console.log('Voice activation timer starting with delay:', inputSettings.voiceActivationDelay, 'ms');
-            
             // Start timer - voice will activate after configured delay
             voiceActivationTimerRef.current = setTimeout(() => {
-              console.log('Voice activation timer completed - starting voice input');
               // Check if window has focus
-              if (document.hasFocus()) {
-              } else {
+              if (!document.hasFocus()) {
                 // Try to focus the window (may not work due to browser restrictions)
                 window.focus();
               }
@@ -187,12 +183,19 @@ export function VoiceInput({
                 // Reset transcript at the START of a new voice session
                 resetTranscript();
                 
-                // Start listening first, then add debug listeners without overwriting library's handlers
-                SpeechRecognition.startListening({ continuous, language });
+                // Start listening with interimResults enabled for real-time updates (required on Windows/Chrome)
+                SpeechRecognition.startListening({ 
+                  continuous, 
+                  language,
+                  interimResults: true  // Critical for Windows - enables real-time transcription
+                });
                 
                 // Add debug listeners AFTER starting (don't overwrite existing handlers)
                 const recognition = (SpeechRecognition as any).getRecognition?.();
                 if (recognition) {
+                  // Force interim results on the raw recognition object (Windows Chrome fix)
+                  recognition.interimResults = true;
+                  recognition.continuous = true;
                   
                   // Save existing handlers
                   const originalOnStart = recognition.onstart;
@@ -213,6 +216,31 @@ export function VoiceInput({
                     } else if (event.error === 'no-speech') {
                     }
                     listeningRef.current = false;
+                  });
+                  
+                  // CRITICAL FOR WINDOWS: Broadcast transcripts immediately from raw events
+                  // This bypasses React state batching which delays updates on Windows
+                  recognition.addEventListener('result', (event: any) => {
+                    // Build full transcript from all results (final + interim)
+                    let fullTranscript = '';
+                    for (let i = 0; i < event.results.length; i++) {
+                      fullTranscript += event.results[i][0].transcript;
+                      if (i < event.results.length - 1) {
+                        fullTranscript += ' ';
+                      }
+                    }
+                    
+                    const trimmedTranscript = fullTranscript.trim();
+                    
+                    // Broadcast immediately - don't wait for React state
+                    if (trimmedTranscript) {
+                      inputBroadcast.broadcastTranscript(trimmedTranscript, true);
+                      
+                      // Also call onTranscript callback immediately
+                      if (onTranscript) {
+                        onTranscript(trimmedTranscript);
+                      }
+                    }
                   });
                   
                   recognition.addEventListener('result', (event: any) => {
@@ -241,11 +269,15 @@ export function VoiceInput({
               setTimeout(() => {
                 listeningRef.current = true;
                 resetTranscript();
-                SpeechRecognition.startListening({ continuous, language });
+                SpeechRecognition.startListening({ 
+                  continuous, 
+                  language,
+                  interimResults: true  // Critical for Windows
+                });
               }, 100); // Small delay to ensure stop completes
             }
           }
-        } else if (data.eventType === 'keyup') {
+        } else if (data.eventType == 'keyup') {
           // Clear the activation timer if button released before 1 second
           if (voiceActivationTimerRef.current) {
             clearTimeout(voiceActivationTimerRef.current);
@@ -292,7 +324,11 @@ export function VoiceInput({
       onStop?.();
     } else {
       resetTranscript();
-      SpeechRecognition.startListening({ continuous, language });
+      SpeechRecognition.startListening({ 
+        continuous, 
+        language,
+        interimResults: true  // Critical for Windows
+      });
       onStart?.();
     }
   };

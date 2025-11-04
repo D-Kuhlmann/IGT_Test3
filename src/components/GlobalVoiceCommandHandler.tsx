@@ -153,19 +153,25 @@ export function GlobalVoiceCommandHandler() {
       // Update global listening state so FlexVision overlay appears
       setIsListening(data.isListening);
       
-      // If listening stopped and we have a transcript but no successful command, show failure feedback
-      if (!data.isListening && lastTranscriptRef.current && !commandSuccessfulRef.current) {
-        
-        // Show failure feedback for 3 seconds then close
-        setFeedback('Command not recognized');
-        
+      // If listening stopped, wait a bit for Windows to deliver final transcripts, then check for errors
+      if (!data.isListening) {
+        // Windows fix: transcripts arrive AFTER listening stops
+        // Wait 1 second for all transcripts to be processed
         setTimeout(() => {
-          setFeedback(null);
-          setTranscript('');
-          resetTranscript();
-          lastTranscriptRef.current = '';
-          lastProcessedTranscriptRef.current = '';
-        }, 3000);
+          if (lastTranscriptRef.current && !commandSuccessfulRef.current) {
+            // Show failure feedback for 3 seconds then close
+            setFeedback('Command not recognized');
+            
+            setTimeout(() => {
+              setFeedback(null);
+              setTranscript('');
+              resetTranscript();
+              lastTranscriptRef.current = '';
+              lastProcessedTranscriptRef.current = '';
+              commandSuccessfulRef.current = false;
+            }, 3000);
+          }
+        }, 1000); // 1 second delay for Windows to process all transcripts
       }
       
       // Reset tracking when listening starts
