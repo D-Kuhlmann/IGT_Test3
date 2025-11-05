@@ -10,6 +10,7 @@ export { AnimatedECG } from './components/shared/AnimatedECG';
 export { XrayLive } from './components/screens/flexvision/XrayLive';
 export { Hemo } from './components/screens/flexvision/Hemo';
 export { FlexVisionStartup } from './components/screens/flexvision/FlexVisionStartup';
+export { InterventionalIVUS } from './components/screens/flexvision/InterventionalIVUS';
 
 // Hooks
 export { useAppState } from './hooks/useAppState';

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import svgPaths from "../../imports/svg-02p7sqlbj5";
 import arrowSvgPaths from "../../imports/svg-xo6dcn4zhp";
 import type { WorkflowStep } from "../../types";
@@ -44,30 +44,25 @@ function WorkflowStepButton({
           </svg>
         );
       default:
-        return null;
+        // Fallback to original icons for other steps (Preset 1)
+        return stepIcons[stepIndex] || stepIcons[0];
     }
   };
+  
+  const stepIcons = [
+    <svg key="0" className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 40 40"><path d="M16.1667 26L5.66667 15.5L19.5 1.66667L33.3333 15.5L28.5833 20.25L26.8333 18.5L29.8333 15.5L19.5 5.16667L9.16667 15.5L16.1667 22.5V26ZM35 25C34.0833 25 33.3333 25.75 33.3333 26.6667V28.3333H31.6667V23.3333C31.6667 22.4167 30.9167 21.6667 30 21.6667C29.0833 21.6667 28.3333 22.4167 28.3333 23.3333V26.6667H26.6667V21.6667C26.6667 20.75 25.9167 20 25 20C24.0833 20 23.3333 20.75 23.3333 21.6667V26.6667H21.6667V13.3333C21.6667 12.4167 20.9167 11.6667 20 11.6667C19.0833 11.6667 18.3333 12.4167 18.3333 13.3333V33.3333H16.6667V31.6667C16.6667 30.75 15.9167 30 15 30C14.0833 30 13.3333 30.75 13.3333 31.6667V35.4167L14.8333 38.3333H34.8333L36.6667 31.9167V26.6667C36.6667 25.75 35.9167 25 35 25Z" fill="var(--fill-0, white)" /></svg>,
+    <svg key="1" className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 40 40"><path d="M39.1667 24.24C34.605 29.7517 27.7133 33.2633 20 33.2633C12.2867 33.2633 5.395 29.7517 0.833333 24.24L14.8608 7.185C16.4117 7.95333 18.1525 8.39667 20 8.39667C21.8475 8.39667 23.5883 7.95333 25.1392 7.185L39.1667 24.24Z" fill="var(--fill-0, white)" /></svg>,
+    <svg key="2" className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 40 40"><path d="M20 7.91667C13.3333 7.91667 7.91667 13.3333 7.91667 20C7.91667 22.8583 8.91667 25.4833 10.5833 27.55L15.9167 22.8833C15.3417 22.0667 15 21.075 15 20C15 17.2417 17.2417 15 20 15C22.7583 15 25 17.2417 25 20C25 21.075 24.6583 22.0667 24.0833 22.8833L29.4167 27.55C31.0833 25.4833 32.0833 22.8583 32.0833 20C32.0833 13.3333 26.6667 7.91667 20 7.91667ZM20 25C18.9167 25 17.9167 24.65 17.1 24.0667L11.7167 28.775C13.8833 30.825 16.7917 32.0833 20 32.0833C23.2083 32.0833 26.1167 30.8167 28.2833 28.775L22.9 24.0667C22.0833 24.65 21.0833 25 20 25ZM20 1.66667C9.875 1.66667 1.66667 9.875 1.66667 20C1.66667 24.8667 3.56667 29.2917 6.66667 32.575V38.3333H33.3333V32.575C36.4333 29.2917 38.3333 24.8667 38.3333 20C38.3333 9.875 30.125 1.66667 20 1.66667ZM20 34.5833C11.9583 34.5833 5.41667 28.0417 5.41667 20C5.41667 11.9583 11.9583 5.41667 20 5.41667C28.0417 5.41667 34.5833 11.9583 34.5833 20C34.5833 28.0417 28.0417 34.5833 20 34.5833Z" fill="var(--fill-0, white)" /></svg>,
+    <svg key="3" className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 40 40"><path d="M20 15C22.75 15 25 17.25 25 20C25 22.75 22.75 25 20 25C17.25 25 15 22.75 15 20C15 17.25 17.25 15 20 15ZM20 10C14.475 10 10 14.475 10 20C10 25.525 14.475 30 20 30C25.525 30 30 25.525 30 20C30 14.475 25.525 10 20 10Z" fill="var(--fill-0, white)" opacity="0.3" /><path d="M20 10C25.525 10 30 14.475 30 20C25.525 30 20 30C14.475 30 10 25.525 10 20C10 14.475 14.475 10 20 10ZM20 5C11.725 5 5 11.725 5 20C5 28.275 11.725 35 20 35C28.275 35 35 28.275 35 20C35 11.725 28.275 5 20 5Z" fill="var(--fill-0, white)" opacity="0.5" /><path d="M20 5C28.275 5 35 11.725 35 20C35 28.275 28.275 35 20 35C11.725 35 5 28.275 5 20C5 11.725 11.725 5 20 5ZM20 1.66667C9.87083 1.66667 1.66667 9.87083 1.66667 20C1.66667 30.1292 9.87083 38.3333 20 38.3333C30.1292 38.3333 38.3333 30.1292 38.3333 20C38.3333 9.87083 30.1292 1.66667 20 1.66667Z" fill="var(--fill-0, white)" /></svg>,
+    <svg key="4" className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 40 40"><path d="M20 7.91667C13.3333 7.91667 7.91667 13.3333 7.91667 20C7.91667 22.8583 8.91667 25.4833 10.5833 27.55L15.9167 22.8833C15.3417 22.0667 15 21.075 15 20C15 17.2417 17.2417 15 20 15C22.7583 15 25 17.2417 25 20C25 21.075 24.6583 22.0667 24.0833 22.8833L29.4167 27.55C31.0833 25.4833 32.0833 22.8583 32.0833 20C32.0833 13.3333 26.6667 7.91667 20 7.91667ZM20 25C18.9167 25 17.9167 24.65 17.1 24.0667L11.7167 28.775C13.8833 30.825 16.7917 32.0833 20 32.0833C23.2083 32.0833 26.1167 30.8167 28.2833 28.775L22.9 24.0667C22.0833 24.65 21.0833 25 20 25ZM20 1.66667C9.875 1.66667 1.66667 9.875 1.66667 20C1.66667 24.8667 3.56667 29.2917 6.66667 32.575V38.3333H33.3333V32.575C36.4333 29.2917 38.3333 24.8667 38.3333 20C38.3333 9.875 30.125 1.66667 20 1.66667ZM20 34.5833C11.9583 34.5833 5.41667 28.0417 5.41667 20C5.41667 11.9583 11.9583 5.41667 20 5.41667C28.0417 5.41667 34.5833 11.9583 34.5833 20C34.5833 28.0417 28.0417 34.5833 20 34.5833Z" fill="var(--fill-0, white)" /></svg>,
+    <svg key="5" className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 40 40"><path d="M19.1667 19.1667V37.5H37.5V35.8333H20.8333V20.8333H37.5V19.1667H19.1667ZM37.5 28.3333L28.3333 23.75V26.6667H22.5V30H28.3333V32.9167L37.5 28.3333Z" fill="var(--fill-0, white)" /><path d="M8.33333 10C8.33333 5.33333 12 1.66667 16.6667 1.66667C21.3333 1.66667 25 5.33333 25 10C25 14.6667 21.3333 18.3333 16.6667 18.3333C12 18.3333 8.33333 14.6667 8.33333 10ZM16.6667 19.9167C14.6667 19.9167 12.6667 19.25 11.1667 18.25H11.0833H10C6.33333 18.25 3.33333 21.25 3.33333 24.9167V31.5833H17.5V19.8333C17.25 19.9167 16.9167 19.9167 16.6667 19.9167Z" fill="var(--fill-0, white)" opacity="0.5" /></svg>
+  ];
 
   return (
     <button
       className="content-stretch flex gap-[16px] items-center relative shrink-0 p-2 rounded-lg transition-all duration-300 min-w-[120px] bg-transparent hover:bg-white/5"
       onClick={onClick}
     >
-      {/* Connecting Line - hidden for first step */}
-      {stepIndex > 0 && (
-        <div className="flex h-[58px] items-center justify-center relative shrink-0 w-[15px]">
-          <div className="flex-none rotate-[270deg]">
-            <div className="h-[15px] relative w-[58px]">
-              <div className="absolute inset-[46.67%_-0.86%]">
-                <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 60 1">
-                  <path d="M59 0.500001H1" stroke="var(--stroke-0, #BEBEBE)" strokeLinecap="square" />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Icon */}
       <div className={`relative shrink-0 size-[40px] transition-opacity duration-300 ${
         isFocused ? 'opacity-100' : 'opacity-30'
@@ -194,7 +189,7 @@ export function SmartWorkflowBar({
 
   return (
     <div
-      className="box-border content-stretch flex flex-col gap-4 items-start justify-center px-4 py-3 relative w-full h-fit origin-top-left"
+      className="box-border content-stretch flex flex-col gap-4 items-start justify-center px-4 py-3 relative w-full h-fit origin-top-left rounded-lg"
       style={{
         backgroundImage: "linear-gradient(45deg, #27316F 20%, #2E9BC8 140%)",
         transform: `scale(${scale})`,
@@ -208,7 +203,7 @@ export function SmartWorkflowBar({
           <div className="box-border content-stretch flex gap-[25px] items-center justify-center px-[25px] py-0 relative w-full h-full">
             
             {/* Stars Icon */}
-            <div className="h-[50px] relative shrink-0 w-[56.571px]">
+            <div className="h-[40px] relative shrink-0 w-[45px]">
               <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 57 50">
                 <g id="Knob-Stars">
                   <path d="M36.6045 11.1777C36.6045 11.1777 42.6021 11.9393 43.6626 12.2595C44.3577 12.4606 45.0528 12.9801 45.3809 14.142C45.6732 15.3039 46.3683 21.875 46.3683 21.875L46.8068 21.875C46.8068 21.875 47.5019 15.3039 47.7942 14.142C48.0015 13.2129 48.6643 12.4867 49.5124 12.2595C50.5729 11.9393 56.5706 11.1777 56.5706 11.1777L56.5706 10.6973C56.5706 10.6973 50.5729 9.93573 49.5124 9.61547C48.6711 9.3734 48.0151 8.6528 47.7942 7.73296C47.5019 6.57107 46.8068 7.67259e-08 46.8068 7.67259e-08L46.3683 7.34284e-08C46.3683 7.34284e-08 45.6732 6.57107 45.3809 7.73296C45.1735 8.66211 44.5107 9.3883 43.6626 9.61547C42.6021 9.93573 36.6045 10.6973 36.6045 10.6973L36.6045 11.1777Z" fill="var(--fill-0, white)" />
@@ -293,13 +288,28 @@ export function SmartWorkflowBar({
                 >
                   {workflowSteps.map((step, stepIndex) => {
                     return (
-                      <WorkflowStepButton
-                        key={step.id}
-                        step={step}
-                        stepIndex={stepIndex}
-                        isFocused={stepIndex === focusedStepIndex}
-                        onClick={() => handleStepClick(step)}
-                      />
+                      <React.Fragment key={step.id}>
+                        {/* Separator line before each step except the first */}
+                        {stepIndex > 0 && (
+                          <div className="flex h-[58px] items-center justify-center relative shrink-0 w-[15px]">
+                            <div className="flex-none rotate-[270deg]">
+                              <div className="h-[15px] relative w-[58px]">
+                                <div className="absolute inset-[46.67%_-0.86%]">
+                                  <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 60 1">
+                                    <path d="M59 0.500001H1" stroke="var(--stroke-0, #BEBEBE)" strokeLinecap="square" />
+                                  </svg>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        <WorkflowStepButton
+                          step={step}
+                          stepIndex={stepIndex}
+                          isFocused={stepIndex === focusedStepIndex}
+                          onClick={() => handleStepClick(step)}
+                        />
+                      </React.Fragment>
                     );
                   })}
                 </div>

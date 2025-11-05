@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { XrayLive } from './screens/flexvision/XrayLive';
 import { InterventionalWorkspace } from './screens/flexvision/InterventionalWorkspace';
 import { Hemo } from './screens/flexvision/Hemo';
+import { InterventionalIVUS } from './screens/flexvision/InterventionalIVUS';
 import { SmartNavigator } from "./screens/flexvision/SmartNavigator";
 import { Placeholder } from "./screens/flexvision/Placeholder";
 import { StatusBar } from "./shared/StatusBar";
@@ -93,7 +94,7 @@ function ScreenFlexvisionInner() {
 
   // Component layout configurations for each workflow step
   interface ComponentConfig {
-    component: 'xrayLive' | 'interventionalWorkspace' | 'hemo' | 'smartNavigator' | 'placeholder';
+    component: 'xrayLive' | 'interventionalWorkspace' | 'hemo' | 'smartNavigator' | 'placeholder' | 'interventionalIVUS';
     size: 'small' | 'medium' | 'large' | 'xlarge'; // Size determines grid span
     position?: number; // Optional explicit position (0-based)
   }
@@ -140,11 +141,13 @@ function ScreenFlexvisionInner() {
       ]
     },
     "ivus-acquisition": {
-      gridLayout: 'standard',
+      gridLayout: 'extended',
       components: [
-        { component: 'xrayLive', size: 'large' },
-        { component: 'interventionalWorkspace', size: 'medium' },
-        { component: 'hemo', size: 'medium' }
+        { component: 'placeholder', size: 'small' },              // Top left
+        { component: 'placeholder', size: 'small' },              // Top center
+        { component: 'placeholder', size: 'small' },              // Top right
+        { component: 'placeholder', size: 'medium' },             // Left side - vertical medium (1x2)
+        { component: 'interventionalIVUS', size: 'large' }        // Bottom right - large (2x2)
       ]
     },
     "xray": {
@@ -902,6 +905,21 @@ function ScreenFlexvisionInner() {
             
             // Clear 3x3 Grid System with Explicit Rules
             const get3x3Layout = () => {
+              // Special layout override for IVUS Acquisition step
+              if (workflowSync.workflowStepId === 'ivus-acquisition') {
+                return [
+                  // Placeholder 1 - Top left (1x1)
+                  { col: 1, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
+                  // Placeholder 2 - Top center (1x1)  
+                  { col: 2, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
+                  // Placeholder 3 - Top right (1x1)
+                  { col: 3, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
+                  // Placeholder 4 - Left side vertical medium (1x2)
+                  { col: 1, row: 2, colSpan: 1, rowSpan: 2, originalSize: 'medium', adjustedSize: 'medium', variant: 'vertical' },
+                  // InterventionalIVUS - Bottom right large (2x2) - FORCE 2x2
+                  { col: 2, row: 2, colSpan: 2, rowSpan: 2, originalSize: 'large', adjustedSize: 'large' }
+                ];
+              }
               // Special layout override for 3D scan step
               if (workflowSync.workflowStepId === '3d-scan') {
                 return [
@@ -1216,6 +1234,10 @@ function ScreenFlexvisionInner() {
                 case 'hemo':
                   renderedComponent = <Hemo componentSize={componentSize} />;
                   focusKey = 'hemo';
+                  break;
+                case 'interventionalIVUS':
+                  renderedComponent = <InterventionalIVUS componentSize={componentSize} />;
+                  focusKey = 'hemo'; // Reuse hemo focus key for now
                   break;
                 case 'smartNavigator':
                   // SmartNavigator is always active when rendered

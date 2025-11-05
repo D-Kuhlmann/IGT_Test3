@@ -166,7 +166,9 @@ function BottomNavigation({ onTabChange, activeTab, currentWorkflowStep, activeP
   };
 
   // Get visible tabs based on visible components
-  const visibleTabs = visibleComponents.map(comp => componentToTab[comp]);
+  const visibleTabs = visibleComponents
+    .map(comp => componentToTab[comp])
+    .filter(tab => tab !== undefined);
 
   return (
     <>
