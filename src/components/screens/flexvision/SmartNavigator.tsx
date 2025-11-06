@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ViewportHeader } from '../../shared/ViewportHeaders';
+import { CarmPositionConfirmOverlay } from '../../shared/CarmPositionConfirmOverlay';
 import svgPaths from './svg-paths';
 import CBCT1 from '../../../assets/CBCT1.png';
 import CBCT2 from '../../../assets/CBCT2.png';
@@ -29,6 +30,7 @@ interface SmartNavigatorProps {
   isActive?: boolean; // Whether this component should handle navigation
   onComplete?: () => void; // Callback when wizard is completed
   hideHeader?: boolean;
+  onOverlayStateChange?: (isActive: boolean) => void; // Callback when C-arm overlay state changes
 }
 
 interface SmartKnobIllustrationProps {
@@ -561,9 +563,10 @@ function AcquisitionStep({ onPrevious, onContinue }: AcquisitionStepProps) {
 interface IsocenterStepProps {
   onPrevious: () => void;
   onContinue?: () => void;
+  onOverlayStateChange?: (isActive: boolean) => void;
 }
 
-function IsocenterStep({ onPrevious, onContinue }: IsocenterStepProps) {
+function IsocenterStep({ onPrevious, onContinue, onOverlayStateChange }: IsocenterStepProps) {
   // Left viewport states
   const [isEnterPressed, setIsEnterPressed] = useState(false);
   const [isAcquisitionMade, setIsAcquisitionMade] = useState(false);
@@ -575,8 +578,18 @@ function IsocenterStep({ onPrevious, onContinue }: IsocenterStepProps) {
   const [rightAcquisitionMade, setRightAcquisitionMade] = useState(false);
   const [rightAligning, setRightAligning] = useState(false);
   const [rightAligned, setRightAligned] = useState(false);
+  
+  // C-arm overlay states
+  const [showCarmOverlay, setShowCarmOverlay] = useState(false);
+  const [isCarmMoving, setIsCarmMoving] = useState(false);
+  const [carmTargetPosition, setCarmTargetPosition] = useState<'AP' | 'Lateral'>('AP');
 
   const { inputSettings } = useSettings();
+  
+  // Notify parent when overlay state changes
+  useEffect(() => {
+    onOverlayStateChange?.(showCarmOverlay);
+  }, [showCarmOverlay, onOverlayStateChange]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -595,8 +608,9 @@ function IsocenterStep({ onPrevious, onContinue }: IsocenterStepProps) {
 
       if (matchesInput(event, inputSettings.workflowStepActivate)) {
         if (!isEnterPressed) {
-          // First Enter - left viewport ready for acquisition
-          setIsEnterPressed(true);
+          // First Enter - show C-arm overlay for AP position
+          setCarmTargetPosition('AP');
+          setShowCarmOverlay(true);
         } else if (isAcquisitionMade && !isAligning && !isAligned) {
           // Second Enter - start left alignment animation
           setIsAligning(true);
@@ -604,8 +618,9 @@ function IsocenterStep({ onPrevious, onContinue }: IsocenterStepProps) {
             setIsAligned(true);
           }, 2000);
         } else if (isAligned && !rightEnterPressed) {
-          // Third Enter - right viewport ready for acquisition
-          setRightEnterPressed(true);
+          // Third Enter - show C-arm overlay for Lateral position
+          setCarmTargetPosition('Lateral');
+          setShowCarmOverlay(true);
         } else if (rightEnterPressed && rightAcquisitionMade && !rightAligning) {
           // Fourth Enter - start right alignment animation
           setRightAligning(true);
@@ -633,6 +648,19 @@ function IsocenterStep({ onPrevious, onContinue }: IsocenterStepProps) {
     if (rightEnterPressed && !rightAcquisitionMade) {
       setRightAcquisitionMade(true);
     }
+  };
+  
+  const handleCarmConfirm = () => {
+    setShowCarmOverlay(false);
+    if (carmTargetPosition === 'AP') {
+      setIsEnterPressed(true); // Move to next step after C-arm confirmation
+    } else {
+      setRightEnterPressed(true); // Move to next step after C-arm confirmation
+    }
+  };
+  
+  const handleCarmCancel = () => {
+    setShowCarmOverlay(false);
   };
 
   return (
@@ -1037,6 +1065,14 @@ function IsocenterStep({ onPrevious, onContinue }: IsocenterStepProps) {
           Previous
         </button>
       </div>
+      
+      {/* C-arm Position Confirmation Overlay */}
+      <CarmPositionConfirmOverlay
+        isVisible={showCarmOverlay}
+        isMoving={isCarmMoving}
+        onConfirm={handleCarmConfirm}
+        onCancel={handleCarmCancel}
+      />
     </div>
   );
 }
@@ -1088,7 +1124,7 @@ function StepperControl({ value, onChange, unit }: StepperControlProps) {
   );
 }
 
-export function SmartNavigator({ componentSize = 'large', isActive = false, onComplete, hideHeader = false }: SmartNavigatorProps) {
+export function SmartNavigator({ componentSize = 'large', isActive = false, onComplete, hideHeader = false, onOverlayStateChange }: SmartNavigatorProps) {
   // Content scaling based on component size - headers stay normal, only content scales
   const getContentScale = () => {
     switch (componentSize) {
@@ -1552,6 +1588,7 @@ export function SmartNavigator({ componentSize = 'large', isActive = false, onCo
                 <IsocenterStep 
                   onPrevious={handlePrevious}
                   onContinue={handleContinue}
+                  onOverlayStateChange={onOverlayStateChange}
                 />
               )}
 

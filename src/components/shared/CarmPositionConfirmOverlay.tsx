@@ -40,8 +40,8 @@ export function CarmPositionConfirmOverlay({
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if any modifier keys are pressed
-      if (e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) {
+      // Ignore if any modifier keys are pressed or if it's a repeat event
+      if (e.ctrlKey || e.altKey || e.metaKey || e.shiftKey || e.repeat) {
         return;
       }
       

@@ -572,15 +572,21 @@ export function SmartWorkflowsOverlay({
                     {!isVoiceMode && (
                       <div className="grid-cols-[max-content] grid-rows-[max-content] inline-grid leading-[0] place-items-start relative shrink-0">
                         <div className="[grid-area:1_/_1] font-['CentraleSans:Bold',_sans-serif] ml-[79.488px] mt-[34px] not-italic relative text-[23px] text-[rgba(255,255,255,0.8)] w-[174.88px]">
-                          <p className="leading-[22px]">PTA Procedure</p>
+                          <p className="leading-[22px]">{activePreset === 1 ? 'PCI Procedure' : 'Embolisation'}</p>
                         </div>
-                        <div className="[grid-area:1_/_1] h-[48px] ml-0 mt-[4px] relative w-[50.874px]">
-                          <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 51 48">
-                            <path d={svgPaths.p1dc44680} fill="var(--fill-0, white)" />
-                          </svg>
+                        <div className="[grid-area:1_/_1] h-[56px] ml-0 mt-0 relative w-[50.874px] flex items-center justify-center">
+                          {activePreset === 1 ? (
+                            <svg className="h-[48px] w-auto" fill="none" preserveAspectRatio="xMidYMid meet" viewBox="0 0 44 58">
+                              <path d="M36.7652 28.9453C34.6702 25.6719 32.3134 23.0531 30.2184 21.4819C20.6599 14.6732 16.7318 15.8516 16.7318 15.8516C16.7318 15.8516 16.6009 15.9825 16.4699 16.1135C9.13745 19.7797 2.85246 31.1713 1.54304 33.6591C1.41211 34.0519 1.28117 34.4447 1.28117 34.8375C1.41211 48.7169 6.91151 49.8953 6.91151 49.8953C13.9821 55.1328 35.3249 57.7515 39.5149 57.7515C39.9077 57.7515 40.3005 57.7515 40.5624 57.6206C41.2171 57.6206 41.7408 57.3587 42.2646 56.9659C43.8358 55.7875 43.8358 53.8234 43.8358 53.8234C45.2761 40.7297 36.7652 28.9453 36.7652 28.9453ZM17.7793 14.1494L17.9102 14.5422C18.0412 14.5422 18.1721 14.5422 18.3031 14.5422C21.5765 12.1853 26.2902 13.4947 26.2902 13.4947C27.2068 12.0544 26.683 10.0904 26.683 10.0904C26.683 10.0904 20.9218 8.65005 16.6009 11.2688C16.9937 12.0544 17.3865 12.971 17.7793 14.1494ZM9.26838 13.3638C10.8396 13.7566 12.5418 14.2803 14.1131 14.935L14.8987 15.3278C15.1606 15.1969 15.4224 15.066 15.5534 14.935L15.8152 14.6732L16.2081 14.5422C16.2081 14.5422 16.339 14.5422 16.4699 14.5422C15.1606 10.876 13.7203 8.78098 13.5893 8.51911C12.4109 8.91192 11.1015 9.56661 10.054 10.4832C9.92307 11.0069 9.53026 12.0544 9.26838 13.3638ZM12.9346 3.01974L12.5418 0.270058C10.3159 -0.515566 8.35182 0.66287 8.35182 0.66287L8.87557 4.32911C9.92307 3.9363 11.2324 3.41255 12.9346 3.01974ZM2.98339 12.84C3.11433 12.84 3.24527 12.84 3.50714 12.84C4.4237 12.84 5.99495 12.84 7.95901 13.2328C8.35182 11.1378 8.74463 9.82848 8.74463 9.82848C12.0181 6.55505 17.5174 6.55505 17.5174 6.55505C18.0412 4.85287 16.9937 3.67443 16.9937 3.67443C9.79213 4.19818 6.64964 7.47161 6.64964 7.47161L5.34026 0.531933C3.50714 0.139121 2.06679 1.05568 2.06679 1.05568L3.50714 8.78098C3.24527 10.0904 3.11433 11.5307 2.98339 12.84ZM13.5893 16.2444C8.35182 13.7566 2.72152 14.1494 2.72152 14.1494C-0.421016 20.6963 -0.421017 27.1122 0.626482 32.2188C2.72152 28.6834 7.5662 20.4344 13.5893 16.2444Z" fill="var(--fill-0, white)" />
+                            </svg>
+                          ) : (
+                            <svg className="h-[48px] w-auto" fill="none" preserveAspectRatio="xMidYMid meet" viewBox="0 0 51 48">
+                              <path d={svgPaths.p1dc44680} fill="var(--fill-0, white)" />
+                            </svg>
+                          )}
                         </div>
                         <div className="[grid-area:1_/_1] font-['CentraleSans:Book',_sans-serif] ml-[77.332px] mt-0 not-italic relative text-[18px] text-[rgba(214,214,214,0.8)] w-[178.06px]">
-                          <p className="leading-[22px]">Periphereal Vascular</p>
+                          <p className="leading-[22px]">{activePreset === 1 ? 'Cardiology' : 'Neurology'}</p>
                         </div>
                       </div>
                     )}
@@ -752,7 +758,7 @@ export function SmartWorkflowsOverlay({
                     </div>
 
                     {/* Dashed Square */}
-                    <div className="relative shrink-0 size-[32px] border-2 border-dashed border-white rounded-sm">
+                    <div className="relative shrink-0 size-[48px] border-2 border-dashed border-white rounded-sm">
                     </div>
                     
                   </div>

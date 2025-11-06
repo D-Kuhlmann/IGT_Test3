@@ -7,6 +7,7 @@ import iconCollimation from "../../../assets/icon_automation_collimation.svg";
 import iconSmartMask from "../../../assets/icon_automation_smartmask.svg";
 import iconPatientDetection from "../../../assets/icon_automation_patientdetection.svg";
 import iconSpray from "../../../assets/dreft.svg";
+import { imgIcoCollablive } from "../../../imports/svg-w95w9";
 
 interface SmartOrchestratorMenuProps {
   activeComponents: Array<'xrayLive' | 'interventionalWorkspace' | 'hemo' | 'smartNavigator'>;
@@ -113,7 +114,7 @@ export function SmartOrchestratorMenu({
             
             {/* Spray bottle button - height matches title + space + bar */}
             <button className="w-40 self-stretch flex items-center justify-center bg-neutral-900 hover:bg-[#3a3a3a] rounded-lg transition-colors flex-shrink-0">
-              <img src={iconSpray} alt="Spray" className="w-20 h-30 object-contain" />
+              <img src={iconSpray} alt="Spray" className="h-3/4 w-auto object-contain" />
             </button>
           </div>
 
@@ -137,6 +138,21 @@ export function SmartOrchestratorMenu({
                   </div>
                 </div>
               ))}
+              
+              {/* Collaboration Live - Always visible */}
+              <div key="collaboration-live">
+                <h4 className="text-white text-lg font-['CentraleSans:Book',_sans-serif] mb-2">
+                  Collaboration Live
+                </h4>
+                <div className="bg-[#1a1a1a] rounded-lg overflow-hidden border border-gray-800 hover:border-cyan-500 transition-colors cursor-pointer">
+                  <div className="aspect-video bg-black/50 flex items-center justify-center relative">
+                    <div className="absolute top-2 left-2 w-8 h-8 bg-cyan-500 rounded flex items-center justify-center">
+                      <img src={imgIcoCollablive} alt="Collaboration Live" className="w-5 h-5" />
+                    </div>
+                    <span className="text-gray-500 text-sm">Preview</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

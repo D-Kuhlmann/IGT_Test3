@@ -22,6 +22,7 @@ import {
 } from "../../../imports/svg-w95w9";
 import DLSHome from "../../../assets/DLS_Home.png";
 import SmartUIOrchestrator from "../../../assets/SmartUIOrchestrator.png";
+import CollaborationLivePlaceholder from "../../../assets/CollabarationLivePlaceholder.png";
 import type { WorkflowStep } from "../../../types";
 
 function BottomNavButton({ 
@@ -85,7 +86,7 @@ function AppsButton({ onClick }: { onClick: () => void }) {
       aria-label="Open Smart UI Orchestrator"
       type="button"
     >
-      <div className="size-12">
+      <div className="size-24">
         <img className="block size-full object-contain" src={SmartUIOrchestrator} alt="Smart UI Orchestrator" />
       </div>
     </button>
@@ -158,10 +159,13 @@ function BottomNavigation({ onTabChange, activeTab, currentWorkflowStep, activeP
   };
 
   // Map component names to tab info
+  // ECG icon SVG data
+  const ecgIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M16.5 23h-.02a1 1 0 0 1-.935-.71l-5.11-17.03-3.99 11.565a.995.995 0 0 1-1.855.08L2.85 13H1v-2h2.5c.395 0 .755.235.915.595l.97 2.18 4.17-12.1A.98.98 0 0 1 10.52 1c.435.01.815.295.94.71l5.115 17.05 2.485-7.095A.99.99 0 0 1 20 11h3v2h-2.29l-3.265 9.33c-.14.4-.52.67-.945.67'%3E%3C/path%3E%3C/svg%3E";
+
   const componentToTab = {
     xrayLive: { id: "xray-live", icon: imgIcoCardio, label: "X-ray Live" },
     interventionalWorkspace: { id: "uniguide", icon: imgIcoIw, label: "UniGuide" },
-    hemo: { id: "hemo", icon: imgIcoCollablive, label: "Hemo" },
+    hemo: { id: "hemo", icon: ecgIcon, label: "Hemo" },
     smartNavigator: { id: "smartnav", icon: imgIcoIw, label: "Smart Navigator" }
   };
 
@@ -210,6 +214,14 @@ function BottomNavigation({ onTabChange, activeTab, currentWorkflowStep, activeP
                 onClick={() => handleTabClick(tab.id)}
               />
             ))}
+            {/* Collaboration Live - Always visible */}
+            <BottomNavButton 
+              key="collaboration-live"
+              icon={imgIcoCollablive} 
+              label="Collaboration Live" 
+              isActive={currentActiveTab === 'collaboration-live'} 
+              onClick={() => handleTabClick('collaboration-live')}
+            />
           </div>
         </div>
         <div className="flex gap-4 items-center flex-shrink-0 ml-auto">
@@ -302,6 +314,16 @@ export function TSMInterface() {
         return <Hemo componentSize="fullscreen" hideHeader={true} />;
       case 'smartnav':
         return <SmartNavigator componentSize="fullscreen" hideHeader={true} isActive={true} />;
+      case 'collaboration-live':
+        return (
+          <div className="w-full h-full flex items-center justify-center bg-black">
+            <img 
+              src={CollaborationLivePlaceholder} 
+              alt="Collaboration Live" 
+              className="w-full h-full object-contain"
+            />
+          </div>
+        );
       default:
         // Default view
         return (

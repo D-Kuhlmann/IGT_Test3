@@ -1269,7 +1269,8 @@ function ScreenFlexvisionInner() {
                   renderedComponent = <SmartNavigator 
                     key={`smartnav-reset-${smartNavResetKey}`}
                     componentSize={componentSize} 
-                    isActive={true} 
+                    isActive={true}
+                    onOverlayStateChange={setIsCarmOverlayActive}
                   />;
                   focusKey = 'smartnav';
                   break;

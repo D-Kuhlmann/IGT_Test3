@@ -305,7 +305,7 @@ function SmartUIIndicator({ isActive = true, focusMode = false, isWorkflowsVisib
           className="absolute left-[calc(100%+12px)] whitespace-nowrap font-['CentraleSans:Medium',_sans-serif] text-[18px] text-white leading-none flex items-center"
           style={{ height: '40px' }}
         >
-          <span className="relative z-10 px-2">Focus Mode</span>
+          <span className="relative z-10 px-2">Viewport Selection Mode</span>
         </div>
       )}
     </div>
