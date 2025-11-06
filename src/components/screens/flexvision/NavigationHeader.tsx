@@ -9,6 +9,7 @@ interface NavigationHeaderProps {
   onShowPresets?: () => void;
   currentWorkflowStep?: string;
   focusMode?: boolean;
+  isCarmOverlayActive?: boolean;
 }
 
 /* ──────────────────────────── Branding ──────────────────────────── */
@@ -101,7 +102,7 @@ function NavItem({ icon, label }: { icon: React.ReactNode; label: string }) {
 
 /* ──────────────────────────── SmartUI Indicator ──────────────────────────── */
 
-function SmartUIIndicator({ isActive = true, focusMode = false, isWorkflowsVisible = false, currentWorkflowStep }: { isActive?: boolean; focusMode?: boolean; isWorkflowsVisible?: boolean; currentWorkflowStep?: string }) {
+function SmartUIIndicator({ isActive = true, focusMode = false, isWorkflowsVisible = false, currentWorkflowStep, isCarmOverlayActive = false }: { isActive?: boolean; focusMode?: boolean; isWorkflowsVisible?: boolean; currentWorkflowStep?: string; isCarmOverlayActive?: boolean }) {
   const { inputSettings } = useSettings();
   const [animationKey, setAnimationKey] = useState(0);
   const prevStepRef = useRef<string | undefined>(currentWorkflowStep);
@@ -208,24 +209,28 @@ function SmartUIIndicator({ isActive = true, focusMode = false, isWorkflowsVisib
         <div 
           className="relative w-10 h-10 rounded-full flex items-center justify-center z-10 border border-white overflow-hidden"
           style={{
-            backgroundImage: focusMode
-              ? 'linear-gradient(135deg, #9333EA 0%, #C084FC 25%, #9333EA 50%, #C084FC 75%, #9333EA 100%)'
-              : currentWorkflowStep 
-                ? isWorkflowsVisible
-                  ? 'linear-gradient(135deg, #27316F 0%, #2E9BC8 25%, #27316F 50%, #2E9BC8 75%, #27316F 100%)'
-                  : 'linear-gradient(45deg, #27316F 20%, #2E9BC8 140%)'
-                : 'none',
-            backgroundColor: currentWorkflowStep ? 'transparent' : '#6B7280',
+            backgroundImage: isCarmOverlayActive
+              ? 'none'
+              : focusMode
+                ? 'linear-gradient(135deg, #9333EA 0%, #C084FC 25%, #9333EA 50%, #C084FC 75%, #9333EA 100%)'
+                : currentWorkflowStep 
+                  ? isWorkflowsVisible
+                    ? 'linear-gradient(135deg, #27316F 0%, #2E9BC8 25%, #27316F 50%, #2E9BC8 75%, #27316F 100%)'
+                    : 'linear-gradient(45deg, #27316F 20%, #2E9BC8 140%)'
+                  : 'none',
+            backgroundColor: isCarmOverlayActive ? '#6B7280' : (currentWorkflowStep ? 'transparent' : '#6B7280'),
             backgroundSize: (focusMode || (isWorkflowsVisible && currentWorkflowStep)) ? '400% 400%' : '100% 100%',
-            boxShadow: focusMode
-              ? '0 2px 8px rgba(147, 51, 234, 0.5)'
-              : currentWorkflowStep 
-                ? '0 2px 8px rgba(39, 49, 111, 0.3)' 
-                : '0 2px 8px rgba(107, 114, 128, 0.3)'
+            boxShadow: isCarmOverlayActive
+              ? '0 2px 8px rgba(107, 114, 128, 0.3)'
+              : focusMode
+                ? '0 2px 8px rgba(147, 51, 234, 0.5)'
+                : currentWorkflowStep 
+                  ? '0 2px 8px rgba(39, 49, 111, 0.3)' 
+                  : '0 2px 8px rgba(107, 114, 128, 0.3)'
           }}
         >
           {/* Animated gradient overlay for focus mode */}
-          {focusMode && (
+          {!isCarmOverlayActive && focusMode && (
             <div 
               className="absolute inset-0 rounded-full"
               style={{
@@ -237,7 +242,7 @@ function SmartUIIndicator({ isActive = true, focusMode = false, isWorkflowsVisib
           )}
           
           {/* Animated gradient overlay when workflows visible */}
-          {!focusMode && isWorkflowsVisible && currentWorkflowStep && (
+          {!isCarmOverlayActive && !focusMode && isWorkflowsVisible && currentWorkflowStep && (
             <div 
               className="absolute inset-0 rounded-full"
               style={{
@@ -349,11 +354,13 @@ function SmartWorkflowsNavigation({
   onShowWorkflows,
   focusMode,
   currentWorkflowStep,
+  isCarmOverlayActive,
 }: {
   isWorkflowsVisible?: boolean;
   onShowWorkflows?: () => void;
   focusMode?: boolean;
   currentWorkflowStep?: string;
+  isCarmOverlayActive?: boolean;
 }) {
   return (
     <div className="flex items-center gap-4">
@@ -362,6 +369,7 @@ function SmartWorkflowsNavigation({
         focusMode={focusMode} 
         isWorkflowsVisible={isWorkflowsVisible} 
         currentWorkflowStep={currentWorkflowStep}
+        isCarmOverlayActive={isCarmOverlayActive}
       />
     </div>
   );
@@ -398,6 +406,7 @@ export function NavigationHeader({
   onShowPresets,
   currentWorkflowStep,
   focusMode,
+  isCarmOverlayActive,
 }: NavigationHeaderProps) {
   const { currentDate, currentTime } = useDateTime();
   return (
@@ -430,6 +439,7 @@ export function NavigationHeader({
               onShowWorkflows={onShowWorkflows} 
               focusMode={focusMode}
               currentWorkflowStep={currentWorkflowStep}
+              isCarmOverlayActive={isCarmOverlayActive}
             />
           </div>
 

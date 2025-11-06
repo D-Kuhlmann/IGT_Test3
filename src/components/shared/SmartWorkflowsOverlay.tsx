@@ -580,7 +580,7 @@ export function SmartWorkflowsOverlay({
                           </svg>
                         </div>
                         <div className="[grid-area:1_/_1] font-['CentraleSans:Book',_sans-serif] ml-[77.332px] mt-0 not-italic relative text-[18px] text-[rgba(214,214,214,0.8)] w-[178.06px]">
-                          <p className="leading-[22px]">Peripheral Vascular</p>
+                          <p className="leading-[22px]">Periphereal Vascular</p>
                         </div>
                       </div>
                     )}

@@ -45,6 +45,11 @@ export interface InputSettings {
   focusModeExit: string | KeyboardShortcut | MouseInput;
   focusBorderColor1: string;
   focusBorderColor2: string;
+  // APC (Automatic Positioning Control) settings
+  apcMovementActivate: string | KeyboardShortcut | MouseInput;
+  apcMovementCancel: string | KeyboardShortcut | MouseInput;
+  apcActivateHoldDuration: number; // Milliseconds to hold for activation
+  apcCancelHoldDuration: number; // Milliseconds to hold for cancellation
 }
 
 const defaultSettings: InputSettings = {
@@ -71,6 +76,11 @@ const defaultSettings: InputSettings = {
   focusModeExit: 'Escape',
   focusBorderColor1: '#9ED5FF',
   focusBorderColor2: '#5A75FF',
+  // APC defaults
+  apcMovementActivate: 's',
+  apcMovementCancel: 'w',
+  apcActivateHoldDuration: 4000, // 4 seconds
+  apcCancelHoldDuration: 2000, // 2 seconds
 };
 
 interface SettingsContextType {

@@ -173,6 +173,38 @@ function ColorPicker({ label, value, onChange }: ColorPickerProps) {
   );
 }
 
+interface NumberInputProps {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+}
+
+function NumberInput({ label, value, onChange, min = 0, max = 100, step = 1 }: NumberInputProps) {
+  return (
+    <div className="flex items-center justify-between py-3 px-4 border-b border-gray-700">
+      <div className="flex flex-col">
+        <span className="text-white font-medium">{label}</span>
+        <span className="text-gray-400 text-sm">Adjust the duration</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          type="number"
+          value={value}
+          onChange={(e) => onChange(parseFloat(e.target.value))}
+          min={min}
+          max={max}
+          step={step}
+          className="w-20 px-2 py-1 bg-gray-800 text-white border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+        />
+        <span className="text-gray-400 text-sm">sec</span>
+      </div>
+    </div>
+  );
+}
+
 export function SettingsMenu() {
   const { inputSettings, updateInputShortcut, updateSetting, resetToDefaults, isSettingsOpen, setIsSettingsOpen } = useSettings();
 
@@ -381,6 +413,38 @@ export function SettingsMenu() {
             </div>
           </div>
 
+          {/* APC (Automatic Positioning Control) Settings */}
+          <div className="mb-6">
+            <h3 className="text-lg font-medium text-white mb-4">APC Movement Settings</h3>
+            <div className="space-y-3">
+              <ShortcutEditor
+                label="APC Movement Activate Key"
+                shortcut={typeof inputSettings.apcMovementActivate === 'string' ? inputSettings.apcMovementActivate : formatInputShortcut(inputSettings.apcMovementActivate)}
+                onUpdate={(shortcut) => updateInputShortcut('apcMovementActivate', shortcut)}
+              />
+              <NumberInput
+                label="APC Activate Hold Duration (seconds)"
+                value={inputSettings.apcActivateHoldDuration / 1000}
+                onChange={(value) => updateSetting('apcActivateHoldDuration', value * 1000)}
+                min={1}
+                max={10}
+                step={0.5}
+              />
+              <ShortcutEditor
+                label="APC Movement Cancel Key"
+                shortcut={typeof inputSettings.apcMovementCancel === 'string' ? inputSettings.apcMovementCancel : formatInputShortcut(inputSettings.apcMovementCancel)}
+                onUpdate={(shortcut) => updateInputShortcut('apcMovementCancel', shortcut)}
+              />
+              <NumberInput
+                label="APC Cancel Hold Duration (seconds)"
+                value={inputSettings.apcCancelHoldDuration / 1000}
+                onChange={(value) => updateSetting('apcCancelHoldDuration', value * 1000)}
+                min={1}
+                max={10}
+                step={0.5}
+              />
+            </div>
+          </div>
 
           {/* Instructions */}
           <div className="mb-6 p-4 bg-blue-900 bg-opacity-30 rounded-lg border border-blue-700">

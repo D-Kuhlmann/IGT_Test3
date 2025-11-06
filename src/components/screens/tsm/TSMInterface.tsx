@@ -317,7 +317,7 @@ export function TSMInterface() {
   };
 
   return (
-    <div className="bg-black flex flex-col w-[1200px] h-[800px]">
+    <div className="bg-black flex flex-col w-screen h-screen">
       {/* Component area - full width, no gap */}
       <div className="flex-1 w-full overflow-hidden">
         {renderActiveComponent()}
@@ -331,10 +331,6 @@ export function TSMInterface() {
         onStepSelect={handleWorkflowStepSelect}
         onOrchestratorToggle={() => setShowOrchestratorMenu(!showOrchestratorMenu)}
       />
-      {/* Footer */}
-      <div className="font-['CentraleSans:Medium',_sans-serif] h-5 leading-[0] not-italic text-[#959595] text-[12px] text-center w-14">
-        <p className="leading-[20px]">04</p>
-      </div>
       
       {/* Workflow Status Indicator */}
       <WorkflowStatusIndicator />

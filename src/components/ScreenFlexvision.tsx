@@ -38,9 +38,17 @@ function ScreenFlexvisionInner() {
   const [selectedAngleIndex, setSelectedAngleIndex] = useState(0);
   const [activePreset, setActivePreset] = useState<1 | 2>(1);
   const [smartNavResetKey, setSmartNavResetKey] = useState(0);
+  const [isCarmOverlayActive, setIsCarmOverlayActive] = useState(false);
   const { setSelectedAngle, activateUniGuide } = useAngle();
   const { inputSettings, setIsSettingsOpen } = useSettings();
   const { setActiveComponents, setFocusedComponent: setContextFocusedComponent } = useActiveComponents();
+
+  // Close SmartWorkflows overlay when C-arm overlay becomes active
+  useEffect(() => {
+    if (isCarmOverlayActive && showWorkflows) {
+      setShowWorkflows(false);
+    }
+  }, [isCarmOverlayActive, showWorkflows]);
 
   // Workflow steps mapping for header display
   const workflowStepsPreset1: WorkflowStep[] = [
@@ -342,6 +350,7 @@ function ScreenFlexvisionInner() {
     
     // Map workflow steps to default selected components
     const stepComponentMap: Record<string, 'xray' | 'iw' | 'hemo' | 'smartnav' | null> = {
+      'start': 'iw',         // In start step (neuro flow), select Interventional Workspace
       '3d-scan': 'smartnav', // In 3D scan, select SmartNavigator
       // Add more mappings as needed
     };
@@ -686,6 +695,18 @@ function ScreenFlexvisionInner() {
     if (!inputSettings.focusModeEnabled) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Block all input except S and W when C-arm overlay is active
+      if (isCarmOverlayActive) {
+        const key = event.key.toLowerCase();
+        if (key !== 's' && key !== 'w') {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        // Let S and W pass through
+        return;
+      }
+      
       // Don't handle key events if SmartNavigator is active
       const hasSmartNavigator = currentLayout.components.some(c => c.component === 'smartNavigator');
       if (hasSmartNavigator) {
@@ -760,7 +781,7 @@ function ScreenFlexvisionInner() {
       document.removeEventListener('wheel', handleWheel);
       document.removeEventListener('click', handleMouseClick);
     };
-  }, [focusMode, focusedComponent, iwSubFocus, selectedAngleIndex, inputSettings]);
+  }, [focusMode, focusedComponent, iwSubFocus, selectedAngleIndex, inputSettings, isCarmOverlayActive]);
 
   // Handle preset switching with number keys
   useEffect(() => {
@@ -851,15 +872,17 @@ function ScreenFlexvisionInner() {
           isWorkflowsVisible={showWorkflows}
           focusMode={focusMode}
           currentWorkflowStep={currentWorkflowStepLabel}
+          isCarmOverlayActive={isCarmOverlayActive}
         />
       </div>
 
 
 
       {/* Smart Workflows Overlay - Shows when workflows open OR voice is listening OR showing feedback */}
+      {/* Hidden when C-arm overlay is active */}
       <SmartWorkflowsOverlay
         key={`workflow-preset-${activePreset}`}
-        isVisible={showWorkflows || shouldShowVoiceOverlay}
+        isVisible={!isCarmOverlayActive && (showWorkflows || shouldShowVoiceOverlay)}
         onClose={handleCloseWorkflows}
         onStepSelect={handleStepSelect}
         currentStep={workflowSync.workflowStepId}
@@ -1227,6 +1250,7 @@ function ScreenFlexvisionInner() {
                       selectedAngleIndex={selectedAngleIndex}
                       onAngleSelect={handleAngleSelection}
                       componentSize={componentSize}
+                      onOverlayStateChange={setIsCarmOverlayActive}
                     />
                   );
                   focusKey = 'iw';

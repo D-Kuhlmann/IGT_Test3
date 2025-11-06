@@ -3,6 +3,8 @@ import { ViewportHeader } from '../../shared/ViewportHeaders';
 import { getFormattedPatientName, getPatientId, getCurrentDate, getFormattedDOB, getPatientAge, getFormattedTime } from '../../../data/patientData';
 import { useSettings, matchesInput } from '../../../contexts/SettingsContext';
 import { useAngle } from '../../../contexts/AngleContext';
+import { CarmPositionConfirmOverlay } from '../../shared/CarmPositionConfirmOverlay';
+import { useStoredAngles } from '../../../hooks/useStoredAngles';
 import svgPaths from "../../../imports/svg-lsvrftrq7x";
 import imgCoronal from "figma:asset/4c8bbf83fe02a6ff097b8e4c2200db41b8b53782.png";
 import imgImage2 from "figma:asset/71dabdc7502548dbc0e7e3fc8521d3ad4a8010af.png";
@@ -745,6 +747,7 @@ interface InterventionalWorkspaceProps {
   onAngleSelect?: (angleId: string) => void;
   componentSize?: 'small' | 'medium' | 'large' | 'xlarge' | 'fullscreen';
   hideHeader?: boolean;
+  onOverlayStateChange?: (isActive: boolean) => void;
 }
 
 export function InterventionalWorkspace({ 
@@ -753,11 +756,19 @@ export function InterventionalWorkspace({
   selectedAngleIndex = 0,
   onAngleSelect,
   componentSize = 'large',
-  hideHeader = false
+  hideHeader = false,
+  onOverlayStateChange
 }: InterventionalWorkspaceProps) {
   const { selectedAngle, setSelectedAngle, activateUniGuide } = useAngle();
   const { inputSettings } = useSettings();
   const [currentAngleIndex, setCurrentAngleIndex] = useState(selectedAngleIndex);
+  const { showConfirmOverlay, isMoving, confirmPosition, cancelPosition, selectAngle } = useStoredAngles();
+  const [pendingAngleData, setPendingAngleData] = useState<any>(null);
+  
+  // Notify parent when overlay state changes
+  useEffect(() => {
+    onOverlayStateChange?.(showConfirmOverlay);
+  }, [showConfirmOverlay, onOverlayStateChange]);
   
   // Sync internal angle index with prop
   useEffect(() => {
@@ -769,6 +780,18 @@ export function InterventionalWorkspace({
     if (!focusMode) return; // Only handle keyboard when selected
     
     const handleKeyDown = (event: KeyboardEvent) => {
+      // If overlay is active, only allow S and W keys
+      if (showConfirmOverlay) {
+        const key = event.key.toLowerCase();
+        if (key !== 's' && key !== 'w') {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        // Let S and W pass through to the overlay
+        return;
+      }
+      
       // Navigate to next angle (don't activate, just highlight)
       if (matchesInput(event, inputSettings.workflowStepRight)) {
         event.preventDefault();
@@ -801,7 +824,7 @@ export function InterventionalWorkspace({
     
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [focusMode, currentAngleIndex, inputSettings, onAngleSelect]);
+  }, [focusMode, currentAngleIndex, inputSettings, onAngleSelect, showConfirmOverlay]);
   
   // Map angle IDs to their corresponding images
   const angleImages = {
@@ -818,10 +841,10 @@ export function InterventionalWorkspace({
     if (angleImage) {
       // Use consistent angle descriptions across screens
       const angleDescriptions = {
-        "1": { rotation: "Rot -180°", angle: "Ang -180°" },
-        "2": { rotation: "Rot 90°", angle: "Ang 0°" },
-        "3": { rotation: "Rot 0°", angle: "Ang 45°" },
-        "4": { rotation: "Rot -90°", angle: "Ang 30°" }
+        "1": { rotation: "Rot -180°", angle: "Ang -180°", rotValue: -180, angValue: -180 },
+        "2": { rotation: "Rot 90°", angle: "Ang 0°", rotValue: 90, angValue: 0 },
+        "3": { rotation: "Rot 0°", angle: "Ang 45°", rotValue: 0, angValue: 45 },
+        "4": { rotation: "Rot -90°", angle: "Ang 30°", rotValue: -90, angValue: 30 }
       };
       
       const angleDesc = angleDescriptions[angleId as keyof typeof angleDescriptions];
@@ -832,12 +855,35 @@ export function InterventionalWorkspace({
         rotation: angleDesc.rotation,
         angle: angleDesc.angle
       };
-      console.log('📤 FlexVision - Sending angle data to context:', angleData);
-      setSelectedAngle(angleData);
-      activateUniGuide();
-      console.log('🚀 FlexVision - UniGuide activated');
+      
+      // Store the angle data for later activation
+      setPendingAngleData(angleData);
+      
+      // Trigger confirmation overlay
+      selectAngle({
+        id: angleId,
+        name: `Angle ${angleId}`,
+        angle: angleDesc.angValue,
+        rotation: angleDesc.rotValue
+      });
+      
+      console.log('📤 FlexVision - Showing confirmation overlay for angle:', angleData);
     } else {
       console.log('❌ FlexVision - No image found for angleId:', angleId);
+    }
+  };
+  
+  // Handle confirmation completion
+  const handleConfirmComplete = () => {
+    console.log('✅ C-arm position confirmed, activating angle');
+    confirmPosition();
+    
+    // Now actually activate the angle and switch to UniGuide
+    if (pendingAngleData) {
+      setSelectedAngle(pendingAngleData);
+      activateUniGuide();
+      console.log('🚀 FlexVision - UniGuide activated with angle:', pendingAngleData);
+      setPendingAngleData(null);
     }
   };
 
@@ -847,6 +893,16 @@ export function InterventionalWorkspace({
   return (
     <div className="flex flex-col h-full">
       {!hideHeader && <ViewportHeader title="Interventional Workspace" />}
+      
+      {/* C-arm Position Confirmation Overlay */}
+      <CarmPositionConfirmOverlay
+        isVisible={showConfirmOverlay}
+        isMoving={isMoving}
+        onConfirm={handleConfirmComplete}
+        onCancel={cancelPosition}
+        confirmKey="s"
+        holdDuration={3000}
+      />
       
       <div className="bg-[#000000] relative flex-1 flex flex-col overflow-hidden">
         {/* Main Content Area */}
