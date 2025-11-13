@@ -369,8 +369,9 @@ export function SmartWorkflowsOverlay({
         return;
       }
       
-      // Check for focus mode activation (Enter key)
-      if (event.key === "Enter" || event.key === settings.inputSettings.focusModeToggle || event.key === settings.inputSettings.focusModeToggle.toString()) {
+      // Check for focus mode activation (Enter key) - only if focus mode is enabled in settings
+      if (settings.inputSettings.focusModeEnabled && 
+          (event.key === "Enter" || event.key === settings.inputSettings.focusModeToggle || event.key === settings.inputSettings.focusModeToggle.toString())) {
         event.preventDefault();
         event.stopPropagation();
         const focusedStep = workflowSteps[focusedStepIndex];
@@ -382,7 +383,6 @@ export function SmartWorkflowsOverlay({
           handleClose(); // Close overlay after activating focus mode
         } else {
           console.log('Step does not support focus mode, ignoring Enter key');
-          // Do nothing - Enter key only works on focus mode enabled steps
         }
         return;
       }
@@ -742,7 +742,7 @@ export function SmartWorkflowsOverlay({
                                     stepIndex={stepIndex}
                                     isFocused={stepIndex === focusedStepIndex}
                                     onClick={() => handleStepClick(step)}
-                                    hasFocusMode={focusModeEnabledSteps.includes(step.id)}
+                                    hasFocusMode={settings.inputSettings.focusModeEnabled && focusModeEnabledSteps.includes(step.id)}
                                   />
                                 </React.Fragment>
                               );

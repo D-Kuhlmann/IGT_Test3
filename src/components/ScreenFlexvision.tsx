@@ -13,6 +13,9 @@ import SkullLAT from '../assets/Skull-big-LAT.png';
 import UniguideDone from '../assets/ScreenImages/UniguideDone.png';
 import XrayLiveImage1 from '../assets/ScreenImages/XrayLiveImage1.png';
 import ReferenceImage1 from '../assets/ScreenImages/ReferenceImage1.png';
+import Reference2 from '../assets/ScreenImages/Reference2.png';
+import IWPatientList from '../assets/ScreenImages/IW_PatientList.png';
+import IWImageList from '../assets/ScreenImages/IWImageList.png';
 import UniGuideFlow from '../assets/ScreenImages/UniGuideFlow.png';
 import { StatusBar } from "./shared/StatusBar";
 import { NavigationHeader } from "./screens/flexvision/NavigationHeader";
@@ -61,12 +64,11 @@ function ScreenFlexvisionInner() {
 
   // Workflow steps mapping for header display
   const workflowStepsPreset1: WorkflowStep[] = [
-    { id: "review", label: "Review", category: "Review" },
-    { id: "ultrasound", label: "Access", category: "Access" },
-    { id: "ccta-planning", label: "Baseline DSA", category: "Planning" },
-    { id: "ivus-acquisition", label: "IVUS Acquisition", category: "Treatment" },
-    { id: "start", label: "Confirm DSA", category: "Planning" },
-    { id: "finalise", label: "Finalise", category: "Treatment" },
+    { id: "start", label: "Start", category: "Start" },
+    { id: "ultrasound", label: "Ultrasound", category: "Ultrasound" },
+    { id: "ccta-planning", label: "CCTA Planning", category: "Planning" },
+    { id: "ivus-acquisition", label: "IVUS", category: "IVUS" },
+    { id: "finalise", label: "Finalise", category: "Finalise" },
   ];
 
   const workflowStepsPreset2: WorkflowStep[] = [
@@ -119,6 +121,7 @@ function ScreenFlexvisionInner() {
     hideContent?: boolean; // Optional flag to hide content (show only header)
     hideHeader?: boolean; // Optional flag to hide header (for completely black components)
     whiteBg?: boolean; // Optional flag for white background instead of black
+    showPatientBar?: boolean; // Optional flag to show patient bar
   }
 
   interface StepLayout {
@@ -147,29 +150,29 @@ function ScreenFlexvisionInner() {
   // Total: 1 + 1 + 6 = 8 cells ✅ (fits in 9)
 },
     "ultrasound": {
-      gridLayout: 'standard', 
+      gridLayout: 'split-screen',
       components: [
-        { component: 'xrayLive', size: 'medium' },
-        { component: 'interventionalWorkspace', size: 'medium' },
-        { component: 'hemo', size: 'large' }
+        { component: 'xrayLive', size: 'xlarge' },     // Left side - full height
+        { component: 'lumify', size: 'medium' },       // Right top - half height
+        { component: 'hemo', size: 'medium' }          // Right bottom - half height
       ]
     },
     "ccta-planning": {
-      gridLayout: 'standard',
+      gridLayout: 'extended',
       components: [
-        { component: 'xrayLive', size: 'large' },
-        { component: 'interventionalWorkspace', size: 'medium' },
-        { component: 'hemo', size: 'medium' }
+        { component: 'placeholder', size: 'small', title: 'Reference 1', contentImage: Reference2 },  // Top left (1x1)
+        { component: 'xrayLive', size: 'small', hideContent: true },     // Middle left (1x1) - black content
+        { component: 'hemo', size: 'small' },                            // Bottom left (1x1)
+        { component: 'interventionalWorkspace', size: 'xlarge', contentImage: 'IW_AngleSelection' }  // Right side (2x3) - IW with angle selection
       ]
     },
     "ivus-acquisition": {
       gridLayout: 'extended',
       components: [
-        { component: 'placeholder', size: 'small' },              // Top left
-        { component: 'placeholder', size: 'small' },              // Top center
-        { component: 'placeholder', size: 'small' },              // Top right
-        { component: 'placeholder', size: 'medium' },             // Left side - vertical medium (1x2)
-        { component: 'interventionalIVUS', size: 'large' }        // Bottom right - large (2x2)
+        { component: 'hemo', size: 'small' },                                           // Top left (1x1)
+        { component: 'placeholder', size: 'medium', title: 'Xray Live', contentImage: Reference2, showPatientBar: true },  // Bottom left (1x2) - Placeholder with Reference2 image and patient bar
+        { component: 'placeholder', size: 'medium', hideHeader: true },                 // Top right (2x1) - empty black square
+        { component: 'interventionalIVUS', size: 'large' }                              // Bottom right (2x2) - IVUS component
       ]
     },
     "xray": {
@@ -195,11 +198,12 @@ function ScreenFlexvisionInner() {
       ]
     },
     "finalise": {
-      gridLayout: 'standard',
+      gridLayout: 'extended',
       components: [
-        { component: 'xrayLive', size: 'large' },
-        { component: 'interventionalWorkspace', size: 'medium' },
-        { component: 'hemo', size: 'medium' }
+        { component: 'hemo', size: 'small' },                                                                        // Top left (1x1)
+        { component: 'placeholder', size: 'small', title: 'Interventional Workspace', contentImage: IWPatientList }, // Middle left (1x1) - Placeholder with IW patient list
+        { component: 'placeholder', size: 'small', title: 'Reference 1', contentImage: Reference2 },                 // Bottom left (1x1) - Reference 1 with Reference2 image
+        { component: 'placeholder', size: 'xlarge', title: 'Interventional Workspace', contentImage: IWImageList }   // Right side (2x3) - Placeholder with IW image list
       ]
     },
     
@@ -903,18 +907,36 @@ function ScreenFlexvisionInner() {
         { col: 2, row: 2, colSpan: 3, rowSpan: 2, originalSize: 'large', adjustedSize: 'large' }   // SimSize (3x2)
       ];
     }
+    // Special layout override for CCTA Planning step (Cardio preset 1)
+    if (workflowSync.workflowStepId === 'ccta-planning' && activePreset === 1) {
+      return [
+        { col: 1, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },  // Reference 1 - top left
+        { col: 1, row: 2, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },  // XrayLive - middle left
+        { col: 1, row: 3, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },  // Hemo - bottom left
+        { col: 2, row: 1, colSpan: 2, rowSpan: 3, originalSize: 'xlarge', adjustedSize: 'xlarge', variant: 'vertical' }  // IW - right side (2x3)
+      ];
+    }
     // Special layout override for IVUS Acquisition step
     if (workflowSync.workflowStepId === 'ivus-acquisition') {
       return [
-        { col: 1, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
-        { col: 2, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
-        { col: 3, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
-        { col: 1, row: 2, colSpan: 1, rowSpan: 2, originalSize: 'medium', adjustedSize: 'medium', variant: 'vertical' },
-        { col: 2, row: 2, colSpan: 2, rowSpan: 2, originalSize: 'large', adjustedSize: 'large' }
+        { col: 1, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },      // Hemo - top left (1x1)
+        { col: 1, row: 2, colSpan: 1, rowSpan: 2, originalSize: 'medium', adjustedSize: 'medium', variant: 'vertical' },  // XrayLive - bottom left (1x2)
+        { col: 2, row: 1, colSpan: 2, rowSpan: 1, originalSize: 'medium', adjustedSize: 'medium' },    // Empty black - top right (2x1)
+        { col: 2, row: 2, colSpan: 2, rowSpan: 2, originalSize: 'large', adjustedSize: 'large' }       // IVUS - bottom right (2x2)
       ];
     }
-    // Special layout override for start step (neuro preset)
+    // Special layout override for Finalise step (Cardio preset 1)
+    if (workflowSync.workflowStepId === 'finalise' && activePreset === 1) {
+      return [
+        { col: 1, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },  // Hemo - top left (1x1)
+        { col: 1, row: 2, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },  // IW Patient List - middle left (1x1)
+        { col: 1, row: 3, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },  // Reference 1 - bottom left (1x1)
+        { col: 2, row: 1, colSpan: 2, rowSpan: 3, originalSize: 'xlarge', adjustedSize: 'xlarge', variant: 'vertical' }  // IW Image List - right side (2x3)
+      ];
+    }
+    // Special layout override for start step
     if (workflowSync.workflowStepId === 'start') {
+      // Same layout for both Cardio (preset 1) and Neuro (preset 2)
       return [
         { col: 1, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
         { col: 2, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
@@ -923,6 +945,8 @@ function ScreenFlexvisionInner() {
         { col: 2, row: 2, colSpan: 2, rowSpan: 2, originalSize: 'large', adjustedSize: 'large' }
       ];
     }
+    // Ultrasound step (Cardio preset 1) - same as access step (returns empty for default layout)
+    // No specific layout override needed - will use default empty array
     // Special layout override for 3D scan step
     if (workflowSync.workflowStepId === '3d-scan') {
       return [
@@ -935,7 +959,7 @@ function ScreenFlexvisionInner() {
     }
     // Return empty array for split-screen or other special layouts
     return [];
-  }, [workflowSync.workflowStepId]);
+  }, [workflowSync.workflowStepId, activePreset]);
   
   const gridPlacements = useMemo(() => get3x3Layout(), [get3x3Layout]);
   
@@ -1362,7 +1386,7 @@ function ScreenFlexvisionInner() {
                   focusKey = 'smartnav';
                   break;
                 case 'placeholder':
-                  renderedComponent = <Placeholder componentSize={componentSize} title={config.title} hideHeader={config.hideHeader} contentImage={config.contentImage} whiteBg={config.whiteBg} />;
+                  renderedComponent = <Placeholder componentSize={componentSize} title={config.title} hideHeader={config.hideHeader} contentImage={config.contentImage} whiteBg={config.whiteBg} showPatientBar={config.showPatientBar} />;
                   focusKey = 'placeholder';
                   break;
                 case 'lumify':

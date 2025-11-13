@@ -251,7 +251,7 @@ function SmartUIIndicator({
           className="rounded-lg border-2 border-[#0086BB] flex justify-center items-center"
           style={{
             height: isWorkflowsVisible ? '80px' : '40px',
-            width: isWorkflowsVisible ? '950px' : (currentWorkflowStep || focusMode ? '200px' : '40px'),
+            width: isWorkflowsVisible ? '950px' : (currentWorkflowStep || focusMode ? '180px' : '40px'),
             minWidth: '40px',
             padding: isWorkflowsVisible ? '0' : (currentWorkflowStep || focusMode ? '0 12px' : '0'),
             opacity: isWorkflowsVisible ? 0 : 1,
