@@ -114,7 +114,7 @@ function SettingsStep({ onPrevious, onContinue, selectedType: propSelectedType, 
                   }, 300);
                 }
               }}
-              className={`relative px-4 py-2 rounded border-2 transition-all ${
+              className={`relative px-4 py-2 rounded border-4 transition-all ${
                 focusedElement === 'helical'
                   ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#383838]'
                   : 'border-[#3b3b3b] bg-[#383838] hover:border-[#41c9fe]'
@@ -135,7 +135,7 @@ function SettingsStep({ onPrevious, onContinue, selectedType: propSelectedType, 
                   }, 300);
                 }
               }}
-              className={`relative px-4 py-2 rounded border-2 transition-all ${
+              className={`relative px-4 py-2 rounded border-4 transition-all ${
                 focusedElement === 'circular'
                   ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#383838]'
                   : 'border-[#3b3b3b] bg-[#383838] hover:border-[#41c9fe]'
@@ -1489,7 +1489,7 @@ export function SmartNavigator({ componentSize = 'large', isActive = false, onCo
                         <div
                           key={protocol.id}
                           onClick={() => handleProtocolSelect(protocol.id)}
-                          className={`relative bg-[#1a1a1a] rounded-lg border-2 cursor-pointer transition-all hover:border-[#41c9fe] ${
+                          className={`relative bg-[#1a1a1a] rounded-lg border-4 cursor-pointer transition-all hover:border-[#41c9fe] ${
                             isActive && focusedProtocol === protocol.id
                               ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30'
                               : 'border-[#3b3b3b]'

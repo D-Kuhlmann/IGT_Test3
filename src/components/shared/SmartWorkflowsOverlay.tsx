@@ -490,7 +490,7 @@ export function SmartWorkflowsOverlay({
         aria-label="Smart Workflows Navigation Menu"
       >
         <div
-          className="relative rounded-lg w-fit h-fit max-w-full max-h-full overflow-visible border-2 border-[#0086BB]"
+          className="relative rounded-lg w-fit h-fit max-w-full max-h-full overflow-visible border-4 border-[#0086BB]"
           data-name="_SmartWorkflows"
           style={{
             backgroundImage: "linear-gradient(45deg, #27316F 20%, #2E9BC8 140%)",

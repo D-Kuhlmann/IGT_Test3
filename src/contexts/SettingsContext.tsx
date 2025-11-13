@@ -50,6 +50,11 @@ export interface InputSettings {
   apcMovementCancel: string | KeyboardShortcut | MouseInput;
   apcActivateHoldDuration: number; // Milliseconds to hold for activation
   apcCancelHoldDuration: number; // Milliseconds to hold for cancellation
+  apcSafetyEnabled: boolean; // Enable/disable safety button requirement
+  apcSafetyButton: string | KeyboardShortcut | MouseInput; // Safety activation button
+  // Angle selection controls
+  angleMoveUp: string | KeyboardShortcut | MouseInput;
+  angleMoveDown: string | KeyboardShortcut | MouseInput;
 }
 
 const defaultSettings: InputSettings = {
@@ -81,6 +86,11 @@ const defaultSettings: InputSettings = {
   apcMovementCancel: 'w',
   apcActivateHoldDuration: 4000, // 4 seconds
   apcCancelHoldDuration: 2000, // 2 seconds
+  apcSafetyEnabled: true, // Safety button enabled by default
+  apcSafetyButton: 'f', // F key for safety activation
+  // Angle selection defaults
+  angleMoveUp: 'w',
+  angleMoveDown: 's',
 };
 
 interface SettingsContextType {

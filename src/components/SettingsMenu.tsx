@@ -443,6 +443,43 @@ export function SettingsMenu() {
                 max={10}
                 step={0.5}
               />
+              
+              {/* Safety Button Toggle */}
+              <div className="flex items-center justify-between">
+                <label className="text-white text-sm">Enable Safety Button</label>
+                <input
+                  type="checkbox"
+                  checked={inputSettings.apcSafetyEnabled}
+                  onChange={(e) => updateSetting('apcSafetyEnabled', e.target.checked)}
+                  className="w-5 h-5 cursor-pointer"
+                />
+              </div>
+              
+              {/* Safety Button Key (only show if enabled) */}
+              {inputSettings.apcSafetyEnabled && (
+                <ShortcutEditor
+                  label="APC Safety Button"
+                  shortcut={typeof inputSettings.apcSafetyButton === 'string' ? inputSettings.apcSafetyButton : formatInputShortcut(inputSettings.apcSafetyButton)}
+                  onUpdate={(shortcut) => updateInputShortcut('apcSafetyButton', shortcut)}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Angle Selection Settings */}
+          <div className="mb-6">
+            <h3 className="text-lg font-medium text-white mb-4">Angle Selection Controls</h3>
+            <div className="space-y-3">
+              <ShortcutEditor
+                label="Angle Move Up"
+                shortcut={typeof inputSettings.angleMoveUp === 'string' ? inputSettings.angleMoveUp : formatInputShortcut(inputSettings.angleMoveUp)}
+                onUpdate={(shortcut) => updateInputShortcut('angleMoveUp', shortcut)}
+              />
+              <ShortcutEditor
+                label="Angle Move Down"
+                shortcut={typeof inputSettings.angleMoveDown === 'string' ? inputSettings.angleMoveDown : formatInputShortcut(inputSettings.angleMoveDown)}
+                onUpdate={(shortcut) => updateInputShortcut('angleMoveDown', shortcut)}
+              />
             </div>
           </div>
 

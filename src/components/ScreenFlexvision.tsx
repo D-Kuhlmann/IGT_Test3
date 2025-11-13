@@ -379,8 +379,9 @@ function ScreenFlexvisionInner() {
     
     // Map workflow steps to default selected components
     const stepComponentMap: Record<string, 'xray' | 'iw' | 'hemo' | 'smartnav' | null> = {
-      'start': 'iw',         // In start step (neuro flow), select Interventional Workspace
-      '3d-scan': 'smartnav', // In 3D scan, select SmartNavigator
+      'start': 'iw',           // In start step (neuro flow), select Interventional Workspace
+      '3d-scan': 'smartnav',   // In 3D scan, select SmartNavigator
+      'ccta-planning': 'iw',   // In CCTA Planning, select Interventional Workspace
       // Add more mappings as needed
     };
     
@@ -428,7 +429,9 @@ function ScreenFlexvisionInner() {
     
     // Then activate focus mode
     setFocusMode(true);
-    setFocusedComponent(components[0] as any);
+    // For CCTA Planning step, default to IW component if available, otherwise first component
+    const defaultComponent = (stepId === 'ccta-planning' && components.includes('iw')) ? 'iw' : components[0];
+    setFocusedComponent(defaultComponent as any);
     setIwSubFocus('none');
     setShowWorkflows(false);
   };
@@ -638,7 +641,8 @@ function ScreenFlexvisionInner() {
     const unsubscribeKeyboard = inputBroadcast.onKeyboardEvent((data) => {
       
       // Create a synthetic KeyboardEvent to pass to existing handlers
-      const syntheticEvent = new KeyboardEvent('keydown', {
+      // Use the eventType from the data to create the correct event type
+      const syntheticEvent = new KeyboardEvent(data.eventType, {
         key: data.key,
         code: data.code,
         ctrlKey: data.ctrlKey,
@@ -852,7 +856,7 @@ function ScreenFlexvisionInner() {
     if (isFocused) {
       // Focus mode: animated gradient border
       return {
-        className: "border-2 border-solid",
+        className: "border-4 border-solid",
         style: {
           borderColor: 'transparent',
           borderImage: `linear-gradient(125deg, ${inputSettings.focusBorderColor1} 0%, ${inputSettings.focusBorderColor2} 75%, ${inputSettings.focusBorderColor2} 100%) 1`,
@@ -867,7 +871,7 @@ function ScreenFlexvisionInner() {
     } else if (isSelected) {
       // Selected component: solid cyan border (same as SmartNavigator wizard steps)
       return {
-        className: "border-2 border-solid border-[#41c9fe] border-opacity-70",
+        className: "border-4 border-solid border-[#41c9fe] border-opacity-70",
         style: {
           boxShadow: '0 0 12px rgba(65, 201, 254, 0.3)'
         }
@@ -1353,10 +1357,12 @@ function ScreenFlexvisionInner() {
                   focusKey = 'xray';
                   break;
                 case 'interventionalWorkspace':
+                  // In CCTA Planning step, always enable focus mode for IW component
+                  const isIWAlwaysFocused = workflowSync.workflowStepId === 'ccta-planning' && activePreset === 1;
                   renderedComponent = (
                     <InterventionalWorkspace 
-                      focusMode={selectedComponent === 'iw'}
-                      subFocusMode={selectedComponent === 'iw' ? 'angles' : 'none'}
+                      focusMode={isIWAlwaysFocused || (focusMode && focusedComponent === 'iw')}
+                      subFocusMode={isIWAlwaysFocused ? 'angles' : ((focusMode && focusedComponent === 'iw') ? 'angles' : 'none')}
                       selectedAngleIndex={selectedAngleIndex}
                       onAngleSelect={handleAngleSelection}
                       componentSize={componentSize}

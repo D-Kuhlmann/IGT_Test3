@@ -8,6 +8,7 @@ interface InputEvent {
 }
 
 interface KeyboardEventData {
+  eventType: 'keydown' | 'keyup';
   key: string;
   code: string;
   ctrlKey: boolean;
@@ -152,6 +153,7 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
     if (!channelRef.current || !isMaster) return;
 
     const data: KeyboardEventData = {
+      eventType: event.type as 'keydown' | 'keyup',
       key: event.key,
       code: event.code,
       ctrlKey: event.ctrlKey,
@@ -336,6 +338,7 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
       if (!channelRef.current) return;
 
       const data: KeyboardEventData = {
+        eventType: 'keydown',
         key: event.key,
         code: event.code,
         ctrlKey: event.ctrlKey,
@@ -343,6 +346,30 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
         shiftKey: event.shiftKey,
         metaKey: event.metaKey,
         repeat: event.repeat,
+      };
+
+      const inputEvent: InputEvent = {
+        type: 'keyboard',
+        timestamp: Date.now(),
+        source: screenId,
+        data,
+      };
+
+      channelRef.current.postMessage(inputEvent);
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (!channelRef.current) return;
+
+      const data: KeyboardEventData = {
+        eventType: 'keyup',
+        key: event.key,
+        code: event.code,
+        ctrlKey: event.ctrlKey,
+        altKey: event.altKey,
+        shiftKey: event.shiftKey,
+        metaKey: event.metaKey,
+        repeat: false, // keyup never repeats
       };
 
       const inputEvent: InputEvent = {
@@ -456,6 +483,7 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
 
     // Capture events at the document level
     document.addEventListener('keydown', handleKeyDown, true);
+    document.addEventListener('keyup', handleKeyUp, true);
     document.addEventListener('click', handleClick, true);
     document.addEventListener('auxclick', handleAuxClick, true);
     document.addEventListener('dblclick', handleDblClick, true);
@@ -464,6 +492,7 @@ export function InputBroadcastProvider({ children, screenId, isMaster = false }:
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown, true);
+      document.removeEventListener('keyup', handleKeyUp, true);
       document.removeEventListener('click', handleClick, true);
       document.removeEventListener('auxclick', handleAuxClick, true);
       document.removeEventListener('dblclick', handleDblClick, true);

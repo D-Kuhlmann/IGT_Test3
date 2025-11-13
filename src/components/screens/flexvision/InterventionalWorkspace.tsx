@@ -660,18 +660,18 @@ function TaskGuidancePanel({ subFocusMode, selectedAngleIndex, onAngleSelect }: 
               // Both can be visible at the same time if navigating over an activated angle
               const focusStyles = (() => {
                 if (isActivated && isCurrentlyNavigating) {
-                  // Activated AND currently navigating - show both blue fill + outline
+                  // Activated AND currently navigating - show gradient fill + outline
                   return {
-                    backgroundColor: '#2b86b2',
+                    backgroundImage: 'linear-gradient(45deg, #27316F 20%, #2E9BC8 140%)',
                     outline: '3px solid #41c9fe',
                     outlineOffset: '-3px',
                     boxShadow: '0 0 0 5px rgba(65, 201, 254, 0.4)',
                     borderRadius: '4px'
                   };
                 } else if (isActivated) {
-                  // Only activated - blue fill
+                  // Only activated - gradient fill
                   return {
-                    backgroundColor: '#2b86b2',
+                    backgroundImage: 'linear-gradient(45deg, #27316F 20%, #2E9BC8 140%)',
                     borderRadius: '4px'
                   };
                 } else if (isCurrentlyNavigating) {
@@ -767,6 +767,7 @@ export function InterventionalWorkspace({
   const [currentAngleIndex, setCurrentAngleIndex] = useState(selectedAngleIndex);
   const { showConfirmOverlay, isMoving, confirmPosition, cancelPosition, selectAngle } = useStoredAngles();
   const [pendingAngleData, setPendingAngleData] = useState<any>(null);
+  const [blockedKeys, setBlockedKeys] = useState<Set<string>>(new Set());
   
   // Notify parent when overlay state changes
   useEffect(() => {
@@ -778,25 +779,54 @@ export function InterventionalWorkspace({
     setCurrentAngleIndex(selectedAngleIndex);
   }, [selectedAngleIndex]);
   
+  // Block angle movement keys when overlay closes until they're released
+  useEffect(() => {
+    // When overlay closes, block the APC keys briefly, then clear after a short delay
+    if (!showConfirmOverlay && !isMoving) {
+      const apcActivateKey = typeof inputSettings.apcMovementActivate === 'string' ? inputSettings.apcMovementActivate.toLowerCase() : 's';
+      const apcCancelKey = typeof inputSettings.apcMovementCancel === 'string' ? inputSettings.apcMovementCancel.toLowerCase() : 'w';
+      setBlockedKeys(new Set([apcActivateKey, apcCancelKey]));
+      
+      // Clear blocked keys after a short delay to allow for key release
+      const timeout = setTimeout(() => {
+        setBlockedKeys(new Set());
+      }, 1000); // 1 second delay for key release
+      
+      return () => clearTimeout(timeout);
+    } else if (showConfirmOverlay) {
+      // Clear blocked keys when overlay opens
+      setBlockedKeys(new Set());
+    }
+  }, [showConfirmOverlay, isMoving, inputSettings.apcMovementActivate, inputSettings.apcMovementCancel]);
+  
   // Keyboard navigation when component is selected (has blue border)
   useEffect(() => {
     if (!focusMode) return; // Only handle keyboard when selected
     
     const handleKeyDown = (event: KeyboardEvent) => {
-      // If overlay is active, only allow S and W keys
+      const key = event.key.toLowerCase();
+      
+      // If overlay is active, only allow S, W, and safety key
       if (showConfirmOverlay) {
-        const key = event.key.toLowerCase();
-        if (key !== 's' && key !== 'w') {
+        const safetyKey = typeof inputSettings.apcSafetyButton === 'string' ? inputSettings.apcSafetyButton.toLowerCase() : 'f';
+        if (key !== 's' && key !== 'w' && key !== safetyKey) {
           event.preventDefault();
           event.stopPropagation();
           return;
         }
-        // Let S and W pass through to the overlay
+        // Let S, W, and safety key pass through to the overlay
         return;
       }
       
-      // Navigate to next angle (don't activate, just highlight)
-      if (matchesInput(event, inputSettings.workflowStepRight)) {
+      // Block angle navigation if this key is in the blocked set
+      if (blockedKeys.has(key)) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      
+      // Navigate to next angle (down) - don't activate, just highlight
+      if (matchesInput(event, inputSettings.angleMoveDown)) {
         event.preventDefault();
         event.stopPropagation();
         const newIndex = (currentAngleIndex + 1) % 4; // 4 angles total
@@ -805,8 +835,8 @@ export function InterventionalWorkspace({
         return;
       }
       
-      // Navigate to previous angle (don't activate, just highlight)
-      if (matchesInput(event, inputSettings.workflowStepLeft)) {
+      // Navigate to previous angle (up) - don't activate, just highlight
+      if (matchesInput(event, inputSettings.angleMoveUp)) {
         event.preventDefault();
         event.stopPropagation();
         const newIndex = (currentAngleIndex - 1 + 4) % 4; // 4 angles total
@@ -825,9 +855,25 @@ export function InterventionalWorkspace({
       }
     };
     
+    const handleKeyUp = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+      // Remove key from blocked set when released
+      if (blockedKeys.has(key)) {
+        setBlockedKeys(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(key);
+          return newSet;
+        });
+      }
+    };
+    
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [focusMode, currentAngleIndex, inputSettings, onAngleSelect, showConfirmOverlay]);
+    document.addEventListener('keyup', handleKeyUp);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [focusMode, currentAngleIndex, inputSettings, onAngleSelect, showConfirmOverlay, blockedKeys]);
   
   // Map angle IDs to their corresponding images
   const angleImages = {
@@ -890,8 +936,10 @@ export function InterventionalWorkspace({
     }
   };
 
-  // Use selected angle image or default
-  const mainImage = selectedAngle?.image || imgImage2;
+  // Use current highlighted angle image (while cycling) or selected angle image or default
+  const currentAngleId = (currentAngleIndex + 1).toString(); // Angles are 1-indexed
+  const currentAngleImage = angleImages[currentAngleId as keyof typeof angleImages];
+  const mainImage = currentAngleImage || selectedAngle?.image || imgImage2;
 
   return (
     <div className="flex flex-col h-full">
