@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-type ComponentType = 'xrayLive' | 'interventionalWorkspace' | 'hemo' | 'smartNavigator';
+type ComponentType = 'xrayLive' | 'interventionalWorkspace' | 'hemo' | 'smartNavigator' | 'lumify';
 
 interface ActiveComponentsContextType {
   activeComponents: ComponentType[];

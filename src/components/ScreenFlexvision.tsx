@@ -5,6 +5,15 @@ import { Hemo } from './screens/flexvision/Hemo';
 import { InterventionalIVUS } from './screens/flexvision/InterventionalIVUS';
 import { SmartNavigator } from "./screens/flexvision/SmartNavigator";
 import { Placeholder } from "./screens/flexvision/Placeholder";
+import { Lumify } from "./screens/flexvision/Lumify";
+import { SimSize } from "./screens/flexvision/SimSize";
+import { UniguideUI } from "./screens/flexvision/UniguideUI";
+import SkullAP from '../assets/Skull-big-AP.png';
+import SkullLAT from '../assets/Skull-big-LAT.png';
+import UniguideDone from '../assets/ScreenImages/UniguideDone.png';
+import XrayLiveImage1 from '../assets/ScreenImages/XrayLiveImage1.png';
+import ReferenceImage1 from '../assets/ScreenImages/ReferenceImage1.png';
+import UniGuideFlow from '../assets/ScreenImages/UniGuideFlow.png';
 import { StatusBar } from "./shared/StatusBar";
 import { NavigationHeader } from "./screens/flexvision/NavigationHeader";
 import { NavigationMenu } from "./shared/NavigationMenu";
@@ -102,14 +111,19 @@ function ScreenFlexvisionInner() {
 
   // Component layout configurations for each workflow step
   interface ComponentConfig {
-    component: 'xrayLive' | 'interventionalWorkspace' | 'hemo' | 'smartNavigator' | 'placeholder' | 'interventionalIVUS';
+    component: 'xrayLive' | 'interventionalWorkspace' | 'hemo' | 'smartNavigator' | 'placeholder' | 'interventionalIVUS' | 'lumify' | 'simSize' | 'uniguide';
     size: 'small' | 'medium' | 'large' | 'xlarge'; // Size determines grid span
     position?: number; // Optional explicit position (0-based)
+    title?: string; // Optional custom title for placeholder components
+    contentImage?: string; // Optional content image identifier for components
+    hideContent?: boolean; // Optional flag to hide content (show only header)
+    hideHeader?: boolean; // Optional flag to hide header (for completely black components)
+    whiteBg?: boolean; // Optional flag for white background instead of black
   }
 
   interface StepLayout {
     components: ComponentConfig[];
-    gridLayout: 'standard' | 'compact' | 'extended'; // Different grid configurations
+    gridLayout: 'standard' | 'compact' | 'extended' | 'split-screen' | 'planning-4x3'; // Different grid configurations
   }
 
   // Define layouts for each step in each preset
@@ -191,48 +205,51 @@ function ScreenFlexvisionInner() {
     
     // Preset 2 layouts - Navigator workflow with different sizes
     "start": {
-      gridLayout: 'compact',
+      gridLayout: 'extended',
       components: [
-        { component: 'interventionalWorkspace', size: 'large' },
-        { component: 'hemo', size: 'medium' },
-        { component: 'placeholder', size: 'small' },
-        { component: 'placeholder', size: 'small' }
+        { component: 'placeholder', size: 'small', title: 'Reference 1' },    // Top left - Reference 1
+        { component: 'placeholder', size: 'small', hideHeader: true },        // Top center - fully black
+        { component: 'hemo', size: 'small' },                                 // Top right - hemo
+        { component: 'xrayLive', size: 'medium', hideContent: true },         // Left side - vertical medium (1x2) with black content
+        { component: 'interventionalWorkspace', size: 'large', contentImage: 'IW_PatientList' }  // Bottom right - large (2x2)
       ]
     },
     "access": {
-      gridLayout: 'compact',
+      gridLayout: 'split-screen',
       components: [
-        { component: 'interventionalWorkspace', size: 'large' },
-        { component: 'hemo', size: 'medium' },
-        { component: 'placeholder', size: 'small' },
-        { component: 'placeholder', size: 'small' }
+        { component: 'xrayLive', size: 'xlarge' },     // Left side - full height
+        { component: 'lumify', size: 'medium' },       // Right top - half height
+        { component: 'hemo', size: 'medium' }          // Right bottom - half height
       ]
     },
     "3d-scan": {
       gridLayout: 'extended',
       components: [
-        { component: 'placeholder', size: 'small' },    // Top row - first small
-        { component: 'placeholder', size: 'small' },    // Top row - second small  
-        { component: 'hemo', size: 'small' },           // Top row - small hemo
-        { component: 'xrayLive', size: 'medium' },      // Left side - vertical medium
-        { component: 'smartNavigator', size: 'large' }  // Bottom right - large (2x2)
+        { component: 'placeholder', size: 'small', title: 'Reference 1' },    // Top row - Reference 1
+        { component: 'placeholder', size: 'small', hideHeader: true },        // Top row - fully black  
+        { component: 'hemo', size: 'small' },                                 // Top row - small hemo
+        { component: 'xrayLive', size: 'medium', hideContent: true },         // Left side - vertical medium (no content)
+        { component: 'smartNavigator', size: 'large' }                        // Bottom right - large (2x2)
       ]
     },
     "planning": {
-      gridLayout: 'extended',
+      gridLayout: 'planning-4x3',
       components: [
-        { component: 'smartNavigator', size: 'xlarge' },
-        { component: 'xrayLive', size: 'large' },
-        { component: 'hemo', size: 'medium' },
-        { component: 'placeholder', size: 'small' }
+        { component: 'placeholder', size: 'small', title: 'Reference 1', contentImage: SkullAP, whiteBg: true },       // Top row 1
+        { component: 'placeholder', size: 'small', title: 'Reference 2', contentImage: SkullLAT, whiteBg: true },      // Top row 2
+        { component: 'placeholder', size: 'small', title: 'Uniguide', contentImage: UniguideDone },                    // Top row 3
+        { component: 'hemo', size: 'small' },                                                                          // Top row 4
+        { component: 'xrayLive', size: 'medium', hideContent: true },                                                  // Bottom left (1x2) - black content
+        { component: 'simSize', size: 'large' }                                                                        // Bottom right (2x2)
       ]
     },
     "treatment": {
-      gridLayout: 'standard',
+      gridLayout: 'extended',
       components: [
-        { component: 'xrayLive', size: 'large' },
-        { component: 'interventionalWorkspace', size: 'medium' },
-        { component: 'hemo', size: 'medium' }
+        { component: 'placeholder', size: 'xlarge', title: 'Xray Live', contentImage: XrayLiveImage1 },  // Left side - 2x3 XrayLive image
+        { component: 'placeholder', size: 'small', title: 'Reference 1', contentImage: ReferenceImage1 }, // Top right - 1x1
+        { component: 'placeholder', size: 'small', title: 'Uniguide', contentImage: UniGuideFlow },        // Middle right - 1x1
+        { component: 'hemo', size: 'small' }                                                               // Bottom right - 1x1
       ]
     },
   };
@@ -240,6 +257,14 @@ function ScreenFlexvisionInner() {
   // Get current step layout or default to preset-based layout
   const getCurrentLayout = (): StepLayout => {
     const currentWorkflowStep = workflowSync.workflowStepId;
+    
+    // If no workflow step is active, return empty layout
+    if (!currentWorkflowStep) {
+      return {
+        gridLayout: 'standard',
+        components: []
+      };
+    }
     
     if (currentWorkflowStep && stepLayouts[currentWorkflowStep]) {
       return stepLayouts[currentWorkflowStep];
@@ -272,8 +297,8 @@ function ScreenFlexvisionInner() {
   useEffect(() => {
     const activeComps = currentLayout.components
       .map(config => config.component)
-      .filter((comp): comp is 'xrayLive' | 'interventionalWorkspace' | 'hemo' | 'smartNavigator' => 
-        comp !== 'placeholder'
+      .filter((comp): comp is 'xrayLive' | 'interventionalWorkspace' | 'hemo' | 'smartNavigator' | 'lumify' => 
+        comp !== 'placeholder' && comp !== 'interventionalIVUS'
       );
     
     // Only update if components actually changed
@@ -382,8 +407,8 @@ function ScreenFlexvisionInner() {
   const handlePresetSelect = (preset: 1 | 2) => {
     setActivePreset(preset);
     setShowPresets(false);
-    // Broadcast preset change to all screens
-    workflowSync.setWorkflowStepId(workflowSync.workflowStepId || '', preset);
+    // Clear workflow step to show empty state when preset changes
+    workflowSync.setWorkflowStepId('', preset);
   };
 
   const handleStepSelect = (step: WorkflowStep) => {
@@ -794,11 +819,11 @@ function ScreenFlexvisionInner() {
       switch (event.key) {
         case '1':
           event.preventDefault();
-          setActivePreset(1);
+          handlePresetSelect(1);
           break;
         case '2':
           event.preventDefault();
-          setActivePreset(2);
+          handlePresetSelect(2);
           break;
       }
     };
@@ -851,6 +876,69 @@ function ScreenFlexvisionInner() {
       };
     }
   };
+  
+  // Compute grid layout (must be called unconditionally before any JSX)
+  const get3x3Layout = useCallback(() => {
+    // Special layout override for treatment step (2x3 XrayLive on left, 3x 1x1 on right)
+    if (workflowSync.workflowStepId === 'treatment') {
+      return [
+        // Left side - XrayLive placeholder 2x3 (vertical xlarge)
+        { col: 1, row: 1, colSpan: 2, rowSpan: 3, originalSize: 'xlarge', adjustedSize: 'xlarge', variant: 'vertical' },
+        // Right side - 3 small components stacked vertically
+        { col: 3, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },  // Reference 1
+        { col: 3, row: 2, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },  // Uniguide
+        { col: 3, row: 3, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' }   // Hemo
+      ];
+    }
+    // Special layout override for planning step (4 components in top row)
+    if (workflowSync.workflowStepId === 'planning') {
+      return [
+        // Top row - 4 components (using 4-column grid)
+        { col: 1, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },  // Reference 1
+        { col: 2, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },  // Reference 2
+        { col: 3, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },  // Uniguide
+        { col: 4, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },  // Hemo
+        // Bottom rows
+        { col: 1, row: 2, colSpan: 1, rowSpan: 2, originalSize: 'medium', adjustedSize: 'medium', variant: 'vertical' },  // XrayLive (1x2)
+        { col: 2, row: 2, colSpan: 3, rowSpan: 2, originalSize: 'large', adjustedSize: 'large' }   // SimSize (3x2)
+      ];
+    }
+    // Special layout override for IVUS Acquisition step
+    if (workflowSync.workflowStepId === 'ivus-acquisition') {
+      return [
+        { col: 1, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
+        { col: 2, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
+        { col: 3, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
+        { col: 1, row: 2, colSpan: 1, rowSpan: 2, originalSize: 'medium', adjustedSize: 'medium', variant: 'vertical' },
+        { col: 2, row: 2, colSpan: 2, rowSpan: 2, originalSize: 'large', adjustedSize: 'large' }
+      ];
+    }
+    // Special layout override for start step (neuro preset)
+    if (workflowSync.workflowStepId === 'start') {
+      return [
+        { col: 1, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
+        { col: 2, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
+        { col: 3, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
+        { col: 1, row: 2, colSpan: 1, rowSpan: 2, originalSize: 'medium', adjustedSize: 'medium', variant: 'vertical' },
+        { col: 2, row: 2, colSpan: 2, rowSpan: 2, originalSize: 'large', adjustedSize: 'large' }
+      ];
+    }
+    // Special layout override for 3D scan step
+    if (workflowSync.workflowStepId === '3d-scan') {
+      return [
+        { col: 1, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
+        { col: 2, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
+        { col: 3, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
+        { col: 1, row: 2, colSpan: 1, rowSpan: 2, originalSize: 'medium', adjustedSize: 'medium', variant: 'vertical' },
+        { col: 2, row: 2, colSpan: 2, rowSpan: 2, originalSize: 'large', adjustedSize: 'large' }
+      ];
+    }
+    // Return empty array for split-screen or other special layouts
+    return [];
+  }, [workflowSync.workflowStepId]);
+  
+  const gridPlacements = useMemo(() => get3x3Layout(), [get3x3Layout]);
+  
   useUnifiedInput({
     smartWorkflows: () => {
       handleShowWorkflows();
@@ -873,13 +961,15 @@ function ScreenFlexvisionInner() {
           focusMode={focusMode}
           currentWorkflowStep={currentWorkflowStepLabel}
           isCarmOverlayActive={isCarmOverlayActive}
+          onStepSelect={handleStepSelect}
+          activePreset={activePreset}
+          isVoiceMode={shouldShowVoiceOverlay}
+          voiceTranscript={transcript}
+          onActivateFocusMode={handleActivateFocusMode}
         />
       </div>
 
-
-
-      {/* Smart Workflows Overlay - Shows when workflows open OR voice is listening OR showing feedback */}
-      {/* Hidden when C-arm overlay is active */}
+      {/* Smart Workflows Overlay - Shows when workflows open */}
       <SmartWorkflowsOverlay
         key={`workflow-preset-${activePreset}`}
         isVisible={!isCarmOverlayActive && (showWorkflows || shouldShowVoiceOverlay)}
@@ -919,45 +1009,38 @@ function ScreenFlexvisionInner() {
             <NavigationMenu />
           </div>
 
-          {/* Component Grid - 3x3 flexible grid system */}
-          <div className="bg-black flex-1 grid overflow-hidden grid-cols-3 grid-rows-3 gap-0">
-
+          {/* Component Grid - 3x3 flexible grid system OR split-screen */}
+          {currentLayout.gridLayout === 'split-screen' ? (
+            /* Split-screen layout for access step */
+            <div className="bg-black flex-1 flex overflow-hidden gap-0">
+              {/* Left side - XrayLive (50%) */}
+              <div className="flex-1 border-2 border-[#3b3b3b] border-solid">
+                <XrayLive componentSize="xlarge" />
+              </div>
+              
+              {/* Right side - Lumify and Hemo stacked (50%) */}
+              <div className="flex-1 flex flex-col">
+                {/* Top half - Lumify (exactly 50% height) */}
+                <div className="h-1/2 border-2 border-[#3b3b3b] border-solid">
+                  <Lumify componentSize="medium" />
+                </div>
+                
+                {/* Bottom half - Hemo (exactly 50% height) */}
+                <div className="h-1/2 border-2 border-[#3b3b3b] border-solid">
+                  <Hemo componentSize="medium" />
+                </div>
+              </div>
+            </div>
+          ) : (
+          <div className={`bg-black flex-1 grid overflow-hidden gap-0 ${
+            workflowSync.workflowStepId === 'planning' ? 'grid-cols-4 grid-rows-3' : 'grid-cols-3 grid-rows-3'
+          }`}>
           {/* Dynamic Grid Layout based on Component Configuration */}
           {(() => {
             const gridComponents = [];
             
-            // Clear 3x3 Grid System with Explicit Rules
-            const get3x3Layout = () => {
-              // Special layout override for IVUS Acquisition step
-              if (workflowSync.workflowStepId === 'ivus-acquisition') {
-                return [
-                  // Placeholder 1 - Top left (1x1)
-                  { col: 1, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
-                  // Placeholder 2 - Top center (1x1)  
-                  { col: 2, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
-                  // Placeholder 3 - Top right (1x1)
-                  { col: 3, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
-                  // Placeholder 4 - Left side vertical medium (1x2)
-                  { col: 1, row: 2, colSpan: 1, rowSpan: 2, originalSize: 'medium', adjustedSize: 'medium', variant: 'vertical' },
-                  // InterventionalIVUS - Bottom right large (2x2) - FORCE 2x2
-                  { col: 2, row: 2, colSpan: 2, rowSpan: 2, originalSize: 'large', adjustedSize: 'large' }
-                ];
-              }
-              // Special layout override for 3D scan step
-              if (workflowSync.workflowStepId === '3d-scan') {
-                return [
-                  // Placeholder 1 - Top left (1x1)
-                  { col: 1, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
-                  // Placeholder 2 - Top center (1x1)  
-                  { col: 2, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
-                  // Hemo - Top right (1x1)
-                  { col: 3, row: 1, colSpan: 1, rowSpan: 1, originalSize: 'small', adjustedSize: 'small' },
-                  // XrayLive - Left side vertical medium (1x2)
-                  { col: 1, row: 2, colSpan: 1, rowSpan: 2, originalSize: 'medium', adjustedSize: 'medium', variant: 'vertical' },
-                  // SmartNavigator - Bottom right large (2x2) - FORCE 2x2
-                  { col: 2, row: 2, colSpan: 2, rowSpan: 2, originalSize: 'large', adjustedSize: 'large' }
-                ];
-              }
+            // Compute dynamic layout for non-special cases
+            const computeDynamicLayout = () => {
               // Define clear component size mappings for 3x3 grid
               const sizeDefinitions = {
                 'fullscreen': { 
@@ -1183,7 +1266,8 @@ function ScreenFlexvisionInner() {
               return placements;
             };
 
-            const placements = useMemo(() => get3x3Layout(), [currentLayout.components, workflowSync.workflowStepId]);
+            // Use pre-computed placements if available, otherwise compute dynamically
+            const placements = gridPlacements.length > 0 ? gridPlacements : computeDynamicLayout();
 
             const getSizeClasses = (size: string, index: number, totalComponents: number) => {
               const placement = placements[index];
@@ -1195,7 +1279,8 @@ function ScreenFlexvisionInner() {
               const colStartClasses = {
                 1: 'col-start-1',
                 2: 'col-start-2', 
-                3: 'col-start-3'
+                3: 'col-start-3',
+                4: 'col-start-4'
               };
               
               const rowStartClasses = {
@@ -1207,7 +1292,8 @@ function ScreenFlexvisionInner() {
               const colSpanClasses = {
                 1: 'col-span-1',
                 2: 'col-span-2',
-                3: 'col-span-3'
+                3: 'col-span-3',
+                4: 'col-span-4'
               };
               
               const rowSpanClasses = {
@@ -1239,7 +1325,7 @@ function ScreenFlexvisionInner() {
               
               switch (config.component) {
                 case 'xrayLive':
-                  renderedComponent = <XrayLive componentSize={componentSize} />;
+                  renderedComponent = <XrayLive componentSize={componentSize} hideContent={config.hideContent} />;
                   focusKey = 'xray';
                   break;
                 case 'interventionalWorkspace':
@@ -1251,6 +1337,7 @@ function ScreenFlexvisionInner() {
                       onAngleSelect={handleAngleSelection}
                       componentSize={componentSize}
                       onOverlayStateChange={setIsCarmOverlayActive}
+                      contentImage={config.contentImage}
                     />
                   );
                   focusKey = 'iw';
@@ -1275,8 +1362,20 @@ function ScreenFlexvisionInner() {
                   focusKey = 'smartnav';
                   break;
                 case 'placeholder':
-                  renderedComponent = <Placeholder componentSize={componentSize} />;
+                  renderedComponent = <Placeholder componentSize={componentSize} title={config.title} hideHeader={config.hideHeader} contentImage={config.contentImage} whiteBg={config.whiteBg} />;
                   focusKey = 'placeholder';
+                  break;
+                case 'lumify':
+                  renderedComponent = <Lumify componentSize={componentSize} />;
+                  focusKey = 'placeholder'; // Reuse placeholder focus key for now
+                  break;
+                case 'simSize':
+                  renderedComponent = <SimSize componentSize={componentSize} />;
+                  focusKey = 'placeholder'; // Reuse placeholder focus key for now
+                  break;
+                case 'uniguide':
+                  renderedComponent = <UniguideUI />;
+                  focusKey = 'placeholder'; // Reuse placeholder focus key for now
                   break;
                 default:
                   return;
@@ -1296,6 +1395,7 @@ function ScreenFlexvisionInner() {
             return gridComponents;
           })()}
           </div>
+          )}
         </div>
       </div>
 

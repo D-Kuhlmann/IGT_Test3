@@ -315,9 +315,10 @@ function XrayLiveContent() {
 interface XrayLiveProps {
   componentSize?: 'small' | 'medium' | 'large' | 'xlarge' | 'fullscreen';
   hideHeader?: boolean;
+  hideContent?: boolean;
 }
 
-export function XrayLive({ componentSize = 'large', hideHeader = false }: XrayLiveProps) {
+export function XrayLive({ componentSize = 'large', hideHeader = false, hideContent = false }: XrayLiveProps) {
   // Content scaling based on component size - headers stay normal, only content scales
   const getContentScale = () => {
     switch (componentSize) {
@@ -362,10 +363,15 @@ export function XrayLive({ componentSize = 'large', hideHeader = false }: XrayLi
       {!hideHeader && <ComponentHeader title="Xray Live" showPatientBar={showPatientBar} />}
       
       {/* Content area uses full available space, then gets scaled */}
-      <div className="flex-1 p-4 min-h-0 w-full overflow-hidden">
-        <div className={`transform ${scale} origin-center w-full h-full flex items-center justify-center`}>
-          <XrayLiveContent />
-        </div>
+      <div className="flex-1 p-4 min-h-0 w-full overflow-hidden bg-[#000000]">
+        {!hideContent ? (
+          <div className={`transform ${scale} origin-center w-full h-full flex items-center justify-center`}>
+            <XrayLiveContent />
+          </div>
+        ) : (
+          /* Black content area when hideContent is true */
+          <div className="w-full h-full bg-[#000000]" />
+        )}
       </div>
     </div>
   );

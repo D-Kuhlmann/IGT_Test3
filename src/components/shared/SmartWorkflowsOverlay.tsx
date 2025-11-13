@@ -60,6 +60,13 @@ function WorkflowStepButton({
             <path d="M40 1.81818V14.5455H29.0909V8.96364C26.0091 10.0636 23.4273 12.2455 21.8182 15.0455V14.5455C21.8182 13.0545 21.3636 11.6727 20.6 10.5182C22.8091 7.97273 25.7545 6.07273 29.0909 5.15455V1.81818H30.9091V0H38.1818V1.81818H40ZM36.8 29.5818L39.0909 24.5455H30L32.2909 29.5818C30.4 30.4455 29.0909 32.3364 29.0909 34.5455C29.0909 34.5909 29.1 34.6273 29.1 34.6727C24.9364 33.1909 21.7 29.7455 20.5091 25.4545H16.7545C18.2727 32.4909 24.0818 37.9273 31.2909 38.9182C32.2 39.6 33.3273 40 34.5455 40C37.5545 40 40 37.5545 40 34.5455C40 32.3364 38.6909 30.4455 36.8 29.5818ZM10 7.27273C12.0091 7.27273 13.6364 5.64545 13.6364 3.63636C13.6364 1.62727 12.0091 0 10 0C7.99091 0 6.36364 1.62727 6.36364 3.63636C6.36364 5.64545 7.99091 7.27273 10 7.27273ZM20 23.6364V14.5455C20 11.5364 17.5545 9.09091 14.5455 9.09091H5.45455C2.44545 9.09091 0 11.5364 0 14.5455V23.6364H3.63636V14.5455C3.63636 14.0455 4.04545 13.6364 4.54545 13.6364C5.04545 13.6364 5.45455 14.0455 5.45455 14.5455V40H9.09091V24.5455C9.09091 24.0455 9.5 23.6364 10 23.6364C10.5 23.6364 10.9091 24.0455 10.9091 24.5455V40H14.5455V14.5455C14.5455 14.0455 14.9545 13.6364 15.4545 13.6364C15.9545 13.6364 16.3636 14.0455 16.3636 14.5455V23.6364H20Z" fill="#F0F8FA"/>
           </svg>
         );
+      case 'Finalise':
+        return (
+          <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 40 40">
+            <path d="M19.1667 19.1667V37.5H37.5V35.8333H20.8333V20.8333H37.5V19.1667H19.1667ZM37.5 28.3333L28.3333 23.75V26.6667H22.5V30H28.3333V32.9167L37.5 28.3333Z" fill="var(--fill-0, white)" />
+            <path d="M8.33333 10C8.33333 5.33333 12 1.66667 16.6667 1.66667C21.3333 1.66667 25 5.33333 25 10C25 14.6667 21.3333 18.3333 16.6667 18.3333C12 18.3333 8.33333 14.6667 8.33333 10ZM16.6667 19.9167C14.6667 19.9167 12.6667 19.25 11.1667 18.25H11.0833H10C6.33333 18.25 3.33333 21.25 3.33333 24.9167V31.5833H17.5V19.8333C17.25 19.9167 16.9167 19.9167 16.6667 19.9167Z" fill="var(--fill-0, white)" opacity="0.5" />
+          </svg>
+        );
       default:
         // Fallback to original icons for other steps
         return stepIcons[stepIndex] || stepIcons[0];
@@ -174,30 +181,8 @@ export function SmartWorkflowsOverlay({
   useEffect(() => {
   }, [voiceTranscript]);
 
-  // Add CSS animations for slide effect
+  // Add CSS animations
   const slideAnimationStyles = `
-    @keyframes slideDown {
-      from {
-        transform: translateY(-100%);
-        opacity: 0;
-      }
-      to {
-        transform: translateY(0);
-        opacity: 1;
-      }
-    }
-    
-    @keyframes slideUp {
-      from {
-        transform: translateY(0);
-        opacity: 1;
-      }
-      to {
-        transform: translateY(-100%);
-        opacity: 0;
-      }
-    }
-    
     @keyframes progressBar {
       from {
         width: 0%;
@@ -223,18 +208,18 @@ export function SmartWorkflowsOverlay({
   const [focusedStepIndex, setFocusedStepIndex] = useState(0);
   const [lastNavigationDirection, setLastNavigationDirection] = useState<'left' | 'right' | null>(null);
   const [isClosing, setIsClosing] = useState(false);
+  const [hasAppeared, setHasAppeared] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
 
   // Dynamic workflow steps based on active preset
   const workflowSteps: WorkflowStep[] = activePreset === 1 
     ? [
-        // Preset 1: Original workflow steps
-        { id: "review", label: "Review", category: "Review" },
-        { id: "ultrasound", label: "Access", category: "Access" },
-        { id: "ccta-planning", label: "Baseline DSA", category: "Planning" },
-        { id: "ivus-acquisition", label: "IVUS Acquisition", category: "Treatment" },
-        { id: "start", label: "Confirm DSA", category: "Planning" },
-        { id: "finalise", label: "Finalise", category: "Treatment" },
+        // Preset 1: Cardiology workflow steps
+        { id: "start", label: "Start", category: "Start" },
+        { id: "ultrasound", label: "Ultrasound", category: "Ultrasound" },
+        { id: "ccta-planning", label: "CCTA Planning", category: "Planning" },
+        { id: "ivus-acquisition", label: "IVUS", category: "IVUS" },
+        { id: "finalise", label: "Finalise", category: "Finalise" },
       ]
     : [
         // Preset 2: Navigator workflow steps
@@ -461,11 +446,18 @@ export function SmartWorkflowsOverlay({
         }
       }
 
+      // Delay appearance to allow indicator morph to complete
+      setTimeout(() => {
+        setHasAppeared(true);
+      }, 300);
+
       setTimeout(() => {
         if (overlayRef.current) {
           overlayRef.current.focus();
         }
-      }, 100);
+      }, 500);
+    } else {
+      setHasAppeared(false);
     }
   }, [isVisible]);
 
@@ -482,23 +474,26 @@ export function SmartWorkflowsOverlay({
         onClick={handleClose}
       />
 
-      {/* Overlay Container */}
+      {/* Overlay Container - positioned to align with indicator */}
       <div
         ref={overlayRef}
-        className="fixed top-9 left-0 right-0 z-40 flex justify-center outline-none"
+        className="fixed left-1/2 z-50 flex justify-center outline-none"
+        style={{
+          top: '-15px', // Align with indicator position in navbar center
+          transform: 'translateX(-50%)',
+          pointerEvents: 'auto',
+          opacity: isClosing ? 0 : (hasAppeared ? 1 : 0),
+          transition: 'opacity 0.2s ease-out'
+        }}
         tabIndex={0}
         role="dialog"
         aria-label="Smart Workflows Navigation Menu"
-        style={{
-          animation: isClosing ? 'slideUp 0.3s ease-out' : 'slideDown 0.3s ease-out'
-        }}
       >
         <div
-          className="bg-[rgba(5,5,5,0.8)] relative rounded-2xl w-fit h-fit max-w-full max-h-full overflow-hidden"
+          className="relative rounded-lg w-fit h-fit max-w-full max-h-full overflow-visible border-2 border-[#0086BB]"
           data-name="_SmartWorkflows"
           style={{
-            backgroundImage:
-              "linear-gradient(45deg, #27316F 20%, #2E9BC8 140%)",
+            backgroundImage: "linear-gradient(45deg, #27316F 20%, #2E9BC8 140%)",
             transform: "scale(0.667)"
           }}
         >

@@ -11,6 +11,7 @@ import imgImage2 from "figma:asset/71dabdc7502548dbc0e7e3fc8521d3ad4a8010af.png"
 import imgImage3 from "figma:asset/db228b80ad186ca3d5adc278aa560e86a0eda3b7.png";
 import imgAxial from "figma:asset/d7258c707bf99e6cc2fdd9e2b612b0b00247fc8f.png";
 import imgImage4 from "figma:asset/7ece7bb00a5e8eaa345a0ea283f6a6bc424b0ef3.png";
+import IWPatientList from '../../../assets/ScreenImages/IW_PatientList.png';
 import { imgDlsCapture16, imgDlsTabMaximize48, imgImageInformation, imgLeft, imgBottom, imgRight, imgCollapse, imgIconsTaskSeries24, imgIconsTaskPlanning24, imgIconsTaskLive24, imgTitle, imgVector1, imgCheckbox, imgIcon5, imgPath, imgVector2, imgDlsHome24, imgPhilipsWordmark2, imgDlsPatientAcquisition24, imgNavIcon, imgNavIcon1 } from "../../../assets/interventional-workspace-svg-assets";
 
 // Custom PatientBar for InterventionalWorkspace with NavigationBar content
@@ -748,6 +749,7 @@ interface InterventionalWorkspaceProps {
   componentSize?: 'small' | 'medium' | 'large' | 'xlarge' | 'fullscreen';
   hideHeader?: boolean;
   onOverlayStateChange?: (isActive: boolean) => void;
+  contentImage?: string;
 }
 
 export function InterventionalWorkspace({ 
@@ -757,7 +759,8 @@ export function InterventionalWorkspace({
   onAngleSelect,
   componentSize = 'large',
   hideHeader = false,
-  onOverlayStateChange
+  onOverlayStateChange,
+  contentImage
 }: InterventionalWorkspaceProps) {
   const { selectedAngle, setSelectedAngle, activateUniGuide } = useAngle();
   const { inputSettings } = useSettings();
@@ -907,52 +910,65 @@ export function InterventionalWorkspace({
       <div className="bg-[#000000] relative flex-1 flex flex-col overflow-hidden">
         {/* Main Content Area */}
         <div className="flex-1 relative">
-        {/* Task Guidance Panel */}
-        <div className="absolute left-0 top-0 bottom-0 w-64">
-          <TaskGuidancePanel 
-            subFocusMode={subFocusMode} 
-            selectedAngleIndex={currentAngleIndex}
-            onAngleSelect={handleAngleActivation}
-          />
-        </div>
-
-        {/* View Area */}
-        <div className="absolute bottom-0 left-64 right-0 top-0 flex">
-          {/* Left Large View */}
-          <div className="flex-[2] flex flex-col min-w-0">
-            <ViewContainer 
-              image={mainImage}
-              orientationImage={imgCoronal}
-              orientationText="Rot 0˚ Ang 0˚"
-              showRotationButtons={true}
+        {contentImage === 'IW_PatientList' ? (
+          /* Patient List View - Full content area */
+          <div className="absolute inset-0">
+            <img 
+              src={IWPatientList} 
+              alt="Patient List" 
+              className="w-full h-full object-cover"
             />
           </div>
+        ) : (
+          <>
+            {/* Task Guidance Panel */}
+            <div className="absolute left-0 top-0 bottom-0 w-64">
+              <TaskGuidancePanel 
+                subFocusMode={subFocusMode} 
+                selectedAngleIndex={currentAngleIndex}
+                onAngleSelect={handleAngleActivation}
+              />
+            </div>
 
-          {/* Right Side - Three Stacked Views */}
-          <div className="flex-1 flex flex-col min-w-0">
-            <ViewContainer 
-              image={imgImage2}
-              orientationImage={imgCoronal}
-              orientationText="Rot 0˚ Ang 0˚"
-              showReferenceLines={true}
-              indicatorColor="#23cc72"
-            />
-            <ViewContainer 
-              image={imgImage3}
-              orientationImage={imgAxial}
-              orientationText="Rot 0˚ Ang 90˚"
-              showReferenceLines={true}
-              indicatorColor="#ff8370"
-            />
-            <ViewContainer 
-              image={imgImage4}
-              orientationImage={imgAxial}
-              orientationText="Rot 90˚ Ang 0˚"
-              showReferenceLines={true}
-              indicatorColor="#ff8370"
-            />
-          </div>
-        </div>
+            {/* View Area */}
+            <div className="absolute bottom-0 left-64 right-0 top-0 flex">
+              {/* Left Large View */}
+              <div className="flex-[2] flex flex-col min-w-0">
+                <ViewContainer 
+                  image={mainImage}
+                  orientationImage={imgCoronal}
+                  orientationText="Rot 0˚ Ang 0˚"
+                  showRotationButtons={true}
+                />
+              </div>
+
+              {/* Right Side - Three Stacked Views */}
+              <div className="flex-1 flex flex-col min-w-0">
+                <ViewContainer 
+                  image={imgImage2}
+                  orientationImage={imgCoronal}
+                  orientationText="Rot 0˚ Ang 0˚"
+                  showReferenceLines={true}
+                  indicatorColor="#23cc72"
+                />
+                <ViewContainer 
+                  image={imgImage3}
+                  orientationImage={imgAxial}
+                  orientationText="Rot 0˚ Ang 90˚"
+                  showReferenceLines={true}
+                  indicatorColor="#ff8370"
+                />
+                <ViewContainer 
+                  image={imgImage4}
+                  orientationImage={imgAxial}
+                  orientationText="Rot 90˚ Ang 0˚"
+                  showReferenceLines={true}
+                  indicatorColor="#ff8370"
+                />
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
     </div>
