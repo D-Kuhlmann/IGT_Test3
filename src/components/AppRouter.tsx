@@ -13,6 +13,7 @@ import { ActiveComponentsProvider } from '../contexts/ActiveComponentsContext';
 import { GlobalVoiceProvider } from '../contexts/GlobalVoiceContext';
 import { VoiceInputStateProvider } from '../contexts/VoiceInputStateContext';
 import { InputBroadcastProvider } from '../contexts/InputBroadcastContext';
+import { AutomationProvider } from '../contexts/AutomationContext';
 import { GlobalVoiceCommandHandler } from './GlobalVoiceCommandHandler';
 
 // Inner component that uses location to determine screen ID
@@ -79,13 +80,15 @@ export function AppRouter() {
       <SettingsProvider>
         <AngleProvider>
           <ActiveComponentsProvider>
-            <GlobalVoiceProvider>
-              <VoiceInputStateProvider>
-                <Router>
-                  <AppContent />
-                </Router>
-              </VoiceInputStateProvider>
-            </GlobalVoiceProvider>
+            <AutomationProvider>
+              <GlobalVoiceProvider>
+                <VoiceInputStateProvider>
+                  <Router>
+                    <AppContent />
+                  </Router>
+                </VoiceInputStateProvider>
+              </GlobalVoiceProvider>
+            </AutomationProvider>
           </ActiveComponentsProvider>
         </AngleProvider>
       </SettingsProvider>

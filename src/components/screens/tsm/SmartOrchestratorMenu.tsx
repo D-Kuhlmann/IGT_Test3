@@ -2,6 +2,7 @@ import { useState } from "react";
 import { SmartWorkflowBar } from "../../shared/SmartWorkflowBar";
 import { SmartWorkflowsOverlay } from "../../shared/SmartWorkflowsOverlay";
 import type { WorkflowStep } from "../../../types";
+import { useAutomation } from "../../../contexts/AutomationContext";
 import iconVoiceActivated from "../../../assets/AutomationIcons/AuVoiceEnable.svg";
 import iconVoiceDeactivated from "../../../assets/AutomationIcons/AuVoiceDisabled.svg";
 import iconCollimationActivated from "../../../assets/AutomationIcons/AUAutoCollimationActivated.svg";
@@ -33,19 +34,9 @@ export function SmartOrchestratorMenu({
   onStepSelect
 }: SmartOrchestratorMenuProps) {
   const [showWorkflows, setShowWorkflows] = useState(false);
-  const [automationState, setAutomationState] = useState({
-    voice: false,
-    collimation: false,
-    smartMask: true,
-    autoZoom: false,
-    detectorMove: false,
-    smartCentering: true,
-    puffFreeze: false
-  });
-
-  const toggleAutomation = (key: keyof typeof automationState) => {
-    setAutomationState(prev => ({ ...prev, [key]: !prev[key] }));
-  };
+  const { automationState, toggleAutomation } = useAutomation();
+  
+  console.log('SmartOrchestratorMenu - Automation State:', automationState);
 
   const handleWorkflowsClick = () => {
     setShowWorkflows(true);
