@@ -1202,7 +1202,7 @@ function ActiveAutomationIcons() {
       {rows.map((row, rowIndex) => (
         <div key={rowIndex} className="flex gap-8 items-center justify-center w-full">
           {row.map((icon, iconIndex) => (
-            <div key={iconIndex} className="w-20 h-20">
+            <div key={iconIndex} className="w-16 h-16">
               <img src={icon} alt="Automation" className="w-full h-full object-contain" />
             </div>
           ))}
