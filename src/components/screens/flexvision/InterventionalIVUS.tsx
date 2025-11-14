@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ComponentHeader, ViewportHeader } from '../../shared/ViewportHeaders';
+import { useSettings } from '../../../contexts/SettingsContext';
 
 // SVG paths from Uniguide
 const svgPaths = {
@@ -252,25 +253,476 @@ function NavigationBar() {
   );
 }
 
-function InterventionalIVUSContent() {
+function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boolean; isSelected: boolean }) {
+  const { inputSettings } = useSettings();
+  const [focusedButtonIndex, setFocusedButtonIndex] = useState(0);
+  const [ringdownActive, setRingdownActive] = useState(false);
+  const [isFrozen, setIsFrozen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [isRecordingStopped, setIsRecordingStopped] = useState(false); // Recording stopped but in review mode
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const scrubberRef = useRef<HTMLDivElement>(null);
+  const [isScrubbing, setIsScrubbing] = useState(false);
+  const isProcessingKey = useRef(false);
+  const [scrubberFocused, setScrubberFocused] = useState(false); // Scrubber is selected
+  const [scrubberActive, setScrubberActive] = useState(false); // Scrubber is being controlled
+  const [isPlaying, setIsPlaying] = useState(false); // Video playback state
+  const [bookmarks, setBookmarks] = useState<number[]>([]); // Bookmark positions in seconds
+  const keyHoldTimer = useRef<NodeJS.Timeout | null>(null);
+  const keyHoldCount = useRef(0);
+  
+  // Bottom row buttons (left to right) - changes based on recording state
+  const buttons = isRecordingStopped
+    ? [
+        { id: 'bookmark', label: 'Bookmark' },
+        { id: isPlaying ? 'pause' : 'play', label: isPlaying ? 'Pause' : 'Play' },
+        { id: 'live', label: 'Live' }
+      ]
+    : isRecording 
+    ? [
+        { id: 'bookmark', label: 'Bookmark' },
+        { id: 'stop', label: 'Stop' }
+      ]
+    : [
+        { id: 'save-frame', label: 'Save Frame' },
+        { id: 'freeze', label: 'Freeze' },
+        { id: 'ringdown', label: 'Ringdown' },
+        { id: 'record', label: 'Record' }
+      ];
+
+  const handleButtonClick = (buttonId: string) => {
+    console.log(`IVUS: Button clicked: ${buttonId}`);
+    
+    if (buttonId === 'freeze') {
+      setIsFrozen(!isFrozen);
+      if (!isFrozen && videoRef.current) {
+        videoRef.current.pause();
+      } else if (isFrozen && videoRef.current) {
+        videoRef.current.play();
+      }
+      console.log('IVUS: Freeze toggled:', !isFrozen);
+    } else if (buttonId === 'ringdown') {
+      setRingdownActive(true);
+      console.log('IVUS: Ringdown activated');
+    } else if (buttonId === 'record' && ringdownActive) {
+      const newRecordingState = !isRecording;
+      setIsRecording(newRecordingState);
+      console.log('IVUS: Recording toggled:', newRecordingState);
+      
+      if (newRecordingState) {
+        // Start recording - reset timer, play recording video, and reset button focus
+        setRecordingTime(0);
+        setFocusedButtonIndex(0); // Reset to first button (Bookmark)
+        if (videoRef.current) {
+          videoRef.current.currentTime = 0;
+          videoRef.current.play();
+        }
+      } else {
+        // Stop recording
+        setRecordingTime(0);
+        setFocusedButtonIndex(0); // Reset to first button (Save Frame)
+      }
+    } else if (buttonId === 'stop') {
+      // Stop recording - enter review mode
+      setIsRecording(false);
+      setIsRecordingStopped(true);
+      setRecordingTime(34); // Jump to end (34 seconds)
+      setFocusedButtonIndex(0); // Reset to first button (Bookmark)
+      
+      // Pause video and set to end
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.currentTime = 34;
+      }
+      console.log('IVUS: Recording stopped, entering review mode');
+    } else if (buttonId === 'pause' || buttonId === 'play') {
+      // Toggle play/pause
+      if (buttonId === 'pause') {
+        console.log('IVUS: Playback paused');
+        setIsPlaying(false);
+        if (videoRef.current) {
+          videoRef.current.pause();
+        }
+      } else {
+        console.log('IVUS: Playback resumed');
+        setIsPlaying(true);
+        if (videoRef.current) {
+          videoRef.current.play();
+        }
+      }
+    } else if (buttonId === 'live') {
+      // Live button - no function for now
+      console.log('IVUS: Live button pressed (no function yet)');
+    } else if (buttonId === 'bookmark') {
+      console.log('IVUS: Bookmark added at', recordingTime);
+      // Add bookmark at current position
+      if (!bookmarks.includes(recordingTime)) {
+        setBookmarks([...bookmarks, recordingTime].sort((a, b) => a - b));
+      }
+    }
+  };
+
+  // Recording timer
+  useEffect(() => {
+    if (!isRecording) return;
+
+    const interval = setInterval(() => {
+      setRecordingTime((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isRecording]);
+
+  // Format recording time as MM:SS
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Handle scrubbing through the video
+  const handleScrub = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!scrubberRef.current || !isRecordingStopped) return;
+    
+    const rect = scrubberRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, x / rect.width));
+    const newTime = Math.round(percentage * 34 * 10) / 10; // Round to nearest 0.1 second (frame)
+    
+    setRecordingTime(newTime);
+    if (videoRef.current) {
+      videoRef.current.currentTime = newTime;
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isRecordingStopped) return;
+    setIsScrubbing(true);
+    handleScrub(e);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isScrubbing) {
+      handleScrub(e);
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsScrubbing(false);
+  };
+
+  // Add global mouse up listener for scrubbing
+  useEffect(() => {
+    if (isScrubbing) {
+      window.addEventListener('mouseup', handleMouseUp);
+      return () => window.removeEventListener('mouseup', handleMouseUp);
+    }
+  }, [isScrubbing]);
+
+  // Start playback when entering review mode
+  useEffect(() => {
+    if (isRecordingStopped && videoRef.current) {
+      // Reset to beginning and start playing
+      videoRef.current.currentTime = 0;
+      setRecordingTime(0);
+      setIsPlaying(true);
+      videoRef.current.play();
+    }
+  }, [isRecordingStopped]);
+
+  // Sync scrubber with video playback
+  useEffect(() => {
+    if (!isPlaying || !videoRef.current) return;
+
+    const updateScrubber = () => {
+      if (videoRef.current) {
+        const currentTime = Math.round(videoRef.current.currentTime * 10) / 10; // Round to frame precision
+        setRecordingTime(currentTime);
+        
+        // Stop at end
+        if (currentTime >= 34) {
+          setIsPlaying(false);
+          videoRef.current.pause();
+        }
+      }
+    };
+
+    const interval = setInterval(updateScrubber, 100); // Update 10 times per second
+    return () => clearInterval(interval);
+  }, [isPlaying]);
+
+  // Debug: Log bookmarks when they change
+  useEffect(() => {
+    console.log('IVUS: Bookmarks array updated:', bookmarks);
+    console.log('IVUS: Number of bookmarks:', bookmarks.length);
+  }, [bookmarks]);
+
+  // Handle keyboard navigation for bottom buttons
+  useEffect(() => {
+    // Enable keyboard control when either focused OR selected
+    const isActive = isFocused || isSelected;
+    
+    if (!isActive) {
+      console.log('IVUS: Not active (focused or selected), keyboard control disabled');
+      return;
+    }
+
+    console.log('IVUS: Active (focused:', isFocused, 'selected:', isSelected, '), keyboard control enabled');
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent duplicate processing
+      if (isProcessingKey.current) {
+        console.log('IVUS: Key already being processed, ignoring');
+        return;
+      }
+      
+      const key = e.key.toLowerCase();
+      console.log('IVUS: Key pressed:', key);
+      
+      const leftKey = typeof inputSettings.workflowStepLeft === 'string' ? inputSettings.workflowStepLeft.toLowerCase() : 'arrowleft';
+      const rightKey = typeof inputSettings.workflowStepRight === 'string' ? inputSettings.workflowStepRight.toLowerCase() : 'arrowright';
+      const activateKey = typeof inputSettings.workflowStepActivate === 'string' ? inputSettings.workflowStepActivate.toLowerCase() : 'enter';
+      const previousKey = typeof inputSettings.navigatorPreviousStep === 'string' ? inputSettings.navigatorPreviousStep.toLowerCase() : 'q';
+      
+      // If scrubber is active (being controlled)
+      if (scrubberActive && isRecordingStopped) {
+        console.log('IVUS: Scrubber is active, key pressed:', key);
+        
+        if (key === activateKey) {
+          // Add bookmark at current position
+          e.preventDefault();
+          e.stopPropagation();
+          isProcessingKey.current = true;
+          console.log('IVUS: Adding bookmark at', recordingTime);
+          console.log('IVUS: Current bookmarks:', bookmarks);
+          if (!bookmarks.includes(recordingTime)) {
+            const newBookmarks = [...bookmarks, recordingTime].sort((a, b) => a - b);
+            console.log('IVUS: New bookmarks array:', newBookmarks);
+            setBookmarks(newBookmarks);
+          } else {
+            console.log('IVUS: Bookmark already exists at this position');
+          }
+          setTimeout(() => { isProcessingKey.current = false; }, 100);
+          return;
+        } else if (key === leftKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          // Calculate step size based on how long key is held
+          keyHoldCount.current++;
+          const stepSize = Math.min(keyHoldCount.current * 0.1, 2); // Max 2 seconds per step
+          
+          console.log('IVUS: Scrub backward, step:', stepSize);
+          const newTime = Math.max(0, Math.round((recordingTime - stepSize) * 10) / 10);
+          setRecordingTime(newTime);
+          if (videoRef.current) {
+            videoRef.current.currentTime = newTime;
+          }
+          
+          // Reset hold count after a delay
+          if (keyHoldTimer.current) clearTimeout(keyHoldTimer.current);
+          keyHoldTimer.current = setTimeout(() => {
+            keyHoldCount.current = 0;
+          }, 200);
+        } else if (key === rightKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          // Calculate step size based on how long key is held
+          keyHoldCount.current++;
+          const stepSize = Math.min(keyHoldCount.current * 0.1, 2); // Max 2 seconds per step
+          
+          console.log('IVUS: Scrub forward, step:', stepSize);
+          const newTime = Math.min(34, Math.round((recordingTime + stepSize) * 10) / 10);
+          setRecordingTime(newTime);
+          if (videoRef.current) {
+            videoRef.current.currentTime = newTime;
+          }
+          
+          // Reset hold count after a delay
+          if (keyHoldTimer.current) clearTimeout(keyHoldTimer.current);
+          keyHoldTimer.current = setTimeout(() => {
+            keyHoldCount.current = 0;
+          }, 200);
+        } else if (key === previousKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          isProcessingKey.current = true;
+          console.log('IVUS: Exit scrubber control');
+          setScrubberActive(false);
+          setTimeout(() => { isProcessingKey.current = false; }, 100);
+        }
+        return;
+      }
+      
+      // If scrubber is focused but not active
+      if (scrubberFocused && isRecordingStopped) {
+        if (key === activateKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          isProcessingKey.current = true;
+          console.log('IVUS: Activate scrubber control');
+          setScrubberActive(true);
+          // Pause video when entering scrubber control
+          if (isPlaying) {
+            setIsPlaying(false);
+            if (videoRef.current) {
+              videoRef.current.pause();
+            }
+          }
+          setTimeout(() => { isProcessingKey.current = false; }, 100);
+          return;
+        } else if (key === previousKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          isProcessingKey.current = true;
+          console.log('IVUS: Unfocus scrubber');
+          setScrubberFocused(false);
+          setTimeout(() => { isProcessingKey.current = false; }, 100);
+          return;
+        } else if (key === rightKey) {
+          // Move from scrubber to first button
+          e.preventDefault();
+          e.stopPropagation();
+          isProcessingKey.current = true;
+          console.log('IVUS: Move from scrubber to first button');
+          setScrubberFocused(false);
+          setFocusedButtonIndex(0);
+          setTimeout(() => { isProcessingKey.current = false; }, 100);
+          return;
+        } else if (key === leftKey) {
+          // Move from scrubber to last button
+          e.preventDefault();
+          e.stopPropagation();
+          isProcessingKey.current = true;
+          console.log('IVUS: Move from scrubber to last button');
+          setScrubberFocused(false);
+          setFocusedButtonIndex(buttons.length - 1);
+          setTimeout(() => { isProcessingKey.current = false; }, 100);
+          return;
+        }
+        // Block all other keys when scrubber is focused
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      
+      // Normal button navigation
+      // Navigate left
+      if (key === leftKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        isProcessingKey.current = true;
+        console.log('IVUS: Navigate left from button', focusedButtonIndex);
+        
+        // Mirror of right navigation but in reverse
+        if (focusedButtonIndex === 0 && isRecordingStopped) {
+          // At first button, wrap to scrubber
+          console.log('IVUS: Wrapping to scrubber from first button');
+          setFocusedButtonIndex(-1); // Clear button focus
+          setScrubberFocused(true);
+        } else {
+          setFocusedButtonIndex((prev) => (prev - 1 + buttons.length) % buttons.length);
+        }
+        setTimeout(() => { isProcessingKey.current = false; }, 100);
+      }
+      // Navigate right
+      else if (key === rightKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        isProcessingKey.current = true;
+        console.log('IVUS: Navigate right from button', focusedButtonIndex);
+        
+        // If at last button and in review mode, focus scrubber
+        if (focusedButtonIndex === buttons.length - 1 && isRecordingStopped) {
+          console.log('IVUS: Wrapping to scrubber from last button');
+          setFocusedButtonIndex(-1); // Clear button focus
+          setScrubberFocused(true);
+        } else {
+          setFocusedButtonIndex((prev) => (prev + 1) % buttons.length);
+        }
+        setTimeout(() => { isProcessingKey.current = false; }, 100);
+      }
+      // Activate button
+      else if (key === activateKey || key === 'enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        isProcessingKey.current = true;
+        const buttonId = buttons[focusedButtonIndex].id;
+        handleButtonClick(buttonId);
+        setTimeout(() => { isProcessingKey.current = false; }, 100);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      console.log('IVUS: Removing keyboard listener');
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isFocused, isSelected, focusedButtonIndex, inputSettings, isRecording, isRecordingStopped, scrubberFocused, scrubberActive, recordingTime, isPlaying, isFrozen]);
+
   return (
     <div className="flex flex-col w-full h-full bg-black">
       {/* Main Content Area - Two Panels Side by Side */}
       <div className="flex-1 flex gap-0 overflow-hidden">
         {/* Left Panel - Controller Information */}
         <div className="w-[400px] bg-black flex flex-col p-6">
-          {/* Warning Message */}
-          <div className="bg-[#2a2a2a] border-l-4 border-yellow-500 p-4 mb-6">
-            <div className="flex gap-3">
-              <div className="text-yellow-500 text-xl">⚠</div>
-              <div className="font-['CentraleSans:Book',_sans-serif] text-[#d6d6d6] text-[13px] leading-[18px]">
-                <p>Avoid changing the zoom, moving the table or C-arm position. Make sure the guide and IVUS Catheter are visible during the pullback.</p>
-              </div>
+          {isRecordingStopped ? (
+            /* Review Mode - Show IVUS Wire image */
+            <div className="flex-1 flex items-start justify-center">
+              <img 
+                src="/src/assets/Assets_Prototype-vids/IVUSWire.png" 
+                alt="IVUS Wire" 
+                className="w-full h-auto object-contain"
+              />
             </div>
-          </div>
+          ) : isRecording ? (
+            /* Recording Mode - Show different content */
+            <>
+              {/* Warning Message */}
+              <div className="bg-[#2a2a2a] border-l-4 border-yellow-500 p-4 mb-6">
+                <div className="flex gap-3">
+                  <div className="text-yellow-500 text-xl">⚠</div>
+                  <div className="font-['CentraleSans:Book',_sans-serif] text-[#d6d6d6] text-[13px] leading-[18px]">
+                    <p>Avoid changing the zoom, moving the table and C-arm position. Make sure the Guide and IVUS Catheter are visible during the pullback.</p>
+                  </div>
+                </div>
+              </div>
 
-          {/* Tutorial Section */}
-          <div className="bg-[#2a2a2a] rounded p-4 mb-4">
+              {/* Recording Instructions */}
+              <div className="text-center">
+                <p className="font-['CentraleSans:Book',_sans-serif] text-[#41c9fe] text-[16px] mb-8">
+                  Begin Continuous Fluoro and Start Pullback now
+                </p>
+                
+                {/* Catheter Illustration */}
+                <div className="bg-[#1a1a1a] rounded p-4 mb-4">
+                  <div className="flex items-center justify-center h-[120px]">
+                    <img 
+                      src="/src/assets/Assets_Prototype-vids/Pedal-press-TSM.gif" 
+                      alt="Catheter Pullback" 
+                      className="h-full object-contain"
+                    />
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Normal Mode - Show tutorial */
+            <>
+              {/* Warning Message */}
+              <div className="bg-[#2a2a2a] border-l-4 border-yellow-500 p-4 mb-6">
+                <div className="flex gap-3">
+                  <div className="text-yellow-500 text-xl">⚠</div>
+                  <div className="font-['CentraleSans:Book',_sans-serif] text-[#d6d6d6] text-[13px] leading-[18px]">
+                    <p>Avoid changing the zoom, moving the table or C-arm position. Make sure the guide and IVUS Catheter are visible during the pullback.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tutorial Section */}
+              <div className="bg-[#2a2a2a] rounded p-4 mb-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-[#41c9fe] rounded flex items-center justify-center text-[10px] text-black font-bold">i</div>
@@ -286,9 +738,11 @@ function InterventionalIVUSContent() {
             {/* Catheter Illustration */}
             <div className="bg-[#1a1a1a] rounded p-4 mb-4">
               <div className="flex items-center justify-center h-[120px]">
-                <div className="font-['CentraleSans:Book',_sans-serif] text-[#666] text-[12px]">
-                  [Catheter Illustration]
-                </div>
+                <img 
+                  src="/src/assets/Assets_Prototype-vids/Pedal-press-TSM.gif" 
+                  alt="Catheter Pullback" 
+                  className="h-full object-contain"
+                />
               </div>
             </div>
 
@@ -314,38 +768,75 @@ function InterventionalIVUSContent() {
               </div>
             </div>
           </div>
+            </>
+          )}
         </div>
 
         {/* Right Panel - IVUS Image */}
         <div className="flex-1 bg-black relative">
-          {/* CO-REG LIVE Label */}
+          {/* CO-REG LIVE / RECORDING / REVIEW Label */}
           <div className="absolute top-4 left-4 z-10">
             <div className="bg-black/50 px-3 py-1 rounded">
-              <p className="font-['CentraleSans:Medium',_sans-serif] text-[#23cc72] text-[14px]">CO-REG LIVE</p>
-              <div className="flex items-center gap-2 mt-1">
-                <div className="w-2 h-2 rounded-full bg-[#23cc72]"></div>
-                <p className="font-['CentraleSans:Book',_sans-serif] text-[#d6d6d6] text-[12px]">Eagle Eye Platinum</p>
-              </div>
+              {isRecordingStopped ? (
+                <>
+                  <p className="font-['CentraleSans:Medium',_sans-serif] text-white text-[14px]">REVIEW #{Math.floor(recordingTime * 10)}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="w-2 h-2 rounded-full bg-white"></div>
+                    <p className="font-['CentraleSans:Book',_sans-serif] text-[#d6d6d6] text-[12px]">Eagle Eye Platinum</p>
+                  </div>
+                </>
+              ) : isRecording ? (
+                <>
+                  <p className="font-['CentraleSans:Medium',_sans-serif] text-[#ff3333] text-[14px]">RECORDING {formatTime(recordingTime)}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="w-2 h-2 rounded-full bg-[#ff3333] animate-pulse"></div>
+                    <p className="font-['CentraleSans:Book',_sans-serif] text-[#d6d6d6] text-[12px]">Eagle Eye Platinum</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="font-['CentraleSans:Medium',_sans-serif] text-[#23cc72] text-[14px]">CO-REG LIVE</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="w-2 h-2 rounded-full bg-[#23cc72]"></div>
+                    <p className="font-['CentraleSans:Book',_sans-serif] text-[#d6d6d6] text-[12px]">Eagle Eye Platinum</p>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
           {/* IVUS Circular Display */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="relative w-[600px] h-[600px]">
+          <div className={`absolute inset-0 flex justify-center ${(isRecording || isRecordingStopped) ? 'items-start pt-8' : 'items-center'} transition-all duration-300`}>
+            <div className={`relative transition-all duration-300 ${(isRecording || isRecordingStopped) ? 'w-[450px] h-[450px]' : 'w-[600px] h-[600px]'}`}>
               {/* IVUS Video */}
               <video 
+                ref={videoRef}
                 className="absolute inset-0 w-full h-full object-cover rounded-full"
-                autoPlay 
-                loop 
+                autoPlay={!isFrozen}
+                loop={!isRecording && !isRecordingStopped && !isFrozen}
                 muted
                 playsInline
+                key={(isRecording || isRecordingStopped) ? 'recording' : 'live'}
+                onEnded={() => {
+                  if (isRecording) {
+                    setIsRecording(false);
+                    setRecordingTime(0);
+                  }
+                }}
               >
-                <source src="/src/assets/Assets_Prototype-vids/IVUSTomoLive-repeats.mp4" type="video/mp4" />
+                <source 
+                  src={(isRecording || isRecordingStopped)
+                    ? "/src/assets/Assets_Prototype-vids/IVUSTomoRecording-fullPullback.mp4" 
+                    : "/src/assets/Assets_Prototype-vids/IVUSTomoLive-repeats.mp4"
+                  } 
+                  type="video/mp4" 
+                />
               </video>
             </div>
           </div>
 
-          {/* Right Side Tools */}
+          {/* Right Side Tools - Hidden during recording */}
+          {!isRecording && (
           <div className="absolute right-4 top-0 bottom-0 flex flex-col justify-between py-4">
             {/* Top 4 Buttons */}
             <div className="flex flex-col gap-2">
@@ -417,14 +908,187 @@ function InterventionalIVUSContent() {
               <span className="font-['CentraleSans:Book',_sans-serif] text-[10px]">ChromaFlo</span>
             </button>
           </div>
+          )}
         </div>
       </div>
 
+      {/* Scrubber Bar - Visible during recording and review mode */}
+      {(isRecording || isRecordingStopped) && (
+        <div className="absolute bottom-[40px] left-1/2 transform -translate-x-1/2 scale-75 z-20 flex items-stretch gap-2">
+          {/* Skip Backward Button */}
+          <button className="bg-[#2a2a2a] hover:bg-[#3a3a3a] px-3 flex items-center justify-center text-[#d6d6d6] hover:text-white transition-colors rounded">
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+            </svg>
+          </button>
+
+          <div 
+            ref={scrubberRef}
+            className={`relative bg-black transition-all ${
+              scrubberFocused 
+                ? 'border-4 border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30' 
+                : 'border-2 border-gray-700'
+            } ${isRecordingStopped ? 'cursor-pointer' : ''}`}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+          >
+            {/* Full IVUS image */}
+            <img 
+              src="/src/assets/Assets_Prototype-vids/IVUS_ild-boom.png" 
+              alt="IVUS Progress Background" 
+              className="block pointer-events-none"
+            />
+            
+            {/* Black overlay - only in recording mode, hides unrecorded portion */}
+            {isRecording && (
+              <div 
+                className="absolute top-0 right-0 h-full bg-black transition-all duration-100 ease-linear"
+                style={{ 
+                  width: `${100 - (recordingTime / 34) * 100}%`
+                }}
+              />
+            )}
+            
+            {/* Playhead line - red during recording, blue when active, white in review */}
+            <div 
+              className={`absolute top-0 bottom-0 w-1 transition-all duration-100 ease-linear z-10 ${
+                isRecording ? 'bg-red-600' : scrubberActive ? 'bg-[#41c9fe]' : 'bg-white'
+              }`}
+              style={{ 
+                left: `${(recordingTime / 34) * 100}%`
+              }}
+            />
+            
+            {/* Bookmarks */}
+            {bookmarks.map((time, index) => (
+              <div 
+                key={index}
+                className="absolute bottom-1 z-50"
+                style={{ 
+                  left: `${(time / 34) * 100}%`,
+                  transform: 'translateX(-50%)'
+                }}
+              >
+                <svg className="w-4 h-5" fill="#FFA500" viewBox="0 0 24 24" style={{ filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.5))' }}>
+                  <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/>
+                </svg>
+              </div>
+            ))}
+          </div>
+
+          {/* Skip Forward Button */}
+          <button className="bg-[#2a2a2a] hover:bg-[#3a3a3a] px-3 flex items-center justify-center text-[#d6d6d6] hover:text-white transition-colors rounded">
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M16 18h2V6h-2zm-2.5-6L5 6v12z"/>
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* Bottom Control Bar */}
       <div className="h-[60px] bg-black flex items-center justify-between px-6">
+        {isRecordingStopped ? (
+          /* Review Mode - Show Bookmark, Pause, Live */
+          <>
+            <div className="flex-1"></div>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => handleButtonClick('bookmark')}
+                className={`px-6 py-2 rounded border-4 flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-all min-w-[150px] justify-center ${
+                  focusedButtonIndex === 0 
+                    ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#3a3a3a]' 
+                    : 'border-[#3b3b3b] bg-[#3a3a3a] hover:border-[#41c9fe]'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+                Bookmark
+              </button>
+              <button 
+                onClick={() => handleButtonClick('pause')}
+                className={`px-6 py-2 rounded border-4 flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-all min-w-[150px] justify-center ${
+                  focusedButtonIndex === 1 && !scrubberFocused
+                    ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#3a3a3a]' 
+                    : 'border-[#3b3b3b] bg-[#3a3a3a] hover:border-[#41c9fe]'
+                }`}
+              >
+                {isPlaying ? (
+                  <>
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                    </svg>
+                    Pause
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    Play
+                  </>
+                )}
+              </button>
+              <button 
+                onClick={() => handleButtonClick('live')}
+                className={`px-6 py-2 rounded border-4 flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-all min-w-[150px] justify-center ${
+                  focusedButtonIndex === 2 && !scrubberFocused
+                    ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#3a3a3a]' 
+                    : 'border-[#3b3b3b] bg-[#3a3a3a] hover:border-[#41c9fe]'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                </svg>
+                Live
+              </button>
+            </div>
+          </>
+        ) : isRecording ? (
+          /* Recording Mode - Show Bookmark and Stop */
+          <>
+            <div className="flex-1"></div>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => handleButtonClick('bookmark')}
+                className={`px-6 py-2 rounded border-4 flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-all min-w-[150px] justify-center ${
+                  focusedButtonIndex === 0 && !scrubberFocused
+                    ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#3a3a3a]' 
+                    : 'border-[#3b3b3b] bg-[#3a3a3a] hover:border-[#41c9fe]'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+                Bookmark
+              </button>
+              <button 
+                onClick={() => handleButtonClick('stop')}
+                className={`px-6 py-2 rounded border-4 flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-all min-w-[150px] justify-center ${
+                  focusedButtonIndex === 1 && !scrubberFocused
+                    ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#1474a4]' 
+                    : 'border-[#3b3b3b] bg-[#1474a4] hover:border-[#41c9fe]'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M6 6h12v12H6z"/>
+                </svg>
+                Stop
+              </button>
+            </div>
+          </>
+        ) : (
+          /* Normal Mode - Show all buttons */
+          <>
         {/* Left - Save Frame Button */}
-        <button className="bg-[#3a3a3a] hover:bg-[#4a4a4a] px-6 py-2 rounded flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-colors min-w-[150px] justify-center">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button 
+          className={`px-6 py-2 rounded border-4 flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-all min-w-[150px] justify-center ${
+            focusedButtonIndex === 0 && !scrubberFocused
+              ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#3a3a3a]' 
+              : 'border-[#3b3b3b] bg-[#3a3a3a] hover:border-[#41c9fe]'
+          }`}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
           </svg>
           Save Frame
@@ -432,19 +1096,51 @@ function InterventionalIVUSContent() {
 
         {/* Right - Control Buttons and Toggle */}
         <div className="flex items-center gap-3">
-          <button className="bg-[#3a3a3a] hover:bg-[#4a4a4a] px-6 py-2 rounded flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-colors min-w-[150px] justify-center">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button 
+            onClick={() => handleButtonClick('freeze')}
+            className={`px-6 py-2 rounded border-4 flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-all min-w-[150px] justify-center ${
+              focusedButtonIndex === 1 
+                ? isFrozen
+                  ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#1474a4]'
+                  : 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#3a3a3a]'
+                : isFrozen
+                  ? 'border-[#3b3b3b] bg-[#1474a4] hover:border-[#41c9fe]'
+                  : 'border-[#3b3b3b] bg-[#3a3a3a] hover:border-[#41c9fe]'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             Freeze
           </button>
-          <button className="bg-[#3a3a3a] hover:bg-[#4a4a4a] px-6 py-2 rounded flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-colors min-w-[150px] justify-center">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <button 
+            onClick={() => handleButtonClick('ringdown')}
+            className={`px-6 py-2 rounded border-4 flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-all min-w-[150px] justify-center ${
+              focusedButtonIndex === 2 
+                ? ringdownActive
+                  ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#3a3a3a]'
+                  : 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#1474a4]'
+                : ringdownActive
+                  ? 'border-[#3b3b3b] bg-[#3a3a3a] hover:border-[#41c9fe]'
+                  : 'border-[#3b3b3b] bg-[#1474a4] hover:border-[#41c9fe]'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
             </svg>
             Ringdown
           </button>
-          <button className="bg-[#1474a4] hover:bg-[#1a8cc8] px-6 py-2 rounded flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-colors min-w-[150px] justify-center">
+          <button 
+            onClick={() => handleButtonClick('record')}
+            disabled={!ringdownActive}
+            className={`px-6 py-2 rounded border-4 flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-all min-w-[150px] justify-center ${
+              focusedButtonIndex === 3 
+                ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#1474a4]'
+                : ringdownActive
+                  ? 'border-[#3b3b3b] bg-[#1474a4] hover:border-[#41c9fe]'
+                  : 'border-[#3b3b3b] bg-[#3a3a3a] hover:border-[#41c9fe] opacity-50 cursor-not-allowed'
+            }`}
+          >
             <div className="w-3 h-3 rounded-full bg-white"></div>
             Record
           </button>
@@ -457,6 +1153,8 @@ function InterventionalIVUSContent() {
             <span className="font-['CentraleSans:Book',_sans-serif] text-white text-[13px]">Co-registration</span>
           </label>
         </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -465,11 +1163,15 @@ function InterventionalIVUSContent() {
 interface InterventionalIVUSProps {
   componentSize?: 'small' | 'medium' | 'large' | 'xlarge' | 'fullscreen';
   hideHeader?: boolean;
+  isFocused?: boolean;
+  isSelected?: boolean;
 }
 
 export function InterventionalIVUS({ 
   componentSize = 'large', 
-  hideHeader = false 
+  hideHeader = false,
+  isFocused = false,
+  isSelected = false
 }: InterventionalIVUSProps) {
   // Content scaling based on component size - headers stay normal, only content scales
   const getContentScale = () => {
@@ -522,7 +1224,7 @@ export function InterventionalIVUS({
         {/* Content area uses full available space, then gets scaled */}
         <div className="absolute inset-0" style={{ top: hideHeader ? 0 : '40px' }}>
           <div className={`transform ${scale} origin-center w-full h-full flex items-center justify-center`}>
-            <InterventionalIVUSContent />
+            <InterventionalIVUSContent isFocused={isFocused} isSelected={isSelected} />
           </div>
         </div>
       </div>

@@ -382,6 +382,7 @@ function ScreenFlexvisionInner() {
       'start': 'iw',           // In start step (neuro flow), select Interventional Workspace
       '3d-scan': 'smartnav',   // In 3D scan, select SmartNavigator
       'ccta-planning': 'iw',   // In CCTA Planning, select Interventional Workspace
+      'ivus-acquisition': 'iw', // In IVUS step, select IVUS component (uses 'iw' focus key)
       // Add more mappings as needed
     };
     
@@ -1377,8 +1378,12 @@ function ScreenFlexvisionInner() {
                   focusKey = 'hemo';
                   break;
                 case 'interventionalIVUS':
-                  renderedComponent = <InterventionalIVUS componentSize={componentSize} />;
-                  focusKey = 'hemo'; // Reuse hemo focus key for now
+                  renderedComponent = <InterventionalIVUS 
+                    componentSize={componentSize}
+                    isFocused={inputSettings.focusModeEnabled && focusMode && focusedComponent === 'iw' && iwSubFocus === 'none'}
+                    isSelected={selectedComponent === 'iw'}
+                  />;
+                  focusKey = 'iw'; // Use IW focus key for IVUS component
                   break;
                 case 'smartNavigator':
                   // SmartNavigator is always active when rendered
