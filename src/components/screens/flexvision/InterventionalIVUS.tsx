@@ -255,6 +255,7 @@ function NavigationBar() {
 
 function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boolean; isSelected: boolean }) {
   const { inputSettings } = useSettings();
+  const [setupStep, setSetupStep] = useState(1); // 1, 2, 3, or 0 (0 = setup complete)
   const [focusedButtonIndex, setFocusedButtonIndex] = useState(0);
   const [ringdownActive, setRingdownActive] = useState(false);
   const [isFrozen, setIsFrozen] = useState(false);
@@ -471,6 +472,22 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
     console.log('IVUS: Active (focused:', isFocused, 'selected:', isSelected, '), keyboard control enabled');
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // If in setup mode, handle activate key to advance steps
+      if (setupStep > 0) {
+        const activateKey = typeof inputSettings.workflowStepActivate === 'string' ? inputSettings.workflowStepActivate.toLowerCase() : 'enter';
+        if (e.key.toLowerCase() === activateKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('IVUS: Advancing setup step from', setupStep);
+          if (setupStep < 3) {
+            setSetupStep(setupStep + 1);
+          } else {
+            setSetupStep(0); // Complete setup
+          }
+          return;
+        }
+        return; // Block all other keys during setup
+      }
       // Prevent duplicate processing
       if (isProcessingKey.current) {
         console.log('IVUS: Key already being processed, ignoring');
@@ -660,7 +677,28 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
       console.log('IVUS: Removing keyboard listener');
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isFocused, isSelected, focusedButtonIndex, inputSettings, isRecording, isRecordingStopped, scrubberFocused, scrubberActive, recordingTime, isPlaying, isFrozen]);
+  }, [isFocused, isSelected, focusedButtonIndex, inputSettings, isRecording, isRecordingStopped, scrubberFocused, scrubberActive, recordingTime, isPlaying, isFrozen, setupStep]);
+
+  // If in setup mode, show setup wizard
+  if (setupStep > 0) {
+    const stepImages = {
+      1: '/src/assets/Assets_Prototype-vids/IvusStep1.png',
+      2: '/src/assets/Assets_Prototype-vids/IvusStep2.png',
+      3: '/src/assets/Assets_Prototype-vids/IvusStep3.png'
+    };
+
+    return (
+      <div className="flex flex-col w-full h-full bg-black">
+        <div className="flex-1 flex items-center justify-center">
+          <img 
+            src={stepImages[setupStep as 1 | 2 | 3]} 
+            alt={`Setup Step ${setupStep}`}
+            className="w-full h-full object-contain"
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col w-full h-full bg-black">

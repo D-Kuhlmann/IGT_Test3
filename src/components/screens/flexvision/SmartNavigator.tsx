@@ -843,9 +843,9 @@ function IsocenterStep({ onPrevious, onContinue, onOverlayStateChange }: Isocent
                   </ol>
                 </div>
                 <p className="font-['CentraleSans:Book',_sans-serif] text-[rgba(255,255,255,0.8)] text-base">
-                  <span className="font-['CentraleSans:Bold',_sans-serif]">Press and hold</span>
-                  <span> one of the </span>
-                  <span className="font-['CentraleSans:Bold',_sans-serif]">Smart controls™</span>
+                  <span className="font-['CentraleSans:Bold',_sans-serif]">Press down and pull</span>
+                  <span> the </span>
+                  <span className="font-['CentraleSans:Bold',_sans-serif]">Smart knob™</span>
                   <span> to move the C-arm to the AP position</span>
                 </p>
               </div>
@@ -876,7 +876,7 @@ function IsocenterStep({ onPrevious, onContinue, onOverlayStateChange }: Isocent
                 </div>
                 <p className="font-['CentraleSans:Book',_sans-serif] text-[rgba(255,255,255,0.8)] text-base">
                   <span>Step on the </span>
-                  <span className="font-['CentraleSans:Bold',_sans-serif]">CINE pedal</span>
+                  <span className="font-['CentraleSans:Bold',_sans-serif]">Fluoro pedal</span>
                   <span> to acquire expose</span>
                 </p>
               </div>
@@ -935,9 +935,9 @@ function IsocenterStep({ onPrevious, onContinue, onOverlayStateChange }: Isocent
                   </ol>
                 </div>
                 <p className="font-['CentraleSans:Book',_sans-serif] text-[rgba(255,255,255,0.8)] text-base">
-                  <span className="font-['CentraleSans:Bold',_sans-serif]">Press and hold</span>
-                  <span> one of the </span>
-                  <span className="font-['CentraleSans:Bold',_sans-serif]">Smart controls™</span>
+                  <span className="font-['CentraleSans:Bold',_sans-serif]">Press down and pull</span>
+                  <span> the </span>
+                  <span className="font-['CentraleSans:Bold',_sans-serif]">Smart knob™</span>
                   <span> to move the C-arm to the lateral position</span>
                 </p>
               </div>
@@ -968,7 +968,7 @@ function IsocenterStep({ onPrevious, onContinue, onOverlayStateChange }: Isocent
                 </div>
                 <p className="font-['CentraleSans:Book',_sans-serif] text-[rgba(255,255,255,0.8)] text-base">
                   <span>Step on the </span>
-                  <span className="font-['CentraleSans:Bold',_sans-serif]">CINE pedal</span>
+                  <span className="font-['CentraleSans:Bold',_sans-serif]">Fluoro pedal</span>
                   <span> to acquire expose</span>
                 </p>
               </div>

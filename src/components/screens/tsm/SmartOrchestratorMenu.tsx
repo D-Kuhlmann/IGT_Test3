@@ -2,10 +2,20 @@ import { useState } from "react";
 import { SmartWorkflowBar } from "../../shared/SmartWorkflowBar";
 import { SmartWorkflowsOverlay } from "../../shared/SmartWorkflowsOverlay";
 import type { WorkflowStep } from "../../../types";
-import iconVoice from "../../../assets/icon_automation_voice.svg";
-import iconCollimation from "../../../assets/icon_automation_collimation.svg";
-import iconSmartMask from "../../../assets/icon_automation_smartmask.svg";
-import iconPatientDetection from "../../../assets/icon_automation_patientdetection.svg";
+import iconVoiceActivated from "../../../assets/AutomationIcons/AuVoiceEnable.svg";
+import iconVoiceDeactivated from "../../../assets/AutomationIcons/AuVoiceDisabled.svg";
+import iconCollimationActivated from "../../../assets/AutomationIcons/AUAutoCollimationActivated.svg";
+import iconCollimationDeactivated from "../../../assets/AutomationIcons/AUAutoCollimationDeactivated.svg";
+import iconSmartMaskActivated from "../../../assets/AutomationIcons/AuSmartMaskActivated.svg";
+import iconSmartMaskDeactivated from "../../../assets/AutomationIcons/AuSmartMaskDeactivated.svg";
+import iconAutoZoomActivated from "../../../assets/AutomationIcons/AuAutoZoomActivated.svg";
+import iconAutoZoomDeactivated from "../../../assets/AutomationIcons/AuAutoZoomDeactivated.svg";
+import iconDetectorMoveActivated from "../../../assets/AutomationIcons/AuDetectormoveActivated.svg";
+import iconDetectorMoveDeactivated from "../../../assets/AutomationIcons/AuDetectormoveDeactivated.svg";
+import iconSmartCenteringActivated from "../../../assets/AutomationIcons/AuSmartCenteringActivated.svg";
+import iconSmartCenteringDeactivated from "../../../assets/AutomationIcons/AuSmartCenteringDeactivated.svg";
+import iconPuffFreezeActivated from "../../../assets/AutomationIcons/AuPuffFreezeActivated.svg";
+import iconPuffFreezeDeactivated from "../../../assets/AutomationIcons/AUPuffFreezeDeactivated.svg";
 import iconSpray from "../../../assets/dreft.svg";
 import { imgIcoCollablive } from "../../../imports/svg-w95w9";
 
@@ -23,6 +33,19 @@ export function SmartOrchestratorMenu({
   onStepSelect
 }: SmartOrchestratorMenuProps) {
   const [showWorkflows, setShowWorkflows] = useState(false);
+  const [automationState, setAutomationState] = useState({
+    voice: false,
+    collimation: false,
+    smartMask: true,
+    autoZoom: false,
+    detectorMove: false,
+    smartCentering: true,
+    puffFreeze: false
+  });
+
+  const toggleAutomation = (key: keyof typeof automationState) => {
+    setAutomationState(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const handleWorkflowsClick = () => {
     setShowWorkflows(true);
@@ -42,8 +65,39 @@ export function SmartOrchestratorMenu({
     xrayLive: "X-ray Live",
     interventionalWorkspace: "Interventional Workspace",
     hemo: "Hemo",
-    smartNavigator: "Smart Navigator"
+    smartNavigator: "Smart Navigator",
+    lumify: "Lumify",
+    ivus: "IVUS",
+    collaborationLive: "Collaboration Live"
   };
+
+  // Get all unique components used in the entire workflow/preset based on active preset
+  const getComponentsForPreset = (preset: 1 | 2): Array<'xrayLive' | 'interventionalWorkspace' | 'hemo' | 'smartNavigator' | 'lumify' | 'ivus' | 'collaborationLive'> => {
+    if (preset === 1) {
+      // Preset 1 - Cardio: includes IVUS
+      return [
+        'xrayLive',
+        'interventionalWorkspace', 
+        'hemo',
+        'smartNavigator',
+        'lumify',
+        'ivus',
+        'collaborationLive'
+      ];
+    } else {
+      // Preset 2 - Neuro: no IVUS
+      return [
+        'xrayLive',
+        'interventionalWorkspace', 
+        'hemo',
+        'smartNavigator',
+        'lumify',
+        'collaborationLive'
+      ];
+    }
+  };
+
+  const allComponents = getComponentsForPreset(activePreset);
 
   return (
     <>
@@ -75,32 +129,81 @@ export function SmartOrchestratorMenu({
             >
               {/* Left side - automation icons */}
               <div className="flex items-center gap-6">
-                <button className="w-16 h-16 flex items-center justify-center hover:opacity-80 transition-opacity">
-                  <img src={iconVoice} alt="Voice" className="w-full h-full object-contain" />
+                <button 
+                  onClick={() => toggleAutomation('voice')}
+                  className="w-16 h-16 flex items-center justify-center hover:opacity-80 transition-all"
+                >
+                  <img 
+                    src={automationState.voice ? iconVoiceActivated : iconVoiceDeactivated} 
+                    alt="Voice" 
+                    className="w-full h-full object-contain" 
+                  />
                 </button>
                 
-                <button className="w-16 h-16 flex items-center justify-center hover:opacity-80 transition-opacity">
-                  <img src={iconCollimation} alt="Collimation" className="w-full h-full object-contain" />
+                <button 
+                  onClick={() => toggleAutomation('collimation')}
+                  className="w-16 h-16 flex items-center justify-center hover:opacity-80 transition-all"
+                >
+                  <img 
+                    src={automationState.collimation ? iconCollimationActivated : iconCollimationDeactivated} 
+                    alt="Collimation" 
+                    className="w-full h-full object-contain" 
+                  />
                 </button>
 
-                <button className="w-16 h-16 flex items-center justify-center hover:opacity-80 transition-opacity">
-                  <img src={iconSmartMask} alt="Smart Mask" className="w-full h-full object-contain" />
+                <button 
+                  onClick={() => toggleAutomation('smartMask')}
+                  className="w-16 h-16 flex items-center justify-center hover:opacity-80 transition-all"
+                >
+                  <img 
+                    src={automationState.smartMask ? iconSmartMaskActivated : iconSmartMaskDeactivated} 
+                    alt="Smart Mask" 
+                    className="w-full h-full object-contain" 
+                  />
                 </button>
 
-                <button className="w-16 h-16 flex items-center justify-center hover:opacity-80 transition-opacity opacity-60">
-                  <img src={iconCollimation} alt="Collimation 2" className="w-full h-full object-contain" />
+                <button 
+                  onClick={() => toggleAutomation('autoZoom')}
+                  className="w-16 h-16 flex items-center justify-center hover:opacity-80 transition-all"
+                >
+                  <img 
+                    src={automationState.autoZoom ? iconAutoZoomActivated : iconAutoZoomDeactivated} 
+                    alt="Auto Zoom" 
+                    className="w-full h-full object-contain" 
+                  />
                 </button>
 
-                <button className="w-16 h-16 flex items-center justify-center hover:opacity-80 transition-opacity opacity-60">
-                  <img src={iconCollimation} alt="Collimation 3" className="w-full h-full object-contain" />
+                <button 
+                  onClick={() => toggleAutomation('detectorMove')}
+                  className="w-16 h-16 flex items-center justify-center hover:opacity-80 transition-all"
+                >
+                  <img 
+                    src={automationState.detectorMove ? iconDetectorMoveActivated : iconDetectorMoveDeactivated} 
+                    alt="Detector Move" 
+                    className="w-full h-full object-contain" 
+                  />
                 </button>
 
-                <button className="w-16 h-16 flex items-center justify-center hover:opacity-80 transition-opacity">
-                  <img src={iconPatientDetection} alt="Patient Detection" className="w-full h-full object-contain" />
+                <button 
+                  onClick={() => toggleAutomation('smartCentering')}
+                  className="w-16 h-16 flex items-center justify-center hover:opacity-80 transition-all"
+                >
+                  <img 
+                    src={automationState.smartCentering ? iconSmartCenteringActivated : iconSmartCenteringDeactivated} 
+                    alt="Smart Centering" 
+                    className="w-full h-full object-contain" 
+                  />
                 </button>
 
-                <button className="w-16 h-16 flex items-center justify-center hover:opacity-80 transition-opacity">
-                  <img src={iconPatientDetection} alt="Patient Detection 2" className="w-full h-full object-contain" />
+                <button 
+                  onClick={() => toggleAutomation('puffFreeze')}
+                  className="w-16 h-16 flex items-center justify-center hover:opacity-80 transition-all"
+                >
+                  <img 
+                    src={automationState.puffFreeze ? iconPuffFreezeActivated : iconPuffFreezeDeactivated} 
+                    alt="Puff Freeze" 
+                    className="w-full h-full object-contain" 
+                  />
                 </button>
               </div>
 
@@ -118,10 +221,10 @@ export function SmartOrchestratorMenu({
             </button>
           </div>
 
-          {/* Active Components Section */}
+          {/* All Components Section - Shows all components from entire workflow */}
           <div>
-            <div className="grid grid-cols-4 gap-4">
-              {activeComponents.map((component) => (
+            <div className="grid grid-cols-5 gap-4">
+              {allComponents.map((component) => (
                 <div key={component}>
                   <h4 className="text-white text-lg font-['CentraleSans:Book',_sans-serif] mb-2">
                     {componentNames[component]}
@@ -129,30 +232,19 @@ export function SmartOrchestratorMenu({
                   <div className="bg-[#1a1a1a] rounded-lg overflow-hidden border border-gray-800 hover:border-cyan-500 transition-colors cursor-pointer">
                     <div className="aspect-video bg-black/50 flex items-center justify-center relative">
                       <div className="absolute top-2 left-2 w-8 h-8 bg-cyan-500 rounded flex items-center justify-center">
-                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
+                        {component === 'collaborationLive' ? (
+                          <img src={imgIcoCollablive} alt="Collaboration Live" className="w-5 h-5" />
+                        ) : (
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        )}
                       </div>
                       <span className="text-gray-500 text-sm">Preview</span>
                     </div>
                   </div>
                 </div>
               ))}
-              
-              {/* Collaboration Live - Always visible */}
-              <div key="collaboration-live">
-                <h4 className="text-white text-lg font-['CentraleSans:Book',_sans-serif] mb-2">
-                  Collaboration Live
-                </h4>
-                <div className="bg-[#1a1a1a] rounded-lg overflow-hidden border border-gray-800 hover:border-cyan-500 transition-colors cursor-pointer">
-                  <div className="aspect-video bg-black/50 flex items-center justify-center relative">
-                    <div className="absolute top-2 left-2 w-8 h-8 bg-cyan-500 rounded flex items-center justify-center">
-                      <img src={imgIcoCollablive} alt="Collaboration Live" className="w-5 h-5" />
-                    </div>
-                    <span className="text-gray-500 text-sm">Preview</span>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>

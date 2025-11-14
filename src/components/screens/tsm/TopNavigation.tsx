@@ -129,7 +129,14 @@ function AutomationMenu() {
     patientDetection: false,
   });
 
-  const toggle = (k: keyof typeof state) => setState((s) => ({ ...s, [k]: !s[k] }));
+  const toggle = (k: keyof typeof state) => {
+    console.log('Toggling automation:', k);
+    setState((s) => {
+      const newState = { ...s, [k]: !s[k] };
+      console.log('New state:', newState);
+      return newState;
+    });
+  };
 
   // Uniform button footprint so everything aligns perfectly
   const IconButton = ({
@@ -149,10 +156,13 @@ function AutomationMenu() {
       aria-label={ariaLabel}
       onClick={onClick}
       className={[
-        "h-9 w-10 flex items-center justify-center shrink-0 rounded transition-all",
+        "h-9 w-10 flex items-center justify-center shrink-0 rounded transition-all relative z-10",
         "focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#2b86b2]",
         active ? "opacity-100" : "opacity-60 hover:opacity-80",
       ].join(" ")}
+      style={active ? {
+        background: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #60a5fa 100%)"
+      } : undefined}
     >
       {/* 24px stage for absolute icon layers */}
       <div className="relative h-6 w-6">{children}</div>

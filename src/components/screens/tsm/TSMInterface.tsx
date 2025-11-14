@@ -11,6 +11,8 @@ import { XrayLive } from "../flexvision/XrayLive";
 import { InterventionalWorkspace } from "../flexvision/InterventionalWorkspace";
 import { Hemo } from "../flexvision/Hemo";
 import { SmartNavigator } from "../flexvision/SmartNavigator";
+import { Lumify } from "../flexvision/Lumify";
+import { InterventionalIVUS } from "../flexvision/InterventionalIVUS";
 import { SmartOrchestratorMenu } from "./SmartOrchestratorMenu";
 import { WorkflowStatusIndicator } from "../../shared/WorkflowStatusIndicator";
 import { 
@@ -78,12 +80,15 @@ function SmallNavButton({
   );
 }
 
-function AppsButton({ onClick }: { onClick: () => void }) {
+function AppsButton({ onClick, isActive }: { onClick: () => void; isActive?: boolean }) {
   return (
     <button 
-      className="h-20 relative shrink-0 w-32 transition-colors hover:bg-[#3a3a3a] rounded focus:outline-none focus:ring-2 focus:ring-[#2b86b2] focus:ring-inset flex items-center justify-center"
+      className={`h-20 relative shrink-0 w-32 transition-colors rounded focus:outline-none focus:ring-2 focus:ring-[#2b86b2] focus:ring-inset flex items-center justify-center ${
+        isActive ? 'bg-[#2b2b2b]' : 'hover:bg-[#3a3a3a]'
+      }`}
       onClick={onClick}
       aria-label="Open Smart UI Orchestrator"
+      aria-pressed={isActive}
       type="button"
     >
       <div className="size-24">
@@ -93,45 +98,61 @@ function AppsButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-function BottomNavigation({ onTabChange, activeTab, currentWorkflowStep, activePreset, onStepSelect, onOrchestratorToggle }: { 
+function BottomNavigation({ onTabChange, activeTab, currentWorkflowStep, activePreset, onStepSelect, onOrchestratorToggle, showOrchestratorMenu }: { 
   onTabChange?: (tabId: string) => void; 
   activeTab?: string;
   currentWorkflowStep?: string;
   activePreset?: 1 | 2;
   onStepSelect?: (step: WorkflowStep) => void;
   onOrchestratorToggle?: () => void;
+  showOrchestratorMenu?: boolean;
 }) {
   const [localActiveTab, setLocalActiveTab] = useState<string>("xray-live");
-  const [showOrchestratorMenu, setShowOrchestratorMenu] = useState(false);
-  const [visibleComponents, setVisibleComponents] = useState<Array<'xrayLive' | 'interventionalWorkspace' | 'hemo' | 'smartNavigator'>>([
-    'xrayLive', 'interventionalWorkspace', 'hemo'
-  ]);
-  const previousComponentsRef = useRef<string>('');
   
-  // Read from localStorage directly on mount and when needed
-  useEffect(() => {
-    const updateFromLocalStorage = () => {
-      const stored = localStorage.getItem('activeComponents');
-      
-      if (stored && stored !== previousComponentsRef.current) {
-        try {
-          const components = JSON.parse(stored);
-          setVisibleComponents(components);
-          previousComponentsRef.current = stored;
-        } catch (e) {
-          console.error('Failed to parse components:', e);
-        }
-      }
-    };
+  // Determine visible components based on workflow step and preset
+  // This matches the exact components visible in ScreenFlexvision for each step
+  const getVisibleComponentsForStep = (step: string | undefined, preset: 1 | 2 | undefined): Array<'xrayLive' | 'interventionalWorkspace' | 'hemo' | 'smartNavigator' | 'lumify' | 'ivus'> => {
+    if (!step || !preset) {
+      // Default components
+      return ['xrayLive', 'interventionalWorkspace', 'hemo'];
+    }
 
-    // Update immediately
-    updateFromLocalStorage();
-    
-    // Poll localStorage every 1000ms
-    const interval = setInterval(updateFromLocalStorage, 1000);
-    
-    return () => clearInterval(interval);
-  }, []); // No dependencies to avoid loops
+    if (preset === 1) {
+      // Preset 1 - Cardio (matches stepLayouts in ScreenFlexvision)
+      switch (step) {
+        case 'startup':
+          return ['xrayLive', 'interventionalWorkspace', 'hemo'];
+        case 'ultrasound':
+          return ['xrayLive', 'lumify', 'hemo'];
+        case 'ccta-planning':
+          return ['xrayLive', 'interventionalWorkspace', 'hemo'];
+        case 'ivus-acquisition':
+          return ['hemo', 'ivus'];
+        case 'finalise':
+          return ['hemo']; // Only hemo is a real component, rest are placeholders
+        default:
+          return ['xrayLive', 'interventionalWorkspace', 'hemo'];
+      }
+    } else {
+      // Preset 2 - Neuro (matches stepLayouts in ScreenFlexvision)
+      switch (step) {
+        case 'start':
+          return ['xrayLive', 'interventionalWorkspace', 'hemo'];
+        case 'access':
+          return ['xrayLive', 'lumify', 'hemo'];
+        case '3d-scan':
+          return ['xrayLive', 'hemo', 'smartNavigator'];
+        case 'planning':
+          return ['xrayLive', 'hemo']; // simSize is not a standard component
+        case 'treatment':
+          return ['hemo']; // Only hemo is a real component, rest are placeholders
+        default:
+          return ['xrayLive', 'interventionalWorkspace', 'hemo'];
+      }
+    }
+  };
+
+  const visibleComponents = getVisibleComponentsForStep(currentWorkflowStep, activePreset);
   
   // Use prop activeTab if provided, otherwise use local state
   const currentActiveTab = activeTab || localActiveTab;
@@ -149,24 +170,29 @@ function BottomNavigation({ onTabChange, activeTab, currentWorkflowStep, activeP
     console.log(`Tool clicked: ${tool}`);
   };
 
-  const handleOrchestratorClose = () => {
-    setShowOrchestratorMenu(false);
-  };
-
   const handleWorkflowStepSelect = (step: WorkflowStep) => {
     onStepSelect?.(step);
-    setShowOrchestratorMenu(false);
+    // Close orchestrator menu after selecting a step
+    onOrchestratorToggle?.();
   };
 
   // Map component names to tab info
   // ECG icon SVG data
   const ecgIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M16.5 23h-.02a1 1 0 0 1-.935-.71l-5.11-17.03-3.99 11.565a.995.995 0 0 1-1.855.08L2.85 13H1v-2h2.5c.395 0 .755.235.915.595l.97 2.18 4.17-12.1A.98.98 0 0 1 10.52 1c.435.01.815.295.94.71l5.115 17.05 2.485-7.095A.99.99 0 0 1 20 11h3v2h-2.29l-3.265 9.33c-.14.4-.52.67-.945.67'%3E%3C/path%3E%3C/svg%3E";
+  
+  // Ultrasound icon SVG data
+  const ultrasoundIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='white' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z'/%3E%3C/svg%3E";
+  
+  // IVUS icon SVG data (medical/heart related)
+  const ivusIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='white' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E";
 
-  const componentToTab = {
+  const componentToTab: Record<string, { id: string; icon: string; label: string }> = {
     xrayLive: { id: "xray-live", icon: imgIcoCardio, label: "X-ray Live" },
     interventionalWorkspace: { id: "uniguide", icon: imgIcoIw, label: "UniGuide" },
     hemo: { id: "hemo", icon: ecgIcon, label: "Hemo" },
-    smartNavigator: { id: "smartnav", icon: imgIcoIw, label: "Smart Navigator" }
+    smartNavigator: { id: "smartnav", icon: imgIcoIw, label: "Smart Navigator" },
+    lumify: { id: "lumify", icon: ultrasoundIcon, label: "Lumify" },
+    ivus: { id: "ivus", icon: ivusIcon, label: "IVUS" }
   };
 
   // Get visible tabs based on visible components
@@ -178,7 +204,7 @@ function BottomNavigation({ onTabChange, activeTab, currentWorkflowStep, activeP
     <>
       <div className="flex gap-0 items-center justify-between relative shrink-0 w-full">
         <div className="flex gap-0 items-center flex-1 min-w-0">
-          <AppsButton onClick={handleAppsClick} />
+          <AppsButton onClick={handleAppsClick} isActive={showOrchestratorMenu} />
           <div 
             className="flex gap-0.5 items-center overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing"
             style={{
@@ -263,6 +289,10 @@ export function TSMInterface() {
 
   const handleBottomTabChange = (tabId: string) => {
     setActiveBottomTab(tabId);
+    // Close orchestrator menu when switching to a different tab
+    if (showOrchestratorMenu) {
+      setShowOrchestratorMenu(false);
+    }
   };
 
   const handleWorkflowStepSelect = (step: WorkflowStep) => {
@@ -314,6 +344,10 @@ export function TSMInterface() {
         return <Hemo componentSize="fullscreen" hideHeader={true} />;
       case 'smartnav':
         return <SmartNavigator componentSize="fullscreen" hideHeader={true} isActive={true} />;
+      case 'lumify':
+        return <Lumify componentSize="fullscreen" />;
+      case 'ivus':
+        return <InterventionalIVUS componentSize="fullscreen" />;
       case 'collaboration-live':
         return (
           <div className="w-full h-full flex items-center justify-center bg-black">
@@ -352,6 +386,7 @@ export function TSMInterface() {
         activePreset={workflowSync.activePreset}
         onStepSelect={handleWorkflowStepSelect}
         onOrchestratorToggle={() => setShowOrchestratorMenu(!showOrchestratorMenu)}
+        showOrchestratorMenu={showOrchestratorMenu}
       />
       
       {/* Workflow Status Indicator */}
