@@ -20,6 +20,14 @@ import iconPuffFreezeDeactivated from "../../../assets/AutomationIcons/AUPuffFre
 import iconSpray from "../../../assets/dreft.svg";
 import { imgIcoCollablive } from "../../../imports/svg-w95w9";
 
+// Screen preview images
+import imgInterventionalWorkspace from "../../../assets/ScreenImages/IWImageList.png";
+import imgHemo from "../../../assets/ScreenImages/Hemo.png";
+import imgSmartNavigator from "../../../assets/ScreenImages/UniguideDone.png";
+import imgLumify from "../../../assets/ScreenImages/Lumify.png";
+import imgIvus from "../../../assets/ScreenImages/Ivus.png";
+import imgCollaborationLive from "../../../assets/ScreenImages/CollabarationLivePlaceholder.png";
+
 interface SmartOrchestratorMenuProps {
   activeComponents: Array<'xrayLive' | 'interventionalWorkspace' | 'hemo' | 'smartNavigator'>;
   currentWorkflowStep?: string;
@@ -60,6 +68,17 @@ export function SmartOrchestratorMenu({
     lumify: "Lumify",
     ivus: "IVUS",
     collaborationLive: "Collaboration Live"
+  };
+
+  // Map components to their preview images (xrayLive will use black background instead)
+  const componentImages: Record<string, string | null> = {
+    xrayLive: null, // Black background, no image
+    interventionalWorkspace: imgInterventionalWorkspace,
+    hemo: imgHemo,
+    smartNavigator: imgSmartNavigator,
+    lumify: imgLumify,
+    ivus: imgIvus,
+    collaborationLive: imgCollaborationLive
   };
 
   // Get all unique components used in the entire workflow/preset based on active preset
@@ -221,17 +240,15 @@ export function SmartOrchestratorMenu({
                     {componentNames[component]}
                   </h4>
                   <div className="bg-[#1a1a1a] rounded-lg overflow-hidden border border-gray-800 hover:border-cyan-500 transition-colors cursor-pointer">
-                    <div className="aspect-video bg-black/50 flex items-center justify-center relative">
-                      <div className="absolute top-2 left-2 w-8 h-8 bg-cyan-500 rounded flex items-center justify-center">
-                        {component === 'collaborationLive' ? (
-                          <img src={imgIcoCollablive} alt="Collaboration Live" className="w-5 h-5" />
-                        ) : (
-                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        )}
-                      </div>
-                      <span className="text-gray-500 text-sm">Preview</span>
+                    <div className="aspect-video bg-black flex items-center justify-center relative">
+                      {/* Preview Image - show image if available, otherwise keep black background */}
+                      {componentImages[component] && (
+                        <img 
+                          src={componentImages[component]!} 
+                          alt={componentNames[component]}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>

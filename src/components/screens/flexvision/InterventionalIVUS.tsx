@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ComponentHeader, ViewportHeader } from '../../shared/ViewportHeaders';
 import { useSettings } from '../../../contexts/SettingsContext';
+import { useWorkflowSync } from '../../../contexts/WorkflowSyncContext';
 
 // SVG paths from Uniguide
 const svgPaths = {
@@ -255,6 +256,7 @@ function NavigationBar() {
 
 function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boolean; isSelected: boolean }) {
   const { inputSettings } = useSettings();
+  const workflowSync = useWorkflowSync();
   const [setupStep, setSetupStep] = useState(1); // 1, 2, 3, or 0 (0 = setup complete)
   const [focusedButtonIndex, setFocusedButtonIndex] = useState(0);
   const [ringdownActive, setRingdownActive] = useState(false);
@@ -876,59 +878,122 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
           {/* Right Side Tools - Hidden during recording */}
           {!isRecording && (
           <div className="absolute right-4 top-0 bottom-0 flex flex-col justify-between py-4">
-            {/* Top 4 Buttons */}
-            <div className="flex flex-col gap-2">
-              {/* Brightness Control */}
-              <button className="w-[80px] h-[80px] bg-[#2a2a2a] hover:bg-[#3a3a3a] rounded flex flex-col items-center justify-center text-[#d6d6d6] relative group">
-                <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-[#666]">
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            {/* Top Buttons - Different for Review vs Acquisition */}
+            {isRecordingStopped ? (
+              /* Review Mode Buttons: Diameter, Autoborder, Draw, Dots, Length, Rapid Review */
+              <div className="flex flex-col gap-2">
+                {/* Diameter */}
+                <button className="w-[80px] h-[80px] bg-[#2a2a2a] hover:bg-[#3a3a3a] rounded flex flex-col items-center justify-center text-[#d6d6d6]">
+                  <svg className="w-12 h-12 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <line x1="4" y1="12" x2="20" y2="12" strokeWidth="2" strokeLinecap="round"/>
+                    <line x1="4" y1="8" x2="4" y2="16" strokeWidth="2" strokeLinecap="round"/>
+                    <line x1="20" y1="8" x2="20" y2="16" strokeWidth="2" strokeLinecap="round"/>
                   </svg>
-                </div>
-                <svg className="w-12 h-12 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                <span className="font-['CentraleSans:Book',_sans-serif] text-[11px]">50</span>
-              </button>
+                  <span className="font-['CentraleSans:Book',_sans-serif] text-[10px]">Diameter</span>
+                </button>
 
-              {/* Contrast Control */}
-              <button className="w-[80px] h-[80px] bg-[#2a2a2a] hover:bg-[#3a3a3a] rounded flex flex-col items-center justify-center text-[#d6d6d6] relative group">
-                <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-[#666]">
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                {/* Autoborder */}
+                <button className="w-[80px] h-[80px] bg-[#2a2a2a] hover:bg-[#3a3a3a] rounded flex flex-col items-center justify-center text-[#d6d6d6]">
+                  <svg className="w-12 h-12 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9" strokeWidth="2" strokeDasharray="3 2"/>
+                    <path d="M12 3 L15 6 M21 12 L18 15 M12 21 L9 18 M3 12 L6 9" strokeWidth="2" strokeLinecap="round"/>
                   </svg>
-                </div>
-                <svg className="w-12 h-12 mb-1" fill="currentColor" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M12 2 A10 10 0 0 1 12 22 Z" fill="currentColor"/>
-                </svg>
-                <span className="font-['CentraleSans:Book',_sans-serif] text-[11px]">10</span>
-              </button>
+                  <span className="font-['CentraleSans:Book',_sans-serif] text-[10px]">Autoborder</span>
+                </button>
 
-              {/* Adaptive */}
-              <button className="w-[80px] h-[80px] bg-[#2a2a2a] hover:bg-[#3a3a3a] rounded flex flex-col items-center justify-center text-[#d6d6d6] relative group">
-                <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-[#666]">
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                {/* Draw */}
+                <button className="w-[80px] h-[80px] bg-[#2a2a2a] hover:bg-[#3a3a3a] rounded flex flex-col items-center justify-center text-[#d6d6d6]">
+                  <svg className="w-12 h-12 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                </div>
-                <svg className="w-12 h-12 mb-1" fill="currentColor" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2"/>
-                  <circle cx="12" cy="8" r="2" fill="currentColor"/>
-                  <circle cx="8" cy="16" r="2" fill="currentColor"/>
-                  <circle cx="16" cy="16" r="2" fill="currentColor"/>
-                </svg>
-                <span className="font-['CentraleSans:Book',_sans-serif] text-[10px]">Adaptive</span>
-              </button>
+                  <span className="font-['CentraleSans:Book',_sans-serif] text-[10px]">Draw</span>
+                </button>
 
-              {/* Revolve */}
-              <button className="w-[80px] h-[80px] bg-[#2a2a2a] hover:bg-[#3a3a3a] rounded flex flex-col items-center justify-center text-[#d6d6d6]">
-                <svg className="w-12 h-12 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                <span className="font-['CentraleSans:Book',_sans-serif] text-[10px]">Revolve</span>
-              </button>
-            </div>
+                {/* Dots */}
+                <button className="w-[80px] h-[80px] bg-[#2a2a2a] hover:bg-[#3a3a3a] rounded flex flex-col items-center justify-center text-[#d6d6d6]">
+                  <svg className="w-12 h-12 mb-1" fill="currentColor" viewBox="0 0 24 24">
+                    <circle cx="6" cy="6" r="2"/>
+                    <circle cx="18" cy="6" r="2"/>
+                    <circle cx="6" cy="18" r="2"/>
+                    <circle cx="18" cy="18" r="2"/>
+                    <circle cx="12" cy="12" r="2"/>
+                  </svg>
+                  <span className="font-['CentraleSans:Book',_sans-serif] text-[10px]">Dots</span>
+                </button>
+
+                {/* Length */}
+                <button className="w-[80px] h-[80px] bg-[#2a2a2a] hover:bg-[#3a3a3a] rounded flex flex-col items-center justify-center text-[#d6d6d6]">
+                  <svg className="w-12 h-12 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <line x1="12" y1="4" x2="12" y2="20" strokeWidth="2" strokeLinecap="round"/>
+                    <line x1="8" y1="4" x2="16" y2="4" strokeWidth="2" strokeLinecap="round"/>
+                    <line x1="8" y1="20" x2="16" y2="20" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  <span className="font-['CentraleSans:Book',_sans-serif] text-[10px]">Length</span>
+                </button>
+
+                {/* Rapid Review */}
+                <button className="w-[80px] h-[80px] bg-[#2a2a2a] hover:bg-[#3a3a3a] rounded flex flex-col items-center justify-center text-[#d6d6d6]">
+                  <svg className="w-12 h-12 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path d="M13 5l7 7-7 7M5 5l7 7-7 7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span className="font-['CentraleSans:Book',_sans-serif] text-[9px]">Rapid Review</span>
+                </button>
+              </div>
+            ) : (
+              /* Acquisition Step Buttons: Brightness, Contrast, Adaptive, Revolve */
+              <div className="flex flex-col gap-2">
+                {/* Brightness Control */}
+                <button className="w-[80px] h-[80px] bg-[#2a2a2a] hover:bg-[#3a3a3a] rounded flex flex-col items-center justify-center text-[#d6d6d6] relative group">
+                  <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-[#666]">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                    </svg>
+                  </div>
+                  <svg className="w-12 h-12 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                  <span className="font-['CentraleSans:Book',_sans-serif] text-[11px]">50</span>
+                </button>
+
+                {/* Contrast Control */}
+                <button className="w-[80px] h-[80px] bg-[#2a2a2a] hover:bg-[#3a3a3a] rounded flex flex-col items-center justify-center text-[#d6d6d6] relative group">
+                  <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-[#666]">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                    </svg>
+                  </div>
+                  <svg className="w-12 h-12 mb-1" fill="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M12 2 A10 10 0 0 1 12 22 Z" fill="currentColor"/>
+                  </svg>
+                  <span className="font-['CentraleSans:Book',_sans-serif] text-[11px]">10</span>
+                </button>
+
+                {/* Adaptive */}
+                <button className="w-[80px] h-[80px] bg-[#2a2a2a] hover:bg-[#3a3a3a] rounded flex flex-col items-center justify-center text-[#d6d6d6] relative group">
+                  <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-[#666]">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                    </svg>
+                  </div>
+                  <svg className="w-12 h-12 mb-1" fill="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2"/>
+                    <circle cx="12" cy="8" r="2" fill="currentColor"/>
+                    <circle cx="8" cy="16" r="2" fill="currentColor"/>
+                    <circle cx="16" cy="16" r="2" fill="currentColor"/>
+                  </svg>
+                  <span className="font-['CentraleSans:Book',_sans-serif] text-[10px]">Adaptive</span>
+                </button>
+
+                {/* Revolve */}
+                <button className="w-[80px] h-[80px] bg-[#2a2a2a] hover:bg-[#3a3a3a] rounded flex flex-col items-center justify-center text-[#d6d6d6]">
+                  <svg className="w-12 h-12 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span className="font-['CentraleSans:Book',_sans-serif] text-[10px]">Revolve</span>
+                </button>
+              </div>
+            )}
 
             {/* ChromaFlo Button at Bottom */}
             <button className="w-[80px] h-[80px] bg-[#2a2a2a] hover:bg-[#3a3a3a] rounded flex flex-col items-center justify-center text-[#d6d6d6] mb-[70px]">
