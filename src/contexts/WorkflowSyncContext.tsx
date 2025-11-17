@@ -11,6 +11,8 @@ interface WorkflowState {
   alignedSkullAP?: string; // Path to aligned AP skull image
   alignedSkullLAT?: string; // Path to aligned LAT skull image
   currentAngleIndex?: number; // Currently highlighted angle during navigation (0-3)
+  ivusRecordingStopped?: boolean; // IVUS in review mode (recording stopped)
+  ivusSetupStep?: number; // IVUS setup step (1, 2, 3, or 0 for complete)
   timestamp: number;
 }
 
@@ -25,11 +27,15 @@ interface WorkflowSyncContextType {
   alignedSkullAP?: string;
   alignedSkullLAT?: string;
   currentAngleIndex?: number;
+  ivusRecordingStopped?: boolean;
+  ivusSetupStep?: number;
   setWorkflowStep: (step: number, subStep?: string, workflowId?: string, wizardVisible?: boolean, wizardCompleted?: boolean) => void;
   setWorkflowStepId: (stepId: string, preset?: 1 | 2) => void;
   setWizardState: (visible: boolean, completed: boolean) => void;
   setAlignedImages: (apImage?: string, latImage?: string) => void;
   setCurrentAngleIndex: (index: number) => void;
+  setIvusRecordingStopped: (stopped: boolean) => void;
+  setIvusSetupStep: (step: number) => void;
   syncWorkflowState: (state: WorkflowState) => void;
 }
 
@@ -54,6 +60,8 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
   const [alignedSkullAP, setAlignedSkullAP] = useState<string | undefined>(undefined);
   const [alignedSkullLAT, setAlignedSkullLAT] = useState<string | undefined>(undefined);
   const [currentAngleIndex, setCurrentAngleIndex_] = useState<number | undefined>(undefined);
+  const [ivusRecordingStopped, setIvusRecordingStopped_] = useState<boolean | undefined>(undefined);
+  const [ivusSetupStep, setIvusSetupStep_] = useState<number | undefined>(undefined);
   const channelRef = React.useRef<BroadcastChannel | null>(null);
 
   // Initialize BroadcastChannel and load initial state
@@ -75,6 +83,8 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
         setAlignedSkullAP(state.alignedSkullAP);
         setAlignedSkullLAT(state.alignedSkullLAT);
         setCurrentAngleIndex_(state.currentAngleIndex);
+        setIvusRecordingStopped_(state.ivusRecordingStopped);
+        setIvusSetupStep_(state.ivusSetupStep);
       } catch (error) {
       }
     }
@@ -100,6 +110,8 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
         setAlignedSkullAP(state.alignedSkullAP);
         setAlignedSkullLAT(state.alignedSkullLAT);
         setCurrentAngleIndex_(state.currentAngleIndex);
+        setIvusRecordingStopped_(state.ivusRecordingStopped);
+        setIvusSetupStep_(state.ivusSetupStep);
         
         // Also update localStorage
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -124,6 +136,11 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
       activePreset,
       wizardVisible: wizVis !== undefined ? wizVis : wizardVisible,
       wizardCompleted: wizComp !== undefined ? wizComp : wizardCompleted,
+      alignedSkullAP,
+      alignedSkullLAT,
+      currentAngleIndex,
+      ivusRecordingStopped,
+      ivusSetupStep,
       timestamp: Date.now(),
     };
 
@@ -141,7 +158,7 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     if (channelRef.current) {
       channelRef.current.postMessage(state);
     }
-  }, [screenId, workflowStepId, activePreset, wizardVisible, wizardCompleted]);
+  }, [screenId, workflowStepId, activePreset, wizardVisible, wizardCompleted, alignedSkullAP, alignedSkullLAT, currentAngleIndex, ivusRecordingStopped, ivusSetupStep]);
 
   // Set workflow step ID (for SmartWorkflows overlay) and broadcast
   const setWorkflowStepId = useCallback((stepId: string, preset?: 1 | 2) => {
@@ -151,6 +168,13 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
       workflowId,
       workflowStepId: stepId,
       activePreset: preset || activePreset,
+      wizardVisible,
+      wizardCompleted,
+      alignedSkullAP,
+      alignedSkullLAT,
+      currentAngleIndex,
+      ivusRecordingStopped,
+      ivusSetupStep,
       timestamp: Date.now(),
     };
 
@@ -167,7 +191,7 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     if (channelRef.current) {
       channelRef.current.postMessage(state);
     }
-  }, [screenId, currentStep, currentSubStep, workflowId, activePreset]);
+  }, [screenId, currentStep, currentSubStep, workflowId, activePreset, wizardVisible, wizardCompleted, alignedSkullAP, alignedSkullLAT, currentAngleIndex, ivusRecordingStopped, ivusSetupStep]);
 
   // Set wizard state (visibility and completion) and broadcast
   const setWizardState = useCallback((visible: boolean, completed: boolean) => {
@@ -181,6 +205,9 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
       wizardCompleted: completed,
       alignedSkullAP,
       alignedSkullLAT,
+      currentAngleIndex,
+      ivusRecordingStopped,
+      ivusSetupStep,
       timestamp: Date.now(),
     };
 
@@ -195,7 +222,7 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     if (channelRef.current) {
       channelRef.current.postMessage(state);
     }
-  }, [screenId, currentStep, currentSubStep, workflowId, workflowStepId, activePreset, alignedSkullAP, alignedSkullLAT]);
+  }, [screenId, currentStep, currentSubStep, workflowId, workflowStepId, activePreset, alignedSkullAP, alignedSkullLAT, currentAngleIndex, ivusRecordingStopped, ivusSetupStep]);
 
   // Set aligned skull images and broadcast
   const setAlignedImages = useCallback((apImage?: string, latImage?: string) => {
@@ -209,6 +236,9 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
       wizardCompleted,
       alignedSkullAP: apImage !== undefined ? apImage : alignedSkullAP,
       alignedSkullLAT: latImage !== undefined ? latImage : alignedSkullLAT,
+      currentAngleIndex,
+      ivusRecordingStopped,
+      ivusSetupStep,
       timestamp: Date.now(),
     };
 
@@ -223,7 +253,7 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     if (channelRef.current) {
       channelRef.current.postMessage(state);
     }
-  }, [screenId, currentStep, currentSubStep, workflowId, workflowStepId, activePreset, wizardVisible, wizardCompleted, alignedSkullAP, alignedSkullLAT]);
+  }, [screenId, currentStep, currentSubStep, workflowId, workflowStepId, activePreset, wizardVisible, wizardCompleted, alignedSkullAP, alignedSkullLAT, currentAngleIndex, ivusRecordingStopped, ivusSetupStep]);
 
   // Set current angle index (for angle cycling navigation) and broadcast
   const setCurrentAngleIndex = useCallback((index: number) => {
@@ -238,6 +268,8 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
       alignedSkullAP,
       alignedSkullLAT,
       currentAngleIndex: index,
+      ivusRecordingStopped,
+      ivusSetupStep,
       timestamp: Date.now(),
     };
 
@@ -255,7 +287,67 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     } else {
       console.warn('⚠️ WorkflowSync - No BroadcastChannel available');
     }
-  }, [screenId, currentStep, currentSubStep, workflowId, workflowStepId, activePreset, wizardVisible, wizardCompleted, alignedSkullAP, alignedSkullLAT]);
+  }, [screenId, currentStep, currentSubStep, workflowId, workflowStepId, activePreset, wizardVisible, wizardCompleted, alignedSkullAP, alignedSkullLAT, ivusRecordingStopped, ivusSetupStep]);
+
+  // Set IVUS recording stopped state and broadcast
+  const setIvusRecordingStopped = useCallback((stopped: boolean) => {
+    const state: WorkflowState = {
+      currentStep,
+      currentSubStep,
+      workflowId,
+      workflowStepId,
+      activePreset,
+      wizardVisible,
+      wizardCompleted,
+      alignedSkullAP,
+      alignedSkullLAT,
+      currentAngleIndex,
+      ivusRecordingStopped: stopped,
+      ivusSetupStep,
+      timestamp: Date.now(),
+    };
+
+    // Update local state
+    setIvusRecordingStopped_(stopped);
+
+    // Save to localStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+    // Broadcast to other screens
+    if (channelRef.current) {
+      channelRef.current.postMessage(state);
+    }
+  }, [screenId, currentStep, currentSubStep, workflowId, workflowStepId, activePreset, wizardVisible, wizardCompleted, alignedSkullAP, alignedSkullLAT, currentAngleIndex, ivusSetupStep]);
+
+  // Set IVUS setup step and broadcast
+  const setIvusSetupStep = useCallback((step: number) => {
+    const state: WorkflowState = {
+      currentStep,
+      currentSubStep,
+      workflowId,
+      workflowStepId,
+      activePreset,
+      wizardVisible,
+      wizardCompleted,
+      alignedSkullAP,
+      alignedSkullLAT,
+      currentAngleIndex,
+      ivusRecordingStopped,
+      ivusSetupStep: step,
+      timestamp: Date.now(),
+    };
+
+    // Update local state
+    setIvusSetupStep_(step);
+
+    // Save to localStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+    // Broadcast to other screens
+    if (channelRef.current) {
+      channelRef.current.postMessage(state);
+    }
+  }, [screenId, currentStep, currentSubStep, workflowId, workflowStepId, activePreset, wizardVisible, wizardCompleted, alignedSkullAP, alignedSkullLAT, currentAngleIndex, ivusRecordingStopped]);
 
   // Sync workflow state (for external updates)
   const syncWorkflowState = useCallback((state: WorkflowState) => {
@@ -271,6 +363,8 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     setAlignedSkullAP(state.alignedSkullAP);
     setAlignedSkullLAT(state.alignedSkullLAT);
     setCurrentAngleIndex_(state.currentAngleIndex);
+    setIvusRecordingStopped_(state.ivusRecordingStopped);
+    setIvusSetupStep_(state.ivusSetupStep);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     
     if (channelRef.current) {
@@ -289,11 +383,15 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     alignedSkullAP,
     alignedSkullLAT,
     currentAngleIndex,
+    ivusRecordingStopped,
+    ivusSetupStep,
     setWorkflowStep,
     setWorkflowStepId,
     setWizardState,
     setAlignedImages,
     setCurrentAngleIndex,
+    setIvusRecordingStopped,
+    setIvusSetupStep,
     syncWorkflowState,
   };
 

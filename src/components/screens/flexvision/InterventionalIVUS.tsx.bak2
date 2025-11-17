@@ -259,23 +259,42 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
   const workflowSync = useWorkflowSync();
   // Use shared state from workflowSync for cross-screen synchronization
   const setupStep = workflowSync.ivusSetupStep ?? 1; // Default to step 1 if undefined
-  const [focusedButtonIndex, setFocusedButtonIndex] = useState(0);
+  const focusedButtonIndex = workflowSync.ivusFocusedButtonIndex ?? 0;
+  const isRecordingStopped = workflowSync.ivusRecordingStopped || false;
+  
+  // Use local state for rapidly changing values (updated by video playback/recording)
+  // Sync state for user interactions (button clicks, manual scrubbing)
+  const [localIsPlaying, setLocalIsPlaying] = useState(false);
+  const [localRecordingTime, setLocalRecordingTime] = useState(0);
+  
   const [ringdownActive, setRingdownActive] = useState(false);
   const [isFrozen, setIsFrozen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
-  // Use shared state from workflowSync for cross-screen synchronization
-  const isRecordingStopped = workflowSync.ivusRecordingStopped || false;
   const videoRef = useRef<HTMLVideoElement>(null);
   const scrubberRef = useRef<HTMLDivElement>(null);
   const [isScrubbing, setIsScrubbing] = useState(false);
   const isProcessingKey = useRef(false);
   const [scrubberFocused, setScrubberFocused] = useState(false); // Scrubber is selected
   const [scrubberActive, setScrubberActive] = useState(false); // Scrubber is being controlled
-  const [isPlaying, setIsPlaying] = useState(false); // Video playback state
   const [bookmarks, setBookmarks] = useState<number[]>([]); // Bookmark positions in seconds
   const keyHoldTimer = useRef<NodeJS.Timeout | null>(null);
   const keyHoldCount = useRef(0);
+  
+  // Sync local state from workflowSync on user interactions
+  useEffect(() => {
+    if (workflowSync.ivusIsPlaying !== undefined) {
+      setLocalIsPlaying(workflowSync.ivusIsPlaying);
+    }
+  }, [workflowSync.ivusIsPlaying]);
+  
+  useEffect(() => {
+    if (workflowSync.ivusRecordingTime !== undefined) {
+      setLocalRecordingTime(workflowSync.ivusRecordingTime);
+      if (videoRef.current) {
+        videoRef.current.currentTime = workflowSync.ivusRecordingTime;
+      }
+    }
+  }, [workflowSync.ivusRecordingTime]);
   
   // Bottom row buttons (left to right) - changes based on recording state
   const buttons = isRecordingStopped
@@ -317,23 +336,23 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
       
       if (newRecordingState) {
         // Start recording - reset timer, play recording video, and reset button focus
-        setRecordingTime(0);
-        setFocusedButtonIndex(0); // Reset to first button (Bookmark)
+        workflowSync.setIvusPlaybackState(false, 0);
+        workflowSync.setIvusFocusedButtonIndex(0); // Reset to first button (Bookmark)
         if (videoRef.current) {
           videoRef.current.currentTime = 0;
           videoRef.current.play();
         }
       } else {
         // Stop recording
-        setRecordingTime(0);
-        setFocusedButtonIndex(0); // Reset to first button (Save Frame)
+        workflowSync.setIvusPlaybackState(false, 0);
+        workflowSync.setIvusFocusedButtonIndex(0); // Reset to first button (Save Frame)
       }
     } else if (buttonId === 'stop') {
       // Stop recording - enter review mode
       setIsRecording(false);
       workflowSync.setIvusRecordingStopped(true);
-      setRecordingTime(34); // Jump to end (34 seconds)
-      setFocusedButtonIndex(0); // Reset to first button (Bookmark)
+      workflowSync.setIvusPlaybackState(false, 34); // Jump to end (34 seconds)
+      workflowSync.setIvusFocusedButtonIndex(0); // Reset to first button (Bookmark)
       
       // Pause video and set to end
       if (videoRef.current) {
@@ -345,13 +364,13 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
       // Toggle play/pause
       if (buttonId === 'pause') {
         console.log('IVUS: Playback paused');
-        setIsPlaying(false);
+        workflowSync.setIvusPlaybackState(false);
         if (videoRef.current) {
           videoRef.current.pause();
         }
       } else {
         console.log('IVUS: Playback resumed');
-        setIsPlaying(true);
+        workflowSync.setIvusPlaybackState(true);
         if (videoRef.current) {
           videoRef.current.play();
         }
@@ -360,9 +379,8 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
       // Live button - exit review mode and return to live view
       console.log('IVUS: Returning to live view');
       workflowSync.setIvusRecordingStopped(false);
-      setRecordingTime(0);
-      setFocusedButtonIndex(0);
-      setIsPlaying(false);
+      workflowSync.setIvusPlaybackState(false, 0);
+      workflowSync.setIvusFocusedButtonIndex(0);
       if (videoRef.current) {
         videoRef.current.currentTime = 0;
         videoRef.current.play();
@@ -381,11 +399,12 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
     if (!isRecording) return;
 
     const interval = setInterval(() => {
-      setRecordingTime((prev) => prev + 1);
+      // Use a callback pattern to avoid dependency on recordingTime
+      workflowSync.setIvusPlaybackState(false, (workflowSync.ivusRecordingTime ?? 0) + 1);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isRecording]);
+  }, [isRecording, workflowSync]);
 
   // Format recording time as MM:SS
   const formatTime = (seconds: number) => {
@@ -403,7 +422,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
     const percentage = Math.max(0, Math.min(1, x / rect.width));
     const newTime = Math.round(percentage * 34 * 10) / 10; // Round to nearest 0.1 second (frame)
     
-    setRecordingTime(newTime);
+    workflowSync.setIvusPlaybackState(isPlaying, newTime);
     if (videoRef.current) {
       videoRef.current.currentTime = newTime;
     }
@@ -438,11 +457,10 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
     if (isRecordingStopped && videoRef.current) {
       // Reset to beginning and start playing
       videoRef.current.currentTime = 0;
-      setRecordingTime(0);
-      setIsPlaying(true);
+      workflowSync.setIvusPlaybackState(true, 0);
       videoRef.current.play();
     }
-  }, [isRecordingStopped]);
+  }, [isRecordingStopped, workflowSync]);
 
   // Sync scrubber with video playback
   useEffect(() => {
@@ -451,11 +469,12 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
     const updateScrubber = () => {
       if (videoRef.current) {
         const currentTime = Math.round(videoRef.current.currentTime * 10) / 10; // Round to frame precision
-        setRecordingTime(currentTime);
+        const currentIsPlaying = workflowSync.ivusIsPlaying || false;
+        workflowSync.setIvusPlaybackState(currentIsPlaying, currentTime);
         
         // Stop at end
         if (currentTime >= 34) {
-          setIsPlaying(false);
+          workflowSync.setIvusPlaybackState(false, currentTime);
           videoRef.current.pause();
         }
       }
@@ -463,7 +482,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
 
     const interval = setInterval(updateScrubber, 100); // Update 10 times per second
     return () => clearInterval(interval);
-  }, [isPlaying]);
+  }, [isPlaying, workflowSync]);
 
   // Debug: Log bookmarks when they change
   useEffect(() => {
@@ -544,7 +563,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
           
           console.log('IVUS: Scrub backward, step:', stepSize);
           const newTime = Math.max(0, Math.round((recordingTime - stepSize) * 10) / 10);
-          setRecordingTime(newTime);
+          workflowSync.setIvusPlaybackState(isPlaying, newTime);
           if (videoRef.current) {
             videoRef.current.currentTime = newTime;
           }
@@ -564,7 +583,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
           
           console.log('IVUS: Scrub forward, step:', stepSize);
           const newTime = Math.min(34, Math.round((recordingTime + stepSize) * 10) / 10);
-          setRecordingTime(newTime);
+          workflowSync.setIvusPlaybackState(isPlaying, newTime);
           if (videoRef.current) {
             videoRef.current.currentTime = newTime;
           }
@@ -595,7 +614,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
           setScrubberActive(true);
           // Pause video when entering scrubber control
           if (isPlaying) {
-            setIsPlaying(false);
+            workflowSync.setIvusPlaybackState(false);
             if (videoRef.current) {
               videoRef.current.pause();
             }
@@ -617,7 +636,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
           isProcessingKey.current = true;
           console.log('IVUS: Move from scrubber to first button');
           setScrubberFocused(false);
-          setFocusedButtonIndex(0);
+          workflowSync.setIvusFocusedButtonIndex(0);
           setTimeout(() => { isProcessingKey.current = false; }, 100);
           return;
         } else if (key === leftKey) {
@@ -627,7 +646,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
           isProcessingKey.current = true;
           console.log('IVUS: Move from scrubber to last button');
           setScrubberFocused(false);
-          setFocusedButtonIndex(buttons.length - 1);
+          workflowSync.setIvusFocusedButtonIndex(buttons.length - 1);
           setTimeout(() => { isProcessingKey.current = false; }, 100);
           return;
         }
@@ -649,10 +668,10 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
         if (focusedButtonIndex === 0 && isRecordingStopped) {
           // At first button, wrap to scrubber
           console.log('IVUS: Wrapping to scrubber from first button');
-          setFocusedButtonIndex(-1); // Clear button focus
+          workflowSync.setIvusFocusedButtonIndex(-1); // Clear button focus
           setScrubberFocused(true);
         } else {
-          setFocusedButtonIndex((prev) => (prev - 1 + buttons.length) % buttons.length);
+          workflowSync.setIvusFocusedButtonIndex((focusedButtonIndex - 1 + buttons.length) % buttons.length);
         }
         setTimeout(() => { isProcessingKey.current = false; }, 100);
       }
@@ -666,10 +685,10 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
         // If at last button and in review mode, focus scrubber
         if (focusedButtonIndex === buttons.length - 1 && isRecordingStopped) {
           console.log('IVUS: Wrapping to scrubber from last button');
-          setFocusedButtonIndex(-1); // Clear button focus
+          workflowSync.setIvusFocusedButtonIndex(-1); // Clear button focus
           setScrubberFocused(true);
         } else {
-          setFocusedButtonIndex((prev) => (prev + 1) % buttons.length);
+          workflowSync.setIvusFocusedButtonIndex((focusedButtonIndex + 1) % buttons.length);
         }
         setTimeout(() => { isProcessingKey.current = false; }, 100);
       }
@@ -870,7 +889,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
                 onEnded={() => {
                   if (isRecording) {
                     setIsRecording(false);
-                    setRecordingTime(0);
+                    workflowSync.setIvusPlaybackState(false, 0);
                   }
                 }}
               >
