@@ -316,9 +316,10 @@ interface XrayLiveProps {
   componentSize?: 'small' | 'medium' | 'large' | 'xlarge' | 'fullscreen';
   hideHeader?: boolean;
   hideContent?: boolean;
+  contentImage?: string; // Path to image to display instead of default content
 }
 
-export function XrayLive({ componentSize = 'large', hideHeader = false, hideContent = false }: XrayLiveProps) {
+export function XrayLive({ componentSize = 'large', hideHeader = false, hideContent = false, contentImage }: XrayLiveProps) {
   // Content scaling based on component size - headers stay normal, only content scales
   const getContentScale = () => {
     switch (componentSize) {
@@ -364,7 +365,12 @@ export function XrayLive({ componentSize = 'large', hideHeader = false, hideCont
       
       {/* Content area uses full available space, then gets scaled */}
       <div className="flex-1 p-4 min-h-0 w-full overflow-hidden bg-[#000000]">
-        {!hideContent ? (
+        {contentImage ? (
+          /* Display custom image */
+          <div className="w-full h-full flex items-center justify-center bg-white">
+            <img src={contentImage} alt="Aligned Skull" className="max-w-full max-h-full object-contain" />
+          </div>
+        ) : !hideContent ? (
           <div className={`transform ${scale} origin-center w-full h-full flex items-center justify-center`}>
             <XrayLiveContent />
           </div>

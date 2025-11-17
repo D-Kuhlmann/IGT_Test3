@@ -1,10 +1,13 @@
 import svgPaths from "./uniguide-svg-paths";
+import FV01Image from "../../../assets/FV 01.png";
+import UniAngle1Image from "../../../assets/UniAngle1.png";
+import UniAngle2Image from "../../../assets/UniAngle2.png";
 
 // Placeholder images - replace with actual assets if available
-const imgImage1 = "";
-const imgImage2 = "";
+const imgImage1 = UniAngle1Image;
+const imgImage2 = UniAngle2Image;
 const imgImage3 = "";
-const imgFv01 = "";
+const imgFv01 = FV01Image;
 
 function Collapse() {
   return (
@@ -1205,7 +1208,7 @@ function ViewAreaIgt() {
 function Frame427() {
   return (
     <div className="[grid-area:1_/_1] h-[976px] ml-0 mt-0 relative w-[1596px]">
-      <ViewAreaIgt />
+      {/* <ViewAreaIgt /> - Removed to prevent duplicate background images */}
     </div>
   );
 }
@@ -1538,32 +1541,23 @@ export function UniguideUI({ onOpenWizard, showVideo, videoSrc }: UniguideUIProp
       <FrameworkMouseSmartNav onOpenWizard={onOpenWizard} />
       <div className="absolute inset-[10.28%_29.11%_0.28%_21.7%]" data-name="FV 01">
         <div className="absolute inset-0 overflow-hidden bg-black flex items-center justify-center">
-          {showVideo && videoSrc ? (
-            <video 
-              autoPlay 
-              muted 
-              className="w-full h-full object-contain"
-              src={videoSrc}
-            />
-          ) : (
-            imgFv01 && <img alt="" className="absolute h-[115.93%] left-[-22.02%] max-w-none top-[-14.56%] w-[205.62%]" src={imgFv01} />
-          )}
+          <img alt="" className="w-full h-full object-contain" src={imgFv01} />
         </div>
       </div>
       <div className="absolute inset-[10.28%_0.69%_0.28%_79.22%]" data-name="Right Images">
         <div className="absolute inset-0 flex flex-col">
           <div className="flex-1 relative border border-[#383838]">
-            <div className="absolute inset-0 overflow-hidden">
-              {imgImage1 && <img alt="" className="absolute h-[100.08%] left-[19.51%] max-w-none top-[-0.04%] w-[60.98%]" src={imgImage1} />}
+            <div className="absolute inset-0 overflow-hidden bg-black flex items-center justify-center">
+              <img alt="" className="w-full h-full object-contain" src={imgImage1} />
             </div>
           </div>
           <div className="flex-1 relative border border-[#383838]">
-            <div className="absolute inset-0 overflow-hidden">
-              {imgImage2 && <img alt="" className="absolute h-[100.93%] left-[19.57%] max-w-none top-[-0.62%] w-[61.04%]" src={imgImage2} />}
+            <div className="absolute inset-0 overflow-hidden bg-black flex items-center justify-center">
+              <img alt="" className="w-full h-full object-contain" src={imgImage2} />
             </div>
           </div>
-          <div className="flex-1 relative border border-[#383838]">
-            {imgImage3 && <img alt="" className="absolute inset-0 max-w-none object-50%-50% object-cover size-full" src={imgImage3} />}
+          <div className="flex-1 relative border border-[#383838] bg-black">
+            {/* Bottom right image removed */}
           </div>
         </div>
       </div>

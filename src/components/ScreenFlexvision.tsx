@@ -1021,9 +1021,6 @@ function ScreenFlexvisionInner() {
 
       {/* Settings Menu */}
       <SettingsMenu />
-      
-      {/* Workflow Status Indicator */}
-      <WorkflowStatusIndicator />
 
       <div className="flex-1 overflow-hidden flex">
         {/* StatusBar - Independent left sidebar */}
@@ -1354,7 +1351,15 @@ function ScreenFlexvisionInner() {
               
               switch (config.component) {
                 case 'xrayLive':
-                  renderedComponent = <XrayLive componentSize={componentSize} hideContent={config.hideContent} />;
+                  // For 3d-scan step, use aligned skull images if available
+                  const xrayContentImage = workflowSync.workflowStepId === '3d-scan' 
+                    ? (workflowSync.alignedSkullLAT || workflowSync.alignedSkullAP)
+                    : undefined;
+                  renderedComponent = <XrayLive 
+                    componentSize={componentSize} 
+                    hideContent={config.hideContent}
+                    contentImage={xrayContentImage}
+                  />;
                   focusKey = 'xray';
                   break;
                 case 'interventionalWorkspace':
@@ -1397,7 +1402,21 @@ function ScreenFlexvisionInner() {
                   focusKey = 'smartnav';
                   break;
                 case 'placeholder':
-                  renderedComponent = <Placeholder componentSize={componentSize} title={config.title} hideHeader={config.hideHeader} contentImage={config.contentImage} whiteBg={config.whiteBg} showPatientBar={config.showPatientBar} />;
+                  // For 3d-scan Reference 1, use aligned AP skull when LAT is available
+                  let placeholderImage = config.contentImage;
+                  let placeholderWhiteBg = config.whiteBg;
+                  if (workflowSync.workflowStepId === '3d-scan' && config.title === 'Reference 1' && workflowSync.alignedSkullLAT) {
+                    placeholderImage = workflowSync.alignedSkullAP;
+                    placeholderWhiteBg = true; // Set white background when showing aligned image
+                  }
+                  renderedComponent = <Placeholder 
+                    componentSize={componentSize} 
+                    title={config.title} 
+                    hideHeader={config.hideHeader} 
+                    contentImage={placeholderImage} 
+                    whiteBg={placeholderWhiteBg} 
+                    showPatientBar={config.showPatientBar} 
+                  />;
                   focusKey = 'placeholder';
                   break;
                 case 'lumify':
@@ -1433,18 +1452,6 @@ function ScreenFlexvisionInner() {
           )}
         </div>
       </div>
-
-      {/* Workflow step indicator */}
-      {workflowSync.workflowStepId && (
-        <div className="absolute bottom-6 left-6 bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 z-20">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-            <span className="text-white text-[14px] font-['CentraleSans:Book',_sans-serif]">
-              Current: {workflowSync.workflowStepId.charAt(0).toUpperCase() + workflowSync.workflowStepId.slice(1).replace('-', ' ')}
-            </span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

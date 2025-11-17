@@ -119,7 +119,7 @@ export function SmartOrchestratorMenu({
               }}
             >
               {/* Left side - automation icons */}
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-20">
                 <button 
                   onClick={() => toggleAutomation('voice')}
                   className="w-16 h-16 flex items-center justify-center hover:opacity-80 transition-all"

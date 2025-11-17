@@ -11,7 +11,7 @@ import PedalImg from '../../../assets/pedal.png';
 import SmartButtonIcon from '../../../assets/Smart-Button-squares.svg';
 import SmartUIIcon from '../../../assets/SmartUIIconSquare.svg';
 import PedalPress from '../../../assets/PedalPress.svg';
-import CinePedal from '../../../assets/CinePedal.svg';
+import CinePedal from '../../../assets/FluoroPedal.svg';
 import SkullAP from '../../../assets/Skull-big-AP.png';
 import SkullLAT from '../../../assets/Skull-big-LAT.png';
 import ViewportIndicationOrange from '../../../assets/viewportindication-orange.png';
@@ -23,6 +23,7 @@ import ExposurePress from '../../../assets/Switch - Exposure Press.png';
 import { useSettings, matchesInput } from '../../../contexts/SettingsContext';
 import { useWorkflowSync } from '../../../contexts/WorkflowSyncContext';
 import { UniguideUI } from './UniguideUI';
+import CArmRotationVideo from '../../../assets/carm-rotation-testpathclear 1.mp4';
 import CBCTVideo from '../../../assets/neuro-3D-RA_Frontal (1).mp4';
 
 interface SmartNavigatorProps {
@@ -287,18 +288,34 @@ interface CheckPathStepProps {
 function CheckPathStep({ onPrevious, onContinue }: CheckPathStepProps) {
   const [isRotating, setIsRotating] = useState(false);
   const [rotationComplete, setRotationComplete] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
   const { inputSettings } = useSettings();
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Handle video end
+  const handleVideoEnd = () => {
+    console.log('Video ended - closing video and completing step');
+    setShowVideo(false);
+    setIsRotating(false);
+    setRotationComplete(true);
+    // Automatically complete the step when video ends
+    if (onContinue) {
+      setTimeout(() => {
+        onContinue();
+      }, 500);
+    }
+  };
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
     if (matchesInput(event, inputSettings.workflowStepActivate)) {
         if (!isRotating && !rotationComplete) {
           setIsRotating(true);
-          // After 3 seconds, mark rotation as complete
+          setShowVideo(true);
+          // Play video
           setTimeout(() => {
-            setIsRotating(false);
-            setRotationComplete(true);
-          }, 3000);
+            videoRef.current?.play();
+          }, 100);
         } else if (rotationComplete && onContinue) {
           // Proceed to Acquisition step
           onContinue();
@@ -312,6 +329,19 @@ function CheckPathStep({ onPrevious, onContinue }: CheckPathStepProps) {
 
   return (
     <div className="flex-1 relative">
+      {/* Video overlay during rotation */}
+      {showVideo && (
+        <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/50">
+          <video
+            ref={videoRef}
+            src={CArmRotationVideo}
+            className="max-w-[80%] max-h-[80%] rounded-lg"
+            playsInline
+            onEnded={handleVideoEnd}
+          />
+        </div>
+      )}
+
       {/* View Containers - 2 viewport layout */}
       <div className="absolute left-6 top-4 right-6 h-[500px] flex gap-0">
         {/* Left View Container - C-arm visualization */}
@@ -585,11 +615,23 @@ function IsocenterStep({ onPrevious, onContinue, onOverlayStateChange }: Isocent
   const [carmTargetPosition, setCarmTargetPosition] = useState<'AP' | 'Lateral'>('AP');
 
   const { inputSettings } = useSettings();
+  const workflowSync = useWorkflowSync();
   
   // Notify parent when overlay state changes
   useEffect(() => {
     onOverlayStateChange?.(showCarmOverlay);
   }, [showCarmOverlay, onOverlayStateChange]);
+
+  // Set aligned images when skulls are aligned
+  useEffect(() => {
+    if (isAligned && !rightAligned) {
+      // AP skull is aligned - broadcast it
+      workflowSync.setAlignedImages(SkullAP, undefined);
+    } else if (isAligned && rightAligned) {
+      // Both skulls aligned - LAT replaces AP in main view, AP moves to reference
+      workflowSync.setAlignedImages(SkullAP, SkullLAT);
+    }
+  }, [isAligned, rightAligned, workflowSync]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

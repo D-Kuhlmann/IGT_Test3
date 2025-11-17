@@ -8,6 +8,8 @@ interface WorkflowState {
   activePreset?: 1 | 2;
   wizardVisible?: boolean; // For SmartNavigator wizard visibility
   wizardCompleted?: boolean; // For SmartNavigator wizard completion
+  alignedSkullAP?: string; // Path to aligned AP skull image
+  alignedSkullLAT?: string; // Path to aligned LAT skull image
   timestamp: number;
 }
 
@@ -19,9 +21,12 @@ interface WorkflowSyncContextType {
   activePreset: 1 | 2;
   wizardVisible?: boolean;
   wizardCompleted?: boolean;
+  alignedSkullAP?: string;
+  alignedSkullLAT?: string;
   setWorkflowStep: (step: number, subStep?: string, workflowId?: string, wizardVisible?: boolean, wizardCompleted?: boolean) => void;
   setWorkflowStepId: (stepId: string, preset?: 1 | 2) => void;
   setWizardState: (visible: boolean, completed: boolean) => void;
+  setAlignedImages: (apImage?: string, latImage?: string) => void;
   syncWorkflowState: (state: WorkflowState) => void;
 }
 
@@ -43,6 +48,8 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
   const [activePreset, setActivePreset] = useState<1 | 2>(1); // Default to Cardio
   const [wizardVisible, setWizardVisible] = useState<boolean | undefined>(undefined);
   const [wizardCompleted, setWizardCompleted] = useState<boolean | undefined>(undefined);
+  const [alignedSkullAP, setAlignedSkullAP] = useState<string | undefined>(undefined);
+  const [alignedSkullLAT, setAlignedSkullLAT] = useState<string | undefined>(undefined);
   const channelRef = React.useRef<BroadcastChannel | null>(null);
 
   // Initialize BroadcastChannel and load initial state
@@ -61,6 +68,8 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
         }
         setWizardVisible(state.wizardVisible);
         setWizardCompleted(state.wizardCompleted);
+        setAlignedSkullAP(state.alignedSkullAP);
+        setAlignedSkullLAT(state.alignedSkullLAT);
       } catch (error) {
       }
     }
@@ -82,6 +91,8 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
         }
         setWizardVisible(state.wizardVisible);
         setWizardCompleted(state.wizardCompleted);
+        setAlignedSkullAP(state.alignedSkullAP);
+        setAlignedSkullLAT(state.alignedSkullLAT);
         
         // Also update localStorage
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -161,6 +172,8 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
       activePreset,
       wizardVisible: visible,
       wizardCompleted: completed,
+      alignedSkullAP,
+      alignedSkullLAT,
       timestamp: Date.now(),
     };
 
@@ -175,7 +188,35 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     if (channelRef.current) {
       channelRef.current.postMessage(state);
     }
-  }, [screenId, currentStep, currentSubStep, workflowId, workflowStepId, activePreset]);
+  }, [screenId, currentStep, currentSubStep, workflowId, workflowStepId, activePreset, alignedSkullAP, alignedSkullLAT]);
+
+  // Set aligned skull images and broadcast
+  const setAlignedImages = useCallback((apImage?: string, latImage?: string) => {
+    const state: WorkflowState = {
+      currentStep,
+      currentSubStep,
+      workflowId,
+      workflowStepId,
+      activePreset,
+      wizardVisible,
+      wizardCompleted,
+      alignedSkullAP: apImage !== undefined ? apImage : alignedSkullAP,
+      alignedSkullLAT: latImage !== undefined ? latImage : alignedSkullLAT,
+      timestamp: Date.now(),
+    };
+
+    // Update local state
+    if (apImage !== undefined) setAlignedSkullAP(apImage);
+    if (latImage !== undefined) setAlignedSkullLAT(latImage);
+
+    // Save to localStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+    // Broadcast to other screens
+    if (channelRef.current) {
+      channelRef.current.postMessage(state);
+    }
+  }, [screenId, currentStep, currentSubStep, workflowId, workflowStepId, activePreset, wizardVisible, wizardCompleted, alignedSkullAP, alignedSkullLAT]);
 
   // Sync workflow state (for external updates)
   const syncWorkflowState = useCallback((state: WorkflowState) => {
@@ -188,6 +229,8 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     }
     setWizardVisible(state.wizardVisible);
     setWizardCompleted(state.wizardCompleted);
+    setAlignedSkullAP(state.alignedSkullAP);
+    setAlignedSkullLAT(state.alignedSkullLAT);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     
     if (channelRef.current) {
@@ -203,9 +246,12 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     activePreset,
     wizardVisible,
     wizardCompleted,
+    alignedSkullAP,
+    alignedSkullLAT,
     setWorkflowStep,
     setWorkflowStepId,
     setWizardState,
+    setAlignedImages,
     syncWorkflowState,
   };
 
