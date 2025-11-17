@@ -1171,8 +1171,6 @@ function Frame22() {
 function ActiveAutomationIcons() {
   const { automationState } = useAutomation();
   
-  console.log('StatusBar - Automation State:', automationState);
-  
   const automationIcons = {
     voice: iconVoiceActivated,
     collimation: iconCollimationActivated,
@@ -1186,8 +1184,6 @@ function ActiveAutomationIcons() {
   const activeIcons = Object.entries(automationState)
     .filter(([_, isActive]) => isActive)
     .map(([key]) => automationIcons[key as keyof typeof automationIcons]);
-  
-  console.log('StatusBar - Active Icons Count:', activeIcons.length);
   
   if (activeIcons.length === 0) return null;
   

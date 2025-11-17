@@ -390,8 +390,24 @@ function ScreenFlexvisionInner() {
     if (defaultComponent) {
       console.log(`Auto-selecting component ${defaultComponent} for step ${currentStep}`);
       setSelectedComponent(defaultComponent);
+      
+      // Also update the context's focused component for cross-screen sync
+      const componentMap: Record<string, 'xrayLive' | 'interventionalWorkspace' | 'hemo' | 'smartNavigator' | null> = {
+        'xray': 'xrayLive',
+        'iw': 'interventionalWorkspace',
+        'hemo': 'hemo',
+        'smartnav': 'smartNavigator',
+        'placeholder': null
+      };
+      const mappedComponent = componentMap[defaultComponent];
+      setContextFocusedComponent(mappedComponent);
     }
-  }, [workflowSync.workflowStepId]);
+  }, [workflowSync.workflowStepId, setContextFocusedComponent]);
+
+  // Broadcast angle index changes to other screens (TSM)
+  useEffect(() => {
+    workflowSync.setCurrentAngleIndex(selectedAngleIndex);
+  }, [selectedAngleIndex]);
 
 
   const handleShowWorkflows = () => {

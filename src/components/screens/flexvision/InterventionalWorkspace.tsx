@@ -3,6 +3,7 @@ import { ViewportHeader } from '../../shared/ViewportHeaders';
 import { getFormattedPatientName, getPatientId, getCurrentDate, getFormattedDOB, getPatientAge, getFormattedTime } from '../../../data/patientData';
 import { useSettings, matchesInput } from '../../../contexts/SettingsContext';
 import { useAngle } from '../../../contexts/AngleContext';
+import { useWorkflowSync } from '../../../contexts/WorkflowSyncContext';
 import { CarmPositionConfirmOverlay } from '../../shared/CarmPositionConfirmOverlay';
 import { useStoredAngles } from '../../../hooks/useStoredAngles';
 import svgPaths from "../../../imports/svg-lsvrftrq7x";
@@ -665,7 +666,6 @@ function TaskGuidancePanel({ subFocusMode, selectedAngleIndex, onAngleSelect }: 
                     backgroundImage: 'linear-gradient(45deg, #27316F 20%, #2E9BC8 140%)',
                     outline: '3px solid #41c9fe',
                     outlineOffset: '-3px',
-                    boxShadow: '0 0 0 5px rgba(65, 201, 254, 0.4)',
                     borderRadius: '4px'
                   };
                 } else if (isActivated) {
@@ -679,7 +679,6 @@ function TaskGuidancePanel({ subFocusMode, selectedAngleIndex, onAngleSelect }: 
                   return {
                     outline: '3px solid #41c9fe',
                     outlineOffset: '-3px',
-                    boxShadow: '0 0 0 5px rgba(65, 201, 254, 0.3)',
                     backgroundColor: 'rgba(65, 201, 254, 0.15)',
                     borderRadius: '4px'
                   };
@@ -762,22 +761,47 @@ export function InterventionalWorkspace({
   onOverlayStateChange,
   contentImage
 }: InterventionalWorkspaceProps) {
-  const { selectedAngle, setSelectedAngle, activateUniGuide } = useAngle();
+  const { selectedAngle, setSelectedAngle, activateUniGuide, clearSelectedAngle } = useAngle();
   const { inputSettings } = useSettings();
+  const workflowSync = useWorkflowSync();
   const [currentAngleIndex, setCurrentAngleIndex] = useState(selectedAngleIndex);
   const { showConfirmOverlay, isMoving, confirmPosition, cancelPosition, selectAngle } = useStoredAngles();
   const [pendingAngleData, setPendingAngleData] = useState<any>(null);
   const [blockedKeys, setBlockedKeys] = useState<Set<string>>(new Set());
+  const [previousWorkflowStepId, setPreviousWorkflowStepId] = useState<string | undefined>(undefined);
+  
+  // Clear selected angle only when CCTA Planning workflow step is first activated (not continuously)
+  useEffect(() => {
+    if (workflowSync.workflowStepId === 'ccta-planning' && previousWorkflowStepId !== 'ccta-planning') {
+      console.log('🔄 InterventionalWorkspace - CCTA Planning step activated, clearing selected angle');
+      clearSelectedAngle();
+    }
+    setPreviousWorkflowStepId(workflowSync.workflowStepId);
+  }, [workflowSync.workflowStepId]);
   
   // Notify parent when overlay state changes
   useEffect(() => {
     onOverlayStateChange?.(showConfirmOverlay);
   }, [showConfirmOverlay, onOverlayStateChange]);
   
-  // Sync internal angle index with prop
+  // Sync internal angle index with prop (when parent FlexVision changes it)
   useEffect(() => {
-    setCurrentAngleIndex(selectedAngleIndex);
+    if (selectedAngleIndex !== currentAngleIndex) {
+      setCurrentAngleIndex(selectedAngleIndex);
+    }
   }, [selectedAngleIndex]);
+
+  // Broadcast currentAngleIndex changes to other screens (works for both FlexVision and TSM)
+  useEffect(() => {
+    workflowSync.setCurrentAngleIndex(currentAngleIndex);
+  }, [currentAngleIndex]);
+
+  // Listen for angle index changes from OTHER screens
+  useEffect(() => {
+    if (workflowSync.currentAngleIndex !== undefined && workflowSync.currentAngleIndex !== currentAngleIndex) {
+      setCurrentAngleIndex(workflowSync.currentAngleIndex);
+    }
+  }, [workflowSync.currentAngleIndex]);
   
   // Block angle movement keys when overlay closes until they're released
   useEffect(() => {
@@ -929,6 +953,7 @@ export function InterventionalWorkspace({
     
     // Now actually activate the angle and switch to UniGuide
     if (pendingAngleData) {
+      console.log('📤 FlexVision - Setting selectedAngle in context:', pendingAngleData);
       setSelectedAngle(pendingAngleData);
       activateUniGuide();
       console.log('🚀 FlexVision - UniGuide activated with angle:', pendingAngleData);

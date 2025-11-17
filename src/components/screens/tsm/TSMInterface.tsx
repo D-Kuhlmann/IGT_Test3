@@ -113,8 +113,8 @@ function BottomNavigation({ onTabChange, activeTab, currentWorkflowStep, activeP
   // This matches the exact components visible in ScreenFlexvision for each step
   const getVisibleComponentsForStep = (step: string | undefined, preset: 1 | 2 | undefined): Array<'xrayLive' | 'interventionalWorkspace' | 'hemo' | 'smartNavigator' | 'lumify' | 'ivus'> => {
     if (!step || !preset) {
-      // Default components
-      return ['xrayLive', 'interventionalWorkspace', 'hemo'];
+      // No step selected - return empty array (like FlexVision startup with black screen)
+      return [];
     }
 
     if (preset === 1) {
@@ -240,14 +240,16 @@ function BottomNavigation({ onTabChange, activeTab, currentWorkflowStep, activeP
                 onClick={() => handleTabClick(tab.id)}
               />
             ))}
-            {/* Collaboration Live - Always visible */}
-            <BottomNavButton 
-              key="collaboration-live"
-              icon={imgIcoCollablive} 
-              label="Collaboration Live" 
-              isActive={currentActiveTab === 'collaboration-live'} 
-              onClick={() => handleTabClick('collaboration-live')}
-            />
+            {/* Collaboration Live - Only visible when a workflow step is selected */}
+            {currentWorkflowStep && (
+              <BottomNavButton 
+                key="collaboration-live"
+                icon={imgIcoCollablive} 
+                label="Collaboration Live" 
+                isActive={currentActiveTab === 'collaboration-live'} 
+                onClick={() => handleTabClick('collaboration-live')}
+              />
+            )}
           </div>
         </div>
         <div className="flex gap-4 items-center flex-shrink-0 ml-auto">
@@ -279,6 +281,7 @@ export function TSMInterface() {
   const workflowSync = useWorkflowSync();
   const [showOrchestratorMenu, setShowOrchestratorMenu] = useState(false);
   const { isUniGuideActive } = useAngle();
+  const { focusedComponent } = useActiveComponents();
 
   // Sync with cross-screen UniGuide activation
   useEffect(() => {
@@ -286,6 +289,85 @@ export function TSMInterface() {
       setActiveBottomTab("uniguide");
     }
   }, [isUniGuideActive]);
+
+  // Auto-switch to focused component (or first visible component) when workflow step changes
+  useEffect(() => {
+    if (!workflowSync.workflowStepId || showOrchestratorMenu) {
+      return; // Don't auto-switch if no step or orchestrator menu is open
+    }
+
+    // Helper function to get visible components for current step
+    const getVisibleComponents = (step: string, preset: 1 | 2 | undefined): Array<string> => {
+      if (!preset) return [];
+      
+      if (preset === 1) {
+        switch (step) {
+          case 'startup':
+            return ['xrayLive', 'interventionalWorkspace', 'hemo'];
+          case 'ultrasound':
+            return ['xrayLive', 'lumify', 'hemo'];
+          case 'ccta-planning':
+            return ['xrayLive', 'interventionalWorkspace', 'hemo'];
+          case 'ivus-acquisition':
+            return ['hemo', 'ivus'];
+          case 'finalise':
+            return ['hemo'];
+          default:
+            return ['xrayLive', 'interventionalWorkspace', 'hemo'];
+        }
+      } else {
+        switch (step) {
+          case 'start':
+            return ['xrayLive', 'interventionalWorkspace', 'hemo'];
+          case 'access':
+            return ['xrayLive', 'lumify', 'hemo'];
+          case '3d-scan':
+            return ['xrayLive', 'hemo', 'smartNavigator'];
+          case 'planning':
+            return ['xrayLive', 'hemo'];
+          case 'treatment':
+            return ['hemo'];
+          default:
+            return ['xrayLive', 'interventionalWorkspace', 'hemo'];
+        }
+      }
+    };
+
+    const visibleComponents = getVisibleComponents(workflowSync.workflowStepId, workflowSync.activePreset);
+    
+    // Map component names to tab IDs
+    const componentToTabId: Record<string, string> = {
+      'xrayLive': 'xray-live',
+      'interventionalWorkspace': 'uniguide',
+      'hemo': 'hemo',
+      'smartNavigator': 'smartnav',
+      'lumify': 'lumify',
+      'ivus': 'ivus'
+    };
+
+    // Prioritize focused component if it's visible, otherwise use first visible component
+    let componentToShow: string | null = null;
+    
+    if (focusedComponent && visibleComponents.includes(focusedComponent)) {
+      // Focused component is visible, use it
+      componentToShow = focusedComponent;
+    } else if (focusedComponent === 'interventionalWorkspace' && 
+               workflowSync.workflowStepId === 'ivus-acquisition' && 
+               visibleComponents.includes('ivus')) {
+      // Special case: In IVUS step, 'interventionalWorkspace' focus means show IVUS component
+      componentToShow = 'ivus';
+    } else if (visibleComponents.length > 0) {
+      // No focused component or it's not visible, use first visible
+      componentToShow = visibleComponents[0];
+    }
+
+    if (componentToShow) {
+      const tabId = componentToTabId[componentToShow];
+      if (tabId) {
+        setActiveBottomTab(tabId);
+      }
+    }
+  }, [workflowSync.workflowStepId, workflowSync.activePreset, showOrchestratorMenu, focusedComponent]);
 
   const handleBottomTabChange = (tabId: string) => {
     setActiveBottomTab(tabId);
@@ -322,6 +404,11 @@ export function TSMInterface() {
 
   // Render the component based on active tab
   const renderActiveComponent = () => {
+    // If no workflow step selected, always show black screen regardless of tab
+    if (!workflowSync.workflowStepId) {
+      return <div className="w-full h-full bg-black" />;
+    }
+    
     // Show orchestrator menu if that tab is active
     if (showOrchestratorMenu) {
       return (
@@ -339,7 +426,7 @@ export function TSMInterface() {
       case 'xray-live':
         return <XrayLive componentSize="fullscreen" hideHeader={true} />;
       case 'uniguide':
-        return <InterventionalWorkspace componentSize="fullscreen" hideHeader={true} />;
+        return <InterventionalWorkspace componentSize="fullscreen" hideHeader={true} subFocusMode="angles" />;
       case 'hemo':
         return <Hemo componentSize="fullscreen" hideHeader={true} />;
       case 'smartnav':
@@ -359,7 +446,7 @@ export function TSMInterface() {
           </div>
         );
       default:
-        // Default view
+        // Default view - TaskMenu and MainContent when a workflow step is selected
         return (
           <>
             <TaskMenu />

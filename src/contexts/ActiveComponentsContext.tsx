@@ -51,7 +51,27 @@ export function ActiveComponentsProvider({ children }: { children: ReactNode }) 
   const setFocusedComponent = (component: ComponentType | null) => {
     setFocusedComponentState(component);
     localStorage.setItem(FOCUSED_STORAGE_KEY, JSON.stringify(component));
+    
+    // Broadcast to other tabs/screens
+    const channel = new BroadcastChannel('active_components_channel');
+    channel.postMessage({ type: 'focusedComponent', component });
+    channel.close();
   };
+
+  // Listen for focused component changes from other tabs/screens
+  useEffect(() => {
+    const channel = new BroadcastChannel('active_components_channel');
+    
+    channel.onmessage = (event) => {
+      if (event.data.type === 'focusedComponent') {
+        setFocusedComponentState(event.data.component);
+      }
+    };
+
+    return () => {
+      channel.close();
+    };
+  }, []);
 
   return (
     <ActiveComponentsContext.Provider value={{ 

@@ -10,6 +10,7 @@ interface WorkflowState {
   wizardCompleted?: boolean; // For SmartNavigator wizard completion
   alignedSkullAP?: string; // Path to aligned AP skull image
   alignedSkullLAT?: string; // Path to aligned LAT skull image
+  currentAngleIndex?: number; // Currently highlighted angle during navigation (0-3)
   timestamp: number;
 }
 
@@ -23,10 +24,12 @@ interface WorkflowSyncContextType {
   wizardCompleted?: boolean;
   alignedSkullAP?: string;
   alignedSkullLAT?: string;
+  currentAngleIndex?: number;
   setWorkflowStep: (step: number, subStep?: string, workflowId?: string, wizardVisible?: boolean, wizardCompleted?: boolean) => void;
   setWorkflowStepId: (stepId: string, preset?: 1 | 2) => void;
   setWizardState: (visible: boolean, completed: boolean) => void;
   setAlignedImages: (apImage?: string, latImage?: string) => void;
+  setCurrentAngleIndex: (index: number) => void;
   syncWorkflowState: (state: WorkflowState) => void;
 }
 
@@ -50,6 +53,7 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
   const [wizardCompleted, setWizardCompleted] = useState<boolean | undefined>(undefined);
   const [alignedSkullAP, setAlignedSkullAP] = useState<string | undefined>(undefined);
   const [alignedSkullLAT, setAlignedSkullLAT] = useState<string | undefined>(undefined);
+  const [currentAngleIndex, setCurrentAngleIndex_] = useState<number | undefined>(undefined);
   const channelRef = React.useRef<BroadcastChannel | null>(null);
 
   // Initialize BroadcastChannel and load initial state
@@ -70,6 +74,7 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
         setWizardCompleted(state.wizardCompleted);
         setAlignedSkullAP(state.alignedSkullAP);
         setAlignedSkullLAT(state.alignedSkullLAT);
+        setCurrentAngleIndex_(state.currentAngleIndex);
       } catch (error) {
       }
     }
@@ -80,6 +85,7 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
 
       channelRef.current.onmessage = (event: MessageEvent<WorkflowState>) => {
         const state = event.data;
+        console.log('📥 WorkflowSync - Received broadcast:', state);
         
         // Update local state
         setCurrentStep(state.currentStep);
@@ -93,6 +99,7 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
         setWizardCompleted(state.wizardCompleted);
         setAlignedSkullAP(state.alignedSkullAP);
         setAlignedSkullLAT(state.alignedSkullLAT);
+        setCurrentAngleIndex_(state.currentAngleIndex);
         
         // Also update localStorage
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -218,6 +225,38 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     }
   }, [screenId, currentStep, currentSubStep, workflowId, workflowStepId, activePreset, wizardVisible, wizardCompleted, alignedSkullAP, alignedSkullLAT]);
 
+  // Set current angle index (for angle cycling navigation) and broadcast
+  const setCurrentAngleIndex = useCallback((index: number) => {
+    const state: WorkflowState = {
+      currentStep,
+      currentSubStep,
+      workflowId,
+      workflowStepId,
+      activePreset,
+      wizardVisible,
+      wizardCompleted,
+      alignedSkullAP,
+      alignedSkullLAT,
+      currentAngleIndex: index,
+      timestamp: Date.now(),
+    };
+
+    // Update local state
+    setCurrentAngleIndex_(index);
+
+    // Save to localStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    console.log('💾 WorkflowSync - Saved to localStorage:', state);
+
+    // Broadcast to other screens
+    if (channelRef.current) {
+      channelRef.current.postMessage(state);
+      console.log('📡 WorkflowSync - Broadcasted state via BroadcastChannel');
+    } else {
+      console.warn('⚠️ WorkflowSync - No BroadcastChannel available');
+    }
+  }, [screenId, currentStep, currentSubStep, workflowId, workflowStepId, activePreset, wizardVisible, wizardCompleted, alignedSkullAP, alignedSkullLAT]);
+
   // Sync workflow state (for external updates)
   const syncWorkflowState = useCallback((state: WorkflowState) => {
     setCurrentStep(state.currentStep);
@@ -231,6 +270,7 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     setWizardCompleted(state.wizardCompleted);
     setAlignedSkullAP(state.alignedSkullAP);
     setAlignedSkullLAT(state.alignedSkullLAT);
+    setCurrentAngleIndex_(state.currentAngleIndex);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     
     if (channelRef.current) {
@@ -248,10 +288,12 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     wizardCompleted,
     alignedSkullAP,
     alignedSkullLAT,
+    currentAngleIndex,
     setWorkflowStep,
     setWorkflowStepId,
     setWizardState,
     setAlignedImages,
+    setCurrentAngleIndex,
     syncWorkflowState,
   };
 

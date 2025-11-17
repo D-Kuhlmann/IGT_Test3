@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import svgPaths from "../../../imports/svg-9nh39pc6ok";
 import { useAngle } from "../../../contexts/AngleContext";
+import { useWorkflowSync } from "../../../contexts/WorkflowSyncContext";
 import imgImage1 from "figma:asset/82f7f32e258c1f3564c6028958e44e4ec5476529.png";
 import imgCoronal from "figma:asset/4c8bbf83fe02a6ff097b8e4c2200db41b8b53782.png";
 import imgImage from "figma:asset/71dabdc7502548dbc0e7e3fc8521d3ad4a8010af.png";
@@ -220,18 +221,46 @@ function AngleListItem({
   angle, 
   onDelete,
   onSelect,
-  isSelected = false
+  isSelected = false,
+  isHighlighted = false
 }: { 
   angle: AngleData; 
   onDelete?: () => void;
   onSelect?: () => void;
   isSelected?: boolean;
+  isHighlighted?: boolean;
 }) {
   const iconPath = angle.icon === "import" ? svgPaths.p19e4b880 : svgPaths.p10a6ce00;
 
+  // Different styling for selected (activated) vs highlighted (cycling)
+  const getStyles = () => {
+    if (isSelected) {
+      // Activated angle - solid blue background
+      return {
+        backgroundColor: '#2b86b2',
+        border: 'none'
+      };
+    } else if (isHighlighted) {
+      // Currently cycling - blue border and light background
+      return {
+        backgroundColor: 'rgba(65, 201, 254, 0.15)',
+        border: '2px solid #41c9fe'
+      };
+    } else {
+      // Default state
+      return {
+        backgroundColor: '',
+        border: 'none'
+      };
+    }
+  };
+
+  const styles = getStyles();
+
   return (
     <button 
-      className={`content-stretch flex h-[72px] items-start justify-start relative shrink-0 w-[304px] transition-colors hover:bg-[rgba(255,255,255,0.05)] focus:outline-none focus:ring-2 focus:ring-[#2b86b2] focus:ring-inset ${isSelected ? 'bg-[#2b86b2]' : ''}`}
+      className={`content-stretch flex h-[72px] items-start justify-start relative shrink-0 w-[304px] transition-colors hover:bg-[rgba(255,255,255,0.05)] focus:outline-none focus:ring-2 focus:ring-[#2b86b2] focus:ring-inset`}
+      style={styles}
       onClick={onSelect}
       type="button"
     >
@@ -371,6 +400,7 @@ function ToolbarButton({
 
 export function UniGuideInterface() {
   const { selectedAngle, setSelectedAngle } = useAngle();
+  const workflowSync = useWorkflowSync();
   
   const [angles, setAngles] = useState<AngleData[]>([
     { id: "1", name: "Angle 1", rotation: "Rot -180°", angle: "Ang -180°", icon: "import", canDelete: false },
@@ -381,27 +411,73 @@ export function UniGuideInterface() {
 
   const [activeImage, setActiveImage] = useState<number>(1);
   const [currentAngle, setCurrentAngle] = useState({ rotation: "-180°", angle: "-180°" });
-  const [mainImage, setMainImage] = useState<string>(imgImage1);
+  const [mainImage, setMainImage] = useState<string>("/src/assets/ImageAngles/Angle1.png");
+  const [highlightedAngleIndex, setHighlightedAngleIndex] = useState<number | undefined>(undefined);
 
-  // Map angle IDs to their corresponding images
+  // Debug: Log mainImage whenever it changes
+  useEffect(() => {
+    console.log('🖼️ TSM - mainImage state changed to:', mainImage);
+  }, [mainImage]);
+
+  // Map angle IDs to their corresponding images (using direct paths like FlexVision)
   const angleImages = {
-    "1": Angle1,
-    "2": Angle2,
-    "3": Angle3,
-    "4": Angle4
+    "1": "/src/assets/ImageAngles/Angle1.png",
+    "2": "/src/assets/ImageAngles/Angle2.png",
+    "3": "/src/assets/ImageAngles/Angle3.png",
+    "4": "/src/assets/ImageAngles/Angle4.png"
   };
+
+  // Debug: Log the angleImages once on mount
+  useEffect(() => {
+    console.log('� TSM - UniGuideInterface mounted');
+    console.log('�🔍 TSM - angleImages object:', angleImages);
+    console.log('🔍 TSM - Angle1:', Angle1);
+    console.log('🔍 TSM - Angle2:', Angle2);
+    console.log('🔍 TSM - Angle3:', Angle3);
+    console.log('🔍 TSM - Angle4:', Angle4);
+    console.log('🔍 TSM - imgImage1:', imgImage1);
+    
+    return () => {
+      console.log('💀 TSM - UniGuideInterface unmounted');
+    };
+  }, []);
 
   // Listen for changes to selectedAngle from context
   useEffect(() => {
     console.log('📥 TSM - selectedAngle changed in context:', selectedAngle);
-    if (selectedAngle?.image) {
-      console.log('🖼️ TSM - Updating main image to:', selectedAngle.image);
-      setMainImage(selectedAngle.image);
-      console.log('✅ TSM - Main image updated successfully');
+    console.log('🔍 TSM - angleImages in useEffect:', angleImages);
+    if (selectedAngle?.id) {
+      console.log('🔍 TSM - Attempting to find image for angle ID:', selectedAngle.id);
+      // Map the angle ID to TSM's local imported image
+      const angleImage = angleImages[selectedAngle.id as keyof typeof angleImages];
+      console.log('🔍 TSM - Found angleImage in useEffect:', angleImage);
+      if (angleImage) {
+        console.log('🖼️ TSM - Updating main image for angle ID:', selectedAngle.id, 'to:', angleImage);
+        setMainImage(angleImage);
+        console.log('✅ TSM - Main image updated successfully to:', angleImage);
+      } else {
+        console.log('⚠️ TSM - No image found for angle ID:', selectedAngle.id);
+      }
     } else {
-      console.log('⚠️ TSM - No image in selectedAngle, keeping current image');
+      console.log('⚠️ TSM - No angle ID in selectedAngle');
     }
   }, [selectedAngle]);
+
+  // Listen for angle cycling from FlexVision
+  useEffect(() => {
+    console.log('📥 TSM - currentAngleIndex changed:', workflowSync.currentAngleIndex);
+    setHighlightedAngleIndex(workflowSync.currentAngleIndex);
+    
+    // Also update the preview image to show the currently cycled angle
+    if (workflowSync.currentAngleIndex !== undefined) {
+      const angleId = String(workflowSync.currentAngleIndex + 1); // Angles are 1-indexed
+      const angleImage = angleImages[angleId as keyof typeof angleImages];
+      if (angleImage) {
+        console.log('🖼️ TSM - Updating preview image for cycling angle:', angleId);
+        setMainImage(angleImage);
+      }
+    }
+  }, [workflowSync.currentAngleIndex]);
 
   const handleStoreAngle = () => {
     const newAngle: AngleData = {
@@ -421,7 +497,10 @@ export function UniGuideInterface() {
 
   const handleSelectAngle = (angle: AngleData) => {
     console.log('🎯 TSM - handleSelectAngle called for angle:', angle.id);
+    console.log('🔍 TSM - angleImages:', angleImages);
+    console.log('🔍 TSM - Looking for image with key:', angle.id);
     const angleImage = angleImages[angle.id as keyof typeof angleImages];
+    console.log('🔍 TSM - Found angleImage:', angleImage);
     if (angleImage) {
       const angleData = {
         id: angle.id,
@@ -488,8 +567,10 @@ export function UniGuideInterface() {
           
           {/* Angles List */}
           <div className="content-stretch flex flex-col items-start justify-start relative shrink-0">
-            {angles.map((angle) => {
+            {angles.map((angle, index) => {
               const isSelected = selectedAngle?.id === angle.id;
+              const isHighlighted = highlightedAngleIndex === index;
+              console.log(`Angle ${angle.id}: isSelected=${isSelected}, isHighlighted=${isHighlighted}, highlightedIndex=${highlightedAngleIndex}`);
               return (
                 <AngleListItem
                   key={angle.id}
@@ -497,6 +578,7 @@ export function UniGuideInterface() {
                   onDelete={angle.canDelete ? () => handleDeleteAngle(angle.id) : undefined}
                   onSelect={() => handleSelectAngle(angle)}
                   isSelected={isSelected}
+                  isHighlighted={isHighlighted}
                 />
               );
             })}
@@ -509,7 +591,7 @@ export function UniGuideInterface() {
         <div className="[grid-area:1_/_1] box-border content-stretch flex flex-col items-start justify-start ml-0 mt-0 relative size-[720px]">
           <div className="basis-0 grow min-h-px min-w-px relative shrink-0 w-full">
             <div className="absolute bg-black box-border content-stretch flex flex-col gap-[10px] inset-0 items-start justify-start p-[2px]">
-              <div className="basis-0 bg-center bg-contain bg-no-repeat grow min-h-px min-w-px shrink-0 w-full" style={{ backgroundImage: `url('${mainImage}')` }} />
+              <div className="basis-0 bg-center bg-contain bg-no-repeat grow min-h-px min-w-px shrink-0 w-full" style={{ backgroundImage: `url(${mainImage})` }} />
             </div>
             
             {/* Image Information Overlay */}
