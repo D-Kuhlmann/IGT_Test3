@@ -498,6 +498,23 @@ function ScreenFlexvisionInner() {
     handlePresetSelect(2);
   }, []); // Empty deps - will always use current values via closure
 
+  const handleGoToStepVoice = useCallback((stepId: string) => {
+    const currentWorkflowSync = workflowSyncRef.current;
+    const currentPreset = activePresetRef.current;
+    
+    // Get current workflow steps based on active preset
+    const steps = currentPreset === 1 ? workflowStepsPreset1 : workflowStepsPreset2;
+    
+    // Validate that the step exists in the current preset
+    const stepExists = steps.some(step => step.id === stepId);
+    
+    if (stepExists) {
+      currentWorkflowSync.setWorkflowStepId(stepId, currentPreset);
+    } else {
+      console.warn(`Step "${stepId}" not found in preset ${currentPreset}`);
+    }
+  }, []); // Empty deps - will always use current values via refs
+
   // Register global voice command handlers (only once on mount)
   useEffect(() => {
     const handlers = {
@@ -513,6 +530,7 @@ function ScreenFlexvisionInner() {
       onCloseSettings: () => setIsSettingsOpen(false),
       onPreset1: handlePreset1Voice,
       onPreset2: handlePreset2Voice,
+      onGoToStep: handleGoToStepVoice,
     };
     
     registerHandlers(handlers);

@@ -5,6 +5,7 @@ interface GlobalVoiceContextType {
   onNextWorkflow?: () => void;
   onPreviousWorkflow?: () => void;
   onRestartWizard?: () => void;
+  onGoToStep?: (stepId: string) => void;
   
   // UI controls
   onShowWorkflows?: () => void;

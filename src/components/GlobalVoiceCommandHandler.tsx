@@ -7,6 +7,7 @@ import { useGlobalVoice } from '../contexts/GlobalVoiceContext';
 import { useVoiceInputState } from '../contexts/VoiceInputStateContext';
 import { useInputBroadcast } from '../contexts/InputBroadcastContext';
 import { useSettings } from '../contexts/SettingsContext';
+import { useAutomation } from '../contexts/AutomationContext';
 
 export function GlobalVoiceCommandHandler() {
   const location = useLocation();
@@ -15,6 +16,7 @@ export function GlobalVoiceCommandHandler() {
   const { resetTranscript } = useSpeechRecognition();
   const inputBroadcast = useInputBroadcast();
   const { inputSettings } = useSettings();
+  const { automationState } = useAutomation();
   const feedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastProcessedTranscriptRef = useRef<string>('');
   const commandActionRef = useRef<(() => void) | null>(null);
@@ -36,6 +38,11 @@ export function GlobalVoiceCommandHandler() {
   const handleTranscript = (transcript: string) => {
     // Ignore empty transcripts
     if (!transcript || transcript.trim() === '') {
+      return;
+    }
+    
+    // Check if voice automation is enabled
+    if (!automationState.voice) {
       return;
     }
     
@@ -120,6 +127,7 @@ export function GlobalVoiceCommandHandler() {
     onNextWorkflow: voiceContext.onNextWorkflow,
     onPreviousWorkflow: voiceContext.onPreviousWorkflow,
     onRestartWizard: voiceContext.onRestartWizard,
+    onGoToStep: voiceContext.onGoToStep,
     onShowWorkflows: voiceContext.onShowWorkflows,
     onHideWorkflows: voiceContext.onHideWorkflows,
     onShowPresets: voiceContext.onShowPresets,

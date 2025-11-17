@@ -11,6 +11,7 @@ interface UseVoiceCommandsProps {
   onNextWorkflow?: () => void;
   onPreviousWorkflow?: () => void;
   onRestartWizard?: () => void;
+  onGoToStep?: (stepId: string) => void; // NEW: Go to specific workflow step
   
   // UI commands
   onShowWorkflows?: () => void;
@@ -35,6 +36,7 @@ export function useVoiceCommands({
   onNextWorkflow,
   onPreviousWorkflow,
   onRestartWizard,
+  onGoToStep,
   onShowWorkflows,
   onHideWorkflows,
   onShowPresets,
@@ -111,6 +113,80 @@ export function useVoiceCommands({
         return true;
       }
       return true;
+    }
+
+    // Go to specific workflow step commands
+    if (onGoToStep) {
+      // Preset 1 steps
+      if (text.includes('go to start') || text.includes('goto start')) {
+        if (shouldExecuteCommand('go-to-start')) {
+          onFeedback?.('Going to Start', () => onGoToStep('start'));
+          return true;
+        }
+        return true;
+      }
+      
+      if (text.includes('go to ultrasound') || text.includes('goto ultrasound')) {
+        if (shouldExecuteCommand('go-to-ultrasound')) {
+          onFeedback?.('Going to Ultrasound', () => onGoToStep('ultrasound'));
+          return true;
+        }
+        return true;
+      }
+      
+      if (text.includes('go to ccta') || text.includes('goto ccta') || 
+          text.includes('go to planning') || text.includes('goto planning') ||
+          text.includes('go to ccta planning') || text.includes('goto ccta planning')) {
+        if (shouldExecuteCommand('go-to-ccta-planning')) {
+          onFeedback?.('Going to CCTA Planning', () => onGoToStep('ccta-planning'));
+          return true;
+        }
+        return true;
+      }
+      
+      if (text.includes('go to ivus') || text.includes('goto ivus') ||
+          text.includes('go to acquisition') || text.includes('goto acquisition')) {
+        if (shouldExecuteCommand('go-to-ivus')) {
+          onFeedback?.('Going to IVUS', () => onGoToStep('ivus-acquisition'));
+          return true;
+        }
+        return true;
+      }
+      
+      if (text.includes('go to finalise') || text.includes('goto finalise') ||
+          text.includes('go to finalize') || text.includes('goto finalize')) {
+        if (shouldExecuteCommand('go-to-finalise')) {
+          onFeedback?.('Going to Finalise', () => onGoToStep('finalise'));
+          return true;
+        }
+        return true;
+      }
+      
+      // Preset 2 steps
+      if (text.includes('go to access') || text.includes('goto access')) {
+        if (shouldExecuteCommand('go-to-access')) {
+          onFeedback?.('Going to Access', () => onGoToStep('access'));
+          return true;
+        }
+        return true;
+      }
+      
+      if (text.includes('go to 3d scan') || text.includes('goto 3d scan') ||
+          text.includes('go to three d scan') || text.includes('goto three d scan')) {
+        if (shouldExecuteCommand('go-to-3d-scan')) {
+          onFeedback?.('Going to 3D Scan', () => onGoToStep('3d-scan'));
+          return true;
+        }
+        return true;
+      }
+      
+      if (text.includes('go to treatment') || text.includes('goto treatment')) {
+        if (shouldExecuteCommand('go-to-treatment')) {
+          onFeedback?.('Going to Treatment', () => onGoToStep('treatment'));
+          return true;
+        }
+        return true;
+      }
     }
 
     // Workflow overlay commands
@@ -230,6 +306,7 @@ export function useVoiceCommands({
     onNextWorkflow,
     onPreviousWorkflow,
     onRestartWizard,
+    onGoToStep,
     onShowWorkflows,
     onHideWorkflows,
     onShowPresets,
@@ -267,6 +344,14 @@ export function useVoiceCommands({
         phrases: ['restart wizard', 'reset wizard', 'restart navigation', 'start over'],
         action: onRestartWizard,
         description: 'Restart the Smart Navigator wizard'
+      });
+    }
+
+    if (onGoToStep) {
+      commands.push({
+        phrases: ['go to start', 'go to ultrasound', 'go to ccta planning', 'go to ivus', 'go to finalise', 'go to access', 'go to 3d scan', 'go to treatment'],
+        action: () => {}, // Placeholder - actual step determined by voice input
+        description: 'Go to a specific workflow step'
       });
     }
 
