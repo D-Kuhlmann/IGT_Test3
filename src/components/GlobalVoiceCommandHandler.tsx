@@ -164,15 +164,11 @@ export function GlobalVoiceCommandHandler() {
       
       // If listening stopped and we have a transcript but no successful command, show failure feedback
       if (!data.isListening) {
-        // Capture the command success state RIGHT NOW before any delays
-        const wasSuccessfulNow = commandSuccessfulRef.current;
-        const currentTranscript = lastTranscriptRef.current;
-        
-        // Wait a moment for any final transcripts to arrive (Windows can be slow)
+        // Wait longer for any final transcripts to arrive (Windows can be very slow)
         setTimeout(() => {
           const hasTranscript = lastTranscriptRef.current && lastTranscriptRef.current.trim() !== '';
-          // Use the captured success state, not the current one (which might have changed)
-          const wasSuccessful = wasSuccessfulNow;
+          // Check the success state AFTER waiting for transcript to arrive
+          const wasSuccessful = commandSuccessfulRef.current;
           
           console.log('🎤 Checking for error feedback - Has transcript:', hasTranscript, 'Was successful (captured):', wasSuccessful, 'Current transcript:', lastTranscriptRef.current);
           
@@ -231,7 +227,7 @@ export function GlobalVoiceCommandHandler() {
             lastTranscriptRef.current = '';
             lastProcessedTranscriptRef.current = '';
           }
-        }, 500); // Wait 500ms for any final transcripts on Windows
+        }, 1000); // Increased from 500ms to 1000ms to give Windows more time to send final transcript
       }
       
       // Reset tracking when listening starts

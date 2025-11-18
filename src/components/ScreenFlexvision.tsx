@@ -95,8 +95,23 @@ function ScreenFlexvisionInner() {
   useEffect(() => {
   }, [transcript]);
 
+  // Debug: Log feedback updates on FlexVision
+  useEffect(() => {
+    console.log('🎤 FlexVision feedback state:', { feedback, isListening, transcript, isKeyPressed });
+  }, [feedback, isListening, transcript, isKeyPressed]);
+
   // Keep overlay open when listening, showing feedback, when there's a transcript to display, or when key is still pressed
   const shouldShowVoiceOverlay = isListening || !!feedback || !!transcript || isKeyPressed;
+  
+  // Debug: Log overlay visibility
+  useEffect(() => {
+    console.log('🎤 FlexVision shouldShowVoiceOverlay:', shouldShowVoiceOverlay, { 
+      isListening, 
+      hasFeedback: !!feedback, 
+      hasTranscript: !!transcript, 
+      isKeyPressed 
+    });
+  }, [shouldShowVoiceOverlay, isListening, feedback, transcript, isKeyPressed]);
 
   // Refs to track latest values for voice handlers
   const workflowSyncRef = useRef(workflowSync);
