@@ -283,6 +283,7 @@ function SettingsStep({ onPrevious, onContinue, selectedType: propSelectedType, 
 interface CheckPathStepProps {
   onPrevious: () => void;
   onContinue?: () => void;
+  hideHeader?: boolean;
 }
 
 function CheckPathStep({ onPrevious, onContinue, hideHeader = false }: CheckPathStepProps) {
@@ -625,17 +626,6 @@ function IsocenterStep({ onPrevious, onContinue, onOverlayStateChange, hideHeade
     onOverlayStateChange?.(showCarmOverlay);
   }, [showCarmOverlay, onOverlayStateChange]);
 
-  // Set aligned images when skulls are aligned
-  useEffect(() => {
-    if (isAligned && !rightAligned) {
-      // AP skull is aligned - broadcast it
-      workflowSync.setAlignedImages(SkullAP, undefined);
-    } else if (isAligned && rightAligned) {
-      // Both skulls aligned - LAT replaces AP in main view, AP moves to reference
-      workflowSync.setAlignedImages(SkullAP, SkullLAT);
-    }
-  }, [isAligned, rightAligned, workflowSync]);
-
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // CINE button (U key by default) - triggers acquisition
@@ -686,12 +676,16 @@ function IsocenterStep({ onPrevious, onContinue, onOverlayStateChange, hideHeade
   const handleCinePedalClick = () => {
     if (isEnterPressed && !isAcquisitionMade) {
       setIsAcquisitionMade(true);
+      // Set AP skull image immediately after acquisition
+      workflowSync.setAlignedImages(SkullAP, undefined);
     }
   };
 
   const handleRightCinePedalClick = () => {
     if (rightEnterPressed && !rightAcquisitionMade) {
       setRightAcquisitionMade(true);
+      // Set both skull images immediately after right acquisition - LAT replaces AP in main view, AP moves to reference
+      workflowSync.setAlignedImages(SkullAP, SkullLAT);
     }
   };
   
