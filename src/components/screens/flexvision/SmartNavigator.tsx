@@ -285,7 +285,7 @@ interface CheckPathStepProps {
   onContinue?: () => void;
 }
 
-function CheckPathStep({ onPrevious, onContinue }: CheckPathStepProps) {
+function CheckPathStep({ onPrevious, onContinue, hideHeader = false }: CheckPathStepProps) {
   const [isRotating, setIsRotating] = useState(false);
   const [rotationComplete, setRotationComplete] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
@@ -380,6 +380,7 @@ function CheckPathStep({ onPrevious, onContinue }: CheckPathStepProps) {
       </div>
 
       {/* Instruction Banner */}
+      {!hideHeader && (
       <div className="absolute top-[520px] backdrop-blur-sm backdrop-filter" style={{ width: '600px', left: '50%', transform: 'translateX(-50%)' }}>
         <div className="relative border-2 border-[rgba(158,213,255,0.8)] rounded p-6 shadow-[0px_4px_20px_10px_rgba(0,0,0,0.2)] overflow-hidden">
           <div className="absolute inset-0 opacity-50" style={{ backgroundImage: "linear-gradient(45deg, #27316F 20%, #2E9BC8 140%)" }} />
@@ -393,10 +394,10 @@ function CheckPathStep({ onPrevious, onContinue }: CheckPathStepProps) {
             <div className="flex-1">
               {!rotationComplete ? (
                 <>
-                  <div className="font-['CentraleSans:Bold',_sans-serif] text-[#41c9fe] text-lg mb-3">
+                  <div className="font-['CentraleSans:Bold',_sans-serif] text-[#41c9fe] text-xl mb-3">
                     Ready to perform the test rotation
                   </div>
-                  <p className="font-['CentraleSans:Book',_sans-serif] text-[rgba(255,255,255,0.8)] text-base">
+                  <p className="font-['CentraleSans:Book',_sans-serif] text-[rgba(255,255,255,0.8)] text-lg">
                     <span className="font-['CentraleSans:Bold',_sans-serif]">Press and hold</span>
                     <span> one of the </span>
                     <span className="font-['CentraleSans:Bold',_sans-serif]">Smart controls™</span>
@@ -406,10 +407,10 @@ function CheckPathStep({ onPrevious, onContinue }: CheckPathStepProps) {
                 </>
               ) : (
                 <>
-                  <div className="font-['CentraleSans:Bold',_sans-serif] text-[#41c9fe] text-lg mb-3">
+                  <div className="font-['CentraleSans:Bold',_sans-serif] text-[#41c9fe] text-xl mb-3">
                     Test rotation is complete
                   </div>
-                  <p className="font-['CentraleSans:Book',_sans-serif] text-[rgba(255,255,255,0.8)] text-base">
+                  <p className="font-['CentraleSans:Book',_sans-serif] text-[rgba(255,255,255,0.8)] text-lg">
                     The rotation path has been verified successfully.
                   </p>
                 </>
@@ -432,6 +433,7 @@ function CheckPathStep({ onPrevious, onContinue }: CheckPathStepProps) {
           </div>
         </div>
       </div>
+      )}
 
       {/* Footer with Previous button */}
       <div className="absolute bottom-0 left-0 right-0 border-t border-[#d6d6d6] border-opacity-12 p-3">
@@ -594,9 +596,10 @@ interface IsocenterStepProps {
   onPrevious: () => void;
   onContinue?: () => void;
   onOverlayStateChange?: (isActive: boolean) => void;
+  hideHeader?: boolean;
 }
 
-function IsocenterStep({ onPrevious, onContinue, onOverlayStateChange }: IsocenterStepProps) {
+function IsocenterStep({ onPrevious, onContinue, onOverlayStateChange, hideHeader = false }: IsocenterStepProps) {
   // Left viewport states
   const [isEnterPressed, setIsEnterPressed] = useState(false);
   const [isAcquisitionMade, setIsAcquisitionMade] = useState(false);
@@ -860,7 +863,7 @@ function IsocenterStep({ onPrevious, onContinue, onOverlayStateChange }: Isocent
       </div>
 
       {/* AI C-arm Confirm Banner - moves from left to right viewport, replaced by completion message when both aligned */}
-      {!rightAligned && (
+      {!hideHeader && !rightAligned && (
         <div 
           className="absolute top-[520px] backdrop-blur-sm backdrop-filter transition-all duration-500" 
           style={{ 
@@ -916,7 +919,7 @@ function IsocenterStep({ onPrevious, onContinue, onOverlayStateChange }: Isocent
                     <li>Ready for acquisition</li>
                   </ol>
                 </div>
-                <p className="font-['CentraleSans:Book',_sans-serif] text-[rgba(255,255,255,0.8)] text-base">
+                <p className="font-['CentraleSans:Book',_sans-serif] text-[rgba(255,255,255,0.8)] text-lg">
                   <span>Step on the </span>
                   <span className="font-['CentraleSans:Bold',_sans-serif]">Fluoro pedal</span>
                   <span> to acquire expose</span>
@@ -1008,7 +1011,7 @@ function IsocenterStep({ onPrevious, onContinue, onOverlayStateChange }: Isocent
                     <li>Ready for acquisition</li>
                   </ol>
                 </div>
-                <p className="font-['CentraleSans:Book',_sans-serif] text-[rgba(255,255,255,0.8)] text-base">
+                <p className="font-['CentraleSans:Book',_sans-serif] text-[rgba(255,255,255,0.8)] text-lg">
                   <span>Step on the </span>
                   <span className="font-['CentraleSans:Bold',_sans-serif]">Fluoro pedal</span>
                   <span> to acquire expose</span>
@@ -1060,7 +1063,7 @@ function IsocenterStep({ onPrevious, onContinue, onOverlayStateChange }: Isocent
       )}
 
       {/* Completion Banner - appears when both viewports are aligned */}
-      {rightAligned && (
+      {!hideHeader && rightAligned && (
         <div className="absolute top-[520px] backdrop-blur-sm backdrop-filter" style={{ width: '600px', left: '50%', transform: 'translateX(-50%)' }}>
           <div className="relative border-2 border-[rgba(158,213,255,0.8)] rounded p-6 shadow-[0px_4px_20px_10px_rgba(0,0,0,0.2)] overflow-hidden">
             <div className="absolute inset-0 opacity-50" style={{ backgroundImage: "linear-gradient(45deg, #27316F 20%, #2E9BC8 140%)" }} />
@@ -1596,7 +1599,7 @@ export function SmartNavigator({ componentSize = 'large', isActive = false, onCo
 
                       {/* Instruction text */}
                       <div className="flex items-center gap-3 mr-4">
-                        <p className="font-['CentraleSans:Book',_sans-serif] text-[#d6d6d6] text-base">
+                        <p className="font-['CentraleSans:Book',_sans-serif] text-[#d6d6d6] text-lg">
                           <span>Select </span>
                           <span className="font-['CentraleSans:Bold',_sans-serif]">acquisition protocol</span>
                           <span> then press a </span>
@@ -1606,7 +1609,7 @@ export function SmartNavigator({ componentSize = 'large', isActive = false, onCo
                           <SmartKnobIllustration small />
                         </div>
                         
-                        <p className="font-['CentraleSans:Book',_sans-serif] text-[#d6d6d6] text-base">
+                        <p className="font-['CentraleSans:Book',_sans-serif] text-[#d6d6d6] text-lg">
                           <span> to continue</span>
                         </p>
                       </div>
@@ -1631,6 +1634,7 @@ export function SmartNavigator({ componentSize = 'large', isActive = false, onCo
                   onPrevious={handlePrevious}
                   onContinue={handleContinue}
                   onOverlayStateChange={onOverlayStateChange}
+                  hideHeader={hideHeader}
                 />
               )}
 
@@ -1639,6 +1643,7 @@ export function SmartNavigator({ componentSize = 'large', isActive = false, onCo
                 <CheckPathStep 
                   onPrevious={handlePrevious}
                   onContinue={handleContinue}
+                  hideHeader={hideHeader}
                 />
               )}
 

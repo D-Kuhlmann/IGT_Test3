@@ -14,7 +14,6 @@ import { SmartNavigator } from "../flexvision/SmartNavigator";
 import { Lumify } from "../flexvision/Lumify";
 import { InterventionalIVUS } from "../flexvision/InterventionalIVUS";
 import { SmartOrchestratorMenu } from "./SmartOrchestratorMenu";
-import { WorkflowStatusIndicator } from "../../shared/WorkflowStatusIndicator";
 import { 
   imgFluoroscopyImageStore,
   imgIcon32DlsHome,
@@ -475,9 +474,6 @@ export function TSMInterface() {
         onOrchestratorToggle={() => setShowOrchestratorMenu(!showOrchestratorMenu)}
         showOrchestratorMenu={showOrchestratorMenu}
       />
-      
-      {/* Workflow Status Indicator */}
-      <WorkflowStatusIndicator />
     </div>
   );
 }

@@ -259,7 +259,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
   const workflowSync = useWorkflowSync();
   // Use shared state from workflowSync for cross-screen synchronization
   const setupStep = workflowSync.ivusSetupStep ?? 1; // Default to step 1 if undefined
-  const [focusedButtonIndex, setFocusedButtonIndex] = useState(0);
+  const [focusedButtonIndex, setFocusedButtonIndex] = useState(2); // Start with Ringdown button selected in live mode
   const [ringdownActive, setRingdownActive] = useState(false);
   const [isFrozen, setIsFrozen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -329,7 +329,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
         setFocusedButtonIndex(0); // Reset to first button (Save Frame)
       }
     } else if (buttonId === 'stop') {
-      // Stop recording - enter review mode
+      // Stop recording manually - enter review mode
       setIsRecording(false);
       workflowSync.setIvusRecordingStopped(true);
       setRecordingTime(34); // Jump to end (34 seconds)
@@ -340,7 +340,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
         videoRef.current.pause();
         videoRef.current.currentTime = 34;
       }
-      console.log('IVUS: Recording stopped, entering review mode');
+      console.log('IVUS: Recording stopped manually, entering review mode');
     } else if (buttonId === 'pause' || buttonId === 'play') {
       // Toggle play/pause
       if (buttonId === 'pause') {
@@ -361,7 +361,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
       console.log('IVUS: Returning to live view');
       workflowSync.setIvusRecordingStopped(false);
       setRecordingTime(0);
-      setFocusedButtonIndex(0);
+      setFocusedButtonIndex(2); // Auto-select Ringdown button when returning to live
       setIsPlaying(false);
       if (videoRef.current) {
         videoRef.current.currentTime = 0;
@@ -376,13 +376,13 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
     }
   };
 
-  // Recording timer
+  // Recording timer - update every 100ms for smoother scrubber animation
   useEffect(() => {
     if (!isRecording) return;
 
     const interval = setInterval(() => {
-      setRecordingTime((prev) => prev + 1);
-    }, 1000);
+      setRecordingTime((prev) => Math.min(prev + 0.1, 34)); // Increment by 0.1 seconds, cap at 34
+    }, 100);
 
     return () => clearInterval(interval);
   }, [isRecording]);
@@ -869,8 +869,12 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
                 key={(isRecording || isRecordingStopped) ? 'recording' : 'live'}
                 onEnded={() => {
                   if (isRecording) {
+                    // When recording completes automatically, transition to review mode
+                    console.log('IVUS: Recording completed automatically, transitioning to review mode');
                     setIsRecording(false);
-                    setRecordingTime(0);
+                    workflowSync.setIvusRecordingStopped(true);
+                    setFocusedButtonIndex(0); // Focus first button (Bookmark) in review mode
+                    // Video will restart from beginning in review mode via useEffect
                   }
                 }}
               >
