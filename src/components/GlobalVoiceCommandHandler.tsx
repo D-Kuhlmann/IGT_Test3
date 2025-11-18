@@ -162,72 +162,88 @@ export function GlobalVoiceCommandHandler() {
       // Update global listening state so FlexVision overlay appears
       setIsListening(data.isListening);
       
-      // If listening stopped and we have a transcript but no successful command, show failure feedback
-      if (!data.isListening) {
-        // Wait longer for any final transcripts to arrive (Windows can be very slow)
-        setTimeout(() => {
-          const hasTranscript = lastTranscriptRef.current && lastTranscriptRef.current.trim() !== '';
-          // Check the success state AFTER waiting for transcript to arrive
-          const wasSuccessful = commandSuccessfulRef.current;
+      // Helper function to handle transcript error display
+      const handleTranscriptError = (hasTranscript: boolean) => {
+        const wasSuccessful = commandSuccessfulRef.current;
+        
+        console.log('🎤 Checking for error feedback - Has transcript:', hasTranscript, 'Was successful:', wasSuccessful, 'Current transcript:', lastTranscriptRef.current);
+        
+        if (hasTranscript && !wasSuccessful) {
+          console.log('🎤 Showing transcript for 2 seconds before error message');
           
-          console.log('🎤 Checking for error feedback - Has transcript:', hasTranscript, 'Was successful (captured):', wasSuccessful, 'Current transcript:', lastTranscriptRef.current);
+          // First show just the transcript for 2 seconds so user can read their input
+          // (feedback is null, so only transcript shows)
           
-          if (hasTranscript && !wasSuccessful) {
-            console.log('🎤 Showing transcript for 2 seconds before error message');
-            
-            // First show just the transcript for 2 seconds so user can read their input
-            // (feedback is null, so only transcript shows)
-            
-            // After 2 seconds, check again if command is still not successful
-            setTimeout(() => {
-              // Double-check that command is still not successful before showing error
-              if (!commandSuccessfulRef.current) {
-                console.log('🎤 Now showing "Command not recognized" feedback');
-                setFeedback('Command not recognized');
-                
-                // Wait 2 more seconds, then clear everything
-                setTimeout(() => {
-                  console.log('🎤 Clearing error feedback and transcript');
-                  setFeedback(null);
-                  setTranscript('');
-                  resetTranscript();
-                  lastTranscriptRef.current = '';
-                  lastProcessedTranscriptRef.current = '';
-                  commandSuccessfulRef.current = false;
-                  // Ensure isKeyPressed is also cleared to close the overlay
-                  setIsKeyPressed(false);
-                }, 2000); // Show error for 2 seconds then clear
-              } else {
-                // Command was recognized during the delay, clear everything properly
-                console.log('🎤 Command was recognized during delay, clearing all state');
+          // After 2 seconds, check again if command is still not successful
+          setTimeout(() => {
+            // Double-check that command is still not successful before showing error
+            if (!commandSuccessfulRef.current) {
+              console.log('🎤 Now showing "Command not recognized" feedback');
+              setFeedback('Command not recognized');
+              
+              // Wait 2 more seconds, then clear everything
+              setTimeout(() => {
+                console.log('🎤 Clearing error feedback and transcript');
                 setFeedback(null);
                 setTranscript('');
                 resetTranscript();
                 lastTranscriptRef.current = '';
                 lastProcessedTranscriptRef.current = '';
                 commandSuccessfulRef.current = false;
+                // Ensure isKeyPressed is also cleared to close the overlay
                 setIsKeyPressed(false);
-              }
-            }, 2000); // Show transcript alone for 2 seconds before error
-          } else if (!hasTranscript) {
-            // No transcript - just clear everything immediately
-            console.log('🎤 No transcript received, clearing state');
-            setFeedback(null);
-            setTranscript('');
-            resetTranscript();
-            lastTranscriptRef.current = '';
-            lastProcessedTranscriptRef.current = '';
-            commandSuccessfulRef.current = false;
-            // Ensure isKeyPressed is also cleared
-            setIsKeyPressed(false);
-          } else if (wasSuccessful) {
-            // Command was successful - refs are already cleared by handleFeedback
-            // Just ensure everything is cleaned up
-            console.log('🎤 Command was successful, ensuring cleanup');
-            lastTranscriptRef.current = '';
-            lastProcessedTranscriptRef.current = '';
-          }
-        }, 1000); // Increased from 500ms to 1000ms to give Windows more time to send final transcript
+              }, 2000); // Show error for 2 seconds then clear
+            } else {
+              // Command was recognized during the delay, clear everything properly
+              console.log('🎤 Command was recognized during delay, clearing all state');
+              setFeedback(null);
+              setTranscript('');
+              resetTranscript();
+              lastTranscriptRef.current = '';
+              lastProcessedTranscriptRef.current = '';
+              commandSuccessfulRef.current = false;
+              setIsKeyPressed(false);
+            }
+          }, 2000); // Show transcript alone for 2 seconds before error
+        } else if (wasSuccessful) {
+          // Command was successful - refs are already cleared by handleFeedback
+          // Just ensure everything is cleaned up
+          console.log('🎤 Command was successful, ensuring cleanup');
+          lastTranscriptRef.current = '';
+          lastProcessedTranscriptRef.current = '';
+        }
+      };
+      
+      // If listening stopped and we have a transcript but no successful command, show failure feedback
+      if (!data.isListening) {
+        // First check: do we have a transcript immediately?
+        const immediateTranscript = lastTranscriptRef.current && lastTranscriptRef.current.trim() !== '';
+        
+        if (!immediateTranscript) {
+          // No transcript yet - wait a bit for Windows to send it
+          setTimeout(() => {
+            const hasTranscript = lastTranscriptRef.current && lastTranscriptRef.current.trim() !== '';
+            
+            if (!hasTranscript) {
+              // Still no transcript after waiting - close overlay immediately
+              console.log('🎤 No transcript received after waiting, closing overlay');
+              setFeedback(null);
+              setTranscript('');
+              resetTranscript();
+              lastTranscriptRef.current = '';
+              lastProcessedTranscriptRef.current = '';
+              commandSuccessfulRef.current = false;
+              setIsKeyPressed(false);
+              return;
+            }
+            
+            // Transcript arrived late - continue with error handling
+            handleTranscriptError(hasTranscript);
+          }, 1000); // Wait up to 1000ms for late transcript
+        } else {
+          // We have transcript immediately - handle it
+          handleTranscriptError(immediateTranscript);
+        }
       }
       
       // Reset tracking when listening starts
