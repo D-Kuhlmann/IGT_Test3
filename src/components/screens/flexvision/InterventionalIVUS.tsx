@@ -310,7 +310,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
     } else if (buttonId === 'ringdown') {
       setRingdownActive(true);
       console.log('IVUS: Ringdown activated');
-    } else if (buttonId === 'record' && ringdownActive) {
+    } else if (buttonId === 'record') {
       const newRecordingState = !isRecording;
       setIsRecording(newRecordingState);
       console.log('IVUS: Recording toggled:', newRecordingState);
@@ -389,8 +389,9 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
 
   // Format recording time as MM:SS
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const wholeSeconds = Math.floor(seconds);
+    const mins = Math.floor(wholeSeconds / 60);
+    const secs = wholeSeconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
@@ -1249,13 +1250,10 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
           </button>
           <button 
             onClick={() => handleButtonClick('record')}
-            disabled={!ringdownActive}
             className={`px-6 py-2 rounded border-4 flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-all min-w-[150px] justify-center ${
               focusedButtonIndex === 3 
                 ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#1474a4]'
-                : ringdownActive
-                  ? 'border-[#3b3b3b] bg-[#1474a4] hover:border-[#41c9fe]'
-                  : 'border-[#3b3b3b] bg-[#3a3a3a] hover:border-[#41c9fe] opacity-50 cursor-not-allowed'
+                : 'border-[#3b3b3b] bg-[#1474a4] hover:border-[#41c9fe]'
             }`}
           >
             <div className="w-3 h-3 rounded-full bg-white"></div>
