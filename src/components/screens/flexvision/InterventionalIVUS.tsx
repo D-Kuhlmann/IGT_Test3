@@ -267,6 +267,7 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
   // Use shared state from workflowSync for cross-screen synchronization
   const isRecordingStopped = workflowSync.ivusRecordingStopped || false;
   const videoRef = useRef<HTMLVideoElement>(null);
+  const pullbackVideoRef = useRef<HTMLVideoElement>(null);
   const scrubberRef = useRef<HTMLDivElement>(null);
   const [isScrubbing, setIsScrubbing] = useState(false);
   const isProcessingKey = useRef(false);
@@ -319,19 +320,27 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
         // Start recording - reset timer, play recording video, and reset button focus
         setRecordingTime(0);
         setFocusedButtonIndex(0); // Reset to first button (Bookmark)
+        workflowSync.setIvusRecordingState(true, 0); // Notify other components that recording started
         if (videoRef.current) {
           videoRef.current.currentTime = 0;
           videoRef.current.play();
+        }
+        if (pullbackVideoRef.current) {
+          pullbackVideoRef.current.currentTime = 0;
+          pullbackVideoRef.current.play();
         }
       } else {
         // Stop recording
         setRecordingTime(0);
         setFocusedButtonIndex(0); // Reset to first button (Save Frame)
+        workflowSync.setIvusRecordingState(false); // Notify other components that recording stopped
       }
     } else if (buttonId === 'stop') {
       // Stop recording manually - enter review mode
       setIsRecording(false);
       workflowSync.setIvusRecordingStopped(true);
+      console.log('IVUS: Setting recording state to FALSE via setIvusRecordingState');
+      workflowSync.setIvusRecordingState(false, 32); // Notify with end time for pullback video
       setRecordingTime(34); // Jump to end (34 seconds)
       setFocusedButtonIndex(0); // Reset to first button (Bookmark)
       
@@ -339,6 +348,10 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
       if (videoRef.current) {
         videoRef.current.pause();
         videoRef.current.currentTime = 34;
+      }
+      if (pullbackVideoRef.current) {
+        pullbackVideoRef.current.pause();
+        pullbackVideoRef.current.currentTime = 32;
       }
       console.log('IVUS: Recording stopped manually, entering review mode');
     } else if (buttonId === 'pause' || buttonId === 'play') {
@@ -360,6 +373,7 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
       // Live button - exit review mode and return to live view
       console.log('IVUS: Returning to live view');
       workflowSync.setIvusRecordingStopped(false);
+      workflowSync.setIvusRecordingState(false, 0); // Reset recording state
       setRecordingTime(0);
       setFocusedButtonIndex(2); // Auto-select Ringdown button when returning to live
       setIsPlaying(false);
@@ -471,6 +485,53 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
     console.log('IVUS: Bookmarks array updated:', bookmarks);
     console.log('IVUS: Number of bookmarks:', bookmarks.length);
   }, [bookmarks]);
+
+  // Sync pullback video with main IVUS video in review and recording mode
+  useEffect(() => {
+    if ((!isRecordingStopped && !isRecording) || !videoRef.current || !pullbackVideoRef.current) return;
+
+    const mainVideo = videoRef.current;
+    const pullbackVideo = pullbackVideoRef.current;
+
+    const syncVideos = () => {
+      // Sync playback state
+      if (isPlaying && pullbackVideo.paused) {
+        pullbackVideo.play();
+      } else if (!isPlaying && !pullbackVideo.paused) {
+        pullbackVideo.pause();
+      }
+
+      // Sync time - map 34s main video to 32s pullback video
+      const mainTime = mainVideo.currentTime;
+      const pullbackTime = (mainTime / 34) * 32; // Scale time proportionally
+      
+      // Only update if difference is significant (> 0.1s) to avoid constant updates
+      if (Math.abs(pullbackVideo.currentTime - pullbackTime) > 0.1) {
+        pullbackVideo.currentTime = pullbackTime;
+      }
+    };
+
+    const interval = setInterval(syncVideos, 100); // Sync 10 times per second
+    return () => clearInterval(interval);
+  }, [isRecordingStopped, isRecording, isPlaying]);
+
+  // Sync pullback video time to context for XRay Live placeholder
+  useEffect(() => {
+    // Only sync during active recording, not during review
+    if (!isRecording) return;
+    if (!videoRef.current) return;
+
+    const updateContextVideoTime = () => {
+      // Use main video time and scale it to pullback video time (34s -> 32s)
+      // This ensures perfect sync even if pullback video drifts slightly
+      const mainTime = videoRef.current?.currentTime || 0;
+      const scaledPullbackTime = (mainTime / 34) * 32;
+      workflowSync.setIvusRecordingState(true, scaledPullbackTime);
+    };
+
+    const interval = setInterval(updateContextVideoTime, 100); // Update 10 times per second
+    return () => clearInterval(interval);
+  }, [isRecording, workflowSync]);
 
   // Handle keyboard navigation for bottom buttons
   useEffect(() => {
@@ -718,47 +779,29 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
       {/* Main Content Area - Two Panels Side by Side */}
       <div className="flex-1 flex gap-0 overflow-hidden">
         {/* Left Panel - Controller Information */}
-        <div className="w-[400px] bg-black flex flex-col p-6">
+        <div className={`bg-black flex flex-col p-6 ${(isRecordingStopped || isRecording) ? 'w-[600px]' : 'w-[400px]'}`}>
           {isRecordingStopped ? (
-            /* Review Mode - Show IVUS Wire image */
+            /* Review Mode - Show IVUS Pullback video */
             <div className="flex-1 flex items-start justify-center">
-              <img 
-                src="/src/assets/Assets_Prototype-vids/IVUSWire.png" 
-                alt="IVUS Wire" 
+              <video 
+                ref={pullbackVideoRef}
+                src="/src/assets/Assets_Prototype-vids/IVUS pullback.mp4" 
                 className="w-full h-auto object-contain"
+                muted
+                playsInline
               />
             </div>
           ) : isRecording ? (
-            /* Recording Mode - Show different content */
-            <>
-              {/* Warning Message */}
-              <div className="bg-[#2a2a2a] border-l-4 border-yellow-500 p-4 mb-6">
-                <div className="flex gap-3">
-                  <div className="text-yellow-500 text-xl">⚠</div>
-                  <div className="font-['CentraleSans:Book',_sans-serif] text-[#d6d6d6] text-[13px] leading-[18px]">
-                    <p>Avoid changing the zoom, moving the table and C-arm position. Make sure the Guide and IVUS Catheter are visible during the pullback.</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Recording Instructions */}
-              <div className="text-center">
-                <p className="font-['CentraleSans:Book',_sans-serif] text-[#41c9fe] text-[16px] mb-8">
-                  Begin Continuous Fluoro and Start Pullback now
-                </p>
-                
-                {/* Catheter Illustration */}
-                <div className="bg-[#1a1a1a] rounded p-4 mb-4">
-                  <div className="flex items-center justify-center h-[120px]">
-                    <img 
-                      src="/src/assets/Assets_Prototype-vids/Pedal-press-TSM.gif" 
-                      alt="Catheter Pullback" 
-                      className="h-full object-contain"
-                    />
-                  </div>
-                </div>
-              </div>
-            </>
+            /* Recording Mode - Show IVUS Pullback video */
+            <div className="flex-1 flex items-start justify-center">
+              <video 
+                ref={pullbackVideoRef}
+                src="/src/assets/Assets_Prototype-vids/IVUS pullback.mp4" 
+                className="w-full h-auto object-contain"
+                muted
+                playsInline
+              />
+            </div>
           ) : (
             /* Normal Mode - Show tutorial */
             <>
@@ -874,8 +917,17 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
                     console.log('IVUS: Recording completed automatically, transitioning to review mode');
                     setIsRecording(false);
                     workflowSync.setIvusRecordingStopped(true);
+                    workflowSync.setIvusRecordingState(false, 32); // Set to last frame of pullback video
                     setFocusedButtonIndex(0); // Focus first button (Bookmark) in review mode
-                    // Video will restart from beginning in review mode via useEffect
+                    // Set videos to end position
+                    if (videoRef.current) {
+                      videoRef.current.pause();
+                      videoRef.current.currentTime = 34;
+                    }
+                    if (pullbackVideoRef.current) {
+                      pullbackVideoRef.current.pause();
+                      pullbackVideoRef.current.currentTime = 32;
+                    }
                   }
                 }}
               >

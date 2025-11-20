@@ -133,6 +133,7 @@ function ScreenFlexvisionInner() {
     position?: number; // Optional explicit position (0-based)
     title?: string; // Optional custom title for placeholder components
     contentImage?: string; // Optional content image identifier for components
+    contentVideo?: string; // Optional content video path for components
     hideContent?: boolean; // Optional flag to hide content (show only header)
     hideHeader?: boolean; // Optional flag to hide header (for completely black components)
     whiteBg?: boolean; // Optional flag for white background instead of black
@@ -185,7 +186,7 @@ function ScreenFlexvisionInner() {
       gridLayout: 'extended',
       components: [
         { component: 'hemo', size: 'small' },                                           // Top left (1x1)
-        { component: 'placeholder', size: 'medium', title: 'Xray Live', contentImage: Reference2, showPatientBar: true },  // Bottom left (1x2) - Placeholder with Reference2 image and patient bar
+        { component: 'placeholder', size: 'medium', title: 'Xray Live', contentVideo: '/src/assets/Assets_Prototype-vids/IVUS pullback.mp4', showPatientBar: true },  // Bottom left (1x2) - Placeholder with pullback video and patient bar
         { component: 'placeholder', size: 'medium', hideHeader: true },                 // Top right (2x1) - empty black square
         { component: 'interventionalIVUS', size: 'large' }                              // Bottom right (2x2) - IVUS component
       ]
@@ -1474,7 +1475,8 @@ function ScreenFlexvisionInner() {
                     componentSize={componentSize} 
                     title={config.title} 
                     hideHeader={config.hideHeader} 
-                    contentImage={placeholderImage} 
+                    contentImage={placeholderImage}
+                    contentVideo={config.contentVideo}
                     whiteBg={placeholderWhiteBg} 
                     showPatientBar={config.showPatientBar} 
                   />;

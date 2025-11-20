@@ -13,6 +13,8 @@ interface WorkflowState {
   currentAngleIndex?: number; // Currently highlighted angle during navigation (0-3)
   ivusRecordingStopped?: boolean; // IVUS in review mode (recording stopped)
   ivusSetupStep?: number; // IVUS setup step (1, 2, 3, or 0 for complete)
+  ivusIsRecording?: boolean; // IVUS recording is active
+  ivusVideoTime?: number; // Current time of IVUS pullback video for sync
   timestamp: number;
 }
 
@@ -29,6 +31,8 @@ interface WorkflowSyncContextType {
   currentAngleIndex?: number;
   ivusRecordingStopped?: boolean;
   ivusSetupStep?: number;
+  ivusIsRecording?: boolean;
+  ivusVideoTime?: number;
   setWorkflowStep: (step: number, subStep?: string, workflowId?: string, wizardVisible?: boolean, wizardCompleted?: boolean) => void;
   setWorkflowStepId: (stepId: string, preset?: 1 | 2) => void;
   setWizardState: (visible: boolean, completed: boolean) => void;
@@ -36,6 +40,7 @@ interface WorkflowSyncContextType {
   setCurrentAngleIndex: (index: number) => void;
   setIvusRecordingStopped: (stopped: boolean) => void;
   setIvusSetupStep: (step: number) => void;
+  setIvusRecordingState: (isRecording: boolean, videoTime?: number) => void;
   syncWorkflowState: (state: WorkflowState) => void;
 }
 
@@ -62,6 +67,8 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
   const [currentAngleIndex, setCurrentAngleIndex_] = useState<number | undefined>(undefined);
   const [ivusRecordingStopped, setIvusRecordingStopped_] = useState<boolean | undefined>(undefined);
   const [ivusSetupStep, setIvusSetupStep_] = useState<number | undefined>(undefined);
+  const [ivusIsRecording, setIvusIsRecording_] = useState<boolean | undefined>(undefined);
+  const [ivusVideoTime, setIvusVideoTime_] = useState<number | undefined>(undefined);
   const channelRef = React.useRef<BroadcastChannel | null>(null);
 
   // Initialize BroadcastChannel and load initial state
@@ -85,6 +92,8 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
         setCurrentAngleIndex_(state.currentAngleIndex);
         setIvusRecordingStopped_(state.ivusRecordingStopped);
         setIvusSetupStep_(state.ivusSetupStep);
+        setIvusIsRecording_(state.ivusIsRecording);
+        setIvusVideoTime_(state.ivusVideoTime);
       } catch (error) {
       }
     }
@@ -349,6 +358,41 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     }
   }, [screenId, currentStep, currentSubStep, workflowId, workflowStepId, activePreset, wizardVisible, wizardCompleted, alignedSkullAP, alignedSkullLAT, currentAngleIndex, ivusRecordingStopped]);
 
+  // Set IVUS recording state and video time for sync
+  const setIvusRecordingState = useCallback((isRecording: boolean, videoTime?: number) => {
+    const state: WorkflowState = {
+      currentStep,
+      currentSubStep,
+      workflowId,
+      workflowStepId,
+      activePreset,
+      wizardVisible,
+      wizardCompleted,
+      alignedSkullAP,
+      alignedSkullLAT,
+      currentAngleIndex,
+      ivusRecordingStopped,
+      ivusSetupStep,
+      ivusIsRecording: isRecording,
+      ivusVideoTime: videoTime,
+      timestamp: Date.now(),
+    };
+
+    // Update local state
+    setIvusIsRecording_(isRecording);
+    if (videoTime !== undefined) {
+      setIvusVideoTime_(videoTime);
+    }
+
+    // Save to localStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+    // Broadcast to other screens
+    if (channelRef.current) {
+      channelRef.current.postMessage(state);
+    }
+  }, [screenId, currentStep, currentSubStep, workflowId, workflowStepId, activePreset, wizardVisible, wizardCompleted, alignedSkullAP, alignedSkullLAT, currentAngleIndex, ivusRecordingStopped, ivusSetupStep]);
+
   // Sync workflow state (for external updates)
   const syncWorkflowState = useCallback((state: WorkflowState) => {
     setCurrentStep(state.currentStep);
@@ -365,6 +409,8 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     setCurrentAngleIndex_(state.currentAngleIndex);
     setIvusRecordingStopped_(state.ivusRecordingStopped);
     setIvusSetupStep_(state.ivusSetupStep);
+    setIvusIsRecording_(state.ivusIsRecording);
+    setIvusVideoTime_(state.ivusVideoTime);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     
     if (channelRef.current) {
@@ -385,6 +431,8 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     currentAngleIndex,
     ivusRecordingStopped,
     ivusSetupStep,
+    ivusIsRecording,
+    ivusVideoTime,
     setWorkflowStep,
     setWorkflowStepId,
     setWizardState,
@@ -392,6 +440,7 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     setCurrentAngleIndex,
     setIvusRecordingStopped,
     setIvusSetupStep,
+    setIvusRecordingState,
     syncWorkflowState,
   };
 
