@@ -429,7 +429,7 @@ export function TSMInterface() {
       case 'hemo':
         return <Hemo componentSize="fullscreen" hideHeader={true} />;
       case 'smartnav':
-        return <SmartNavigator componentSize="fullscreen" hideHeader={true} isActive={true} />;
+        return <SmartNavigator componentSize="fullscreen" hideHeader={true} isActive={false} hideFocusIndicators={true} />;
       case 'lumify':
         return <Lumify componentSize="fullscreen" />;
       case 'ivus':

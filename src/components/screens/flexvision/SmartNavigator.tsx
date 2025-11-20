@@ -32,6 +32,7 @@ interface SmartNavigatorProps {
   onComplete?: () => void; // Callback when wizard is completed
   hideHeader?: boolean;
   onOverlayStateChange?: (isActive: boolean) => void; // Callback when C-arm overlay state changes
+  hideFocusIndicators?: boolean; // Hide blue focus borders on buttons
 }
 
 interface SmartKnobIllustrationProps {
@@ -89,9 +90,10 @@ interface SettingsStepProps {
   onContinue?: () => void;
   selectedType?: string;
   focusedElement?: 'helical' | 'circular' | 'previous';
+  hideFocusIndicators?: boolean;
 }
 
-function SettingsStep({ onPrevious, onContinue, selectedType: propSelectedType, focusedElement }: SettingsStepProps) {
+function SettingsStep({ onPrevious, onContinue, selectedType: propSelectedType, focusedElement, hideFocusIndicators = false }: SettingsStepProps) {
   const [selectedType, setSelectedType] = useState(propSelectedType || 'helical');
   const [injectorCoupling, setInjectorCoupling] = useState(true);
   const [xrayDelay, setXrayDelay] = useState(0);
@@ -116,7 +118,7 @@ function SettingsStep({ onPrevious, onContinue, selectedType: propSelectedType, 
                 }
               }}
               className={`relative px-4 py-2 rounded border-4 transition-all ${
-                focusedElement === 'helical'
+                !hideFocusIndicators && focusedElement === 'helical'
                   ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#383838]'
                   : 'border-[#3b3b3b] bg-[#383838] hover:border-[#41c9fe]'
               }`}
@@ -137,7 +139,7 @@ function SettingsStep({ onPrevious, onContinue, selectedType: propSelectedType, 
                 }
               }}
               className={`relative px-4 py-2 rounded border-4 transition-all ${
-                focusedElement === 'circular'
+                !hideFocusIndicators && focusedElement === 'circular'
                   ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#383838]'
                   : 'border-[#3b3b3b] bg-[#383838] hover:border-[#41c9fe]'
               }`}
@@ -268,7 +270,7 @@ function SettingsStep({ onPrevious, onContinue, selectedType: propSelectedType, 
         <button
           onClick={onPrevious}
           className={`px-4 py-2 rounded text-[#e8e8e8] text-base transition-all ${
-            focusedElement === 'previous'
+            !hideFocusIndicators && focusedElement === 'previous'
               ? 'bg-[#41c9fe] text-black shadow-lg shadow-[#41c9fe]/30'
               : 'bg-[dimgrey] hover:opacity-90'
           }`}
@@ -1163,7 +1165,9 @@ function StepperControl({ value, onChange, unit }: StepperControlProps) {
   );
 }
 
-export function SmartNavigator({ componentSize = 'large', isActive = false, onComplete, hideHeader = false, onOverlayStateChange }: SmartNavigatorProps) {
+export function SmartNavigator({ componentSize = 'large', isActive = false, onComplete, hideHeader = false, onOverlayStateChange, hideFocusIndicators = false }: SmartNavigatorProps) {
+  console.log('[SmartNavigator] Render - Props:', { componentSize, isActive, hideHeader, hideFocusIndicators });
+  
   // Content scaling based on component size - headers stay normal, only content scales
   const getContentScale = () => {
     switch (componentSize) {
@@ -1301,10 +1305,13 @@ export function SmartNavigator({ componentSize = 'large', isActive = false, onCo
 
   // Navigation controls when SmartNavigator is active
   useEffect(() => {
-    if (!isActive) {
-      return; // Only handle navigation when active
+    console.log('[SmartNavigator Navigation] isActive:', isActive, 'hideFocusIndicators:', hideFocusIndicators);
+    if (!isActive || hideFocusIndicators) {
+      console.log('[SmartNavigator Navigation] Skipping event listener registration - not active or focus hidden');
+      return; // Only handle navigation when active and focus indicators are not hidden
     }
 
+    console.log('[SmartNavigator Navigation] Registering event listeners');
     const handleKeyDown = (event: KeyboardEvent) => {
       // Global navigation: Previous step (Q key by default)
       if (matchesInput(event, inputSettings.navigatorPreviousStep)) {
@@ -1418,7 +1425,7 @@ export function SmartNavigator({ componentSize = 'large', isActive = false, onCo
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('wheel', handleWheel);
     };
-  }, [currentStep, focusedProtocol, focusedElement, isActive, inputSettings, PROTOCOLS.length]);
+  }, [currentStep, focusedProtocol, focusedElement, isActive, hideFocusIndicators, inputSettings, PROTOCOLS.length]);
 
   return (
     <div className="flex flex-col h-full">
@@ -1529,7 +1536,7 @@ export function SmartNavigator({ componentSize = 'large', isActive = false, onCo
                           key={protocol.id}
                           onClick={() => handleProtocolSelect(protocol.id)}
                           className={`relative bg-[#1a1a1a] rounded-lg border-4 cursor-pointer transition-all hover:border-[#41c9fe] ${
-                            isActive && focusedProtocol === protocol.id
+                            !hideFocusIndicators && isActive && focusedProtocol === protocol.id
                               ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30'
                               : 'border-[#3b3b3b]'
                           }`}
@@ -1619,6 +1626,7 @@ export function SmartNavigator({ componentSize = 'large', isActive = false, onCo
                   onContinue={handleContinue}
                   selectedType={selectedCBCTType}
                   focusedElement={isActive ? focusedElement : undefined}
+                  hideFocusIndicators={hideFocusIndicators}
                 />
               )}
 
