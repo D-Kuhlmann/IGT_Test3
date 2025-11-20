@@ -254,7 +254,7 @@ function NavigationBar() {
   );
 }
 
-function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boolean; isSelected: boolean }) {
+function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators = false }: { isFocused: boolean; isSelected: boolean; hideFocusIndicators?: boolean }) {
   const { inputSettings } = useSettings();
   const workflowSync = useWorkflowSync();
   // Use shared state from workflowSync for cross-screen synchronization
@@ -474,11 +474,11 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
 
   // Handle keyboard navigation for bottom buttons
   useEffect(() => {
-    // Enable keyboard control when either focused OR selected
-    const isActive = isFocused || isSelected;
+    // Enable keyboard control when either focused OR selected AND focus indicators are not hidden
+    const isActive = (isFocused || isSelected) && !hideFocusIndicators;
     
     if (!isActive) {
-      console.log('IVUS: Not active (focused or selected), keyboard control disabled');
+      console.log('IVUS: Not active (focused or selected) or focus hidden, keyboard control disabled');
       return;
     }
 
@@ -1113,7 +1113,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
               <button 
                 onClick={() => handleButtonClick('bookmark')}
                 className={`px-6 py-2 rounded border-4 flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-all min-w-[150px] justify-center ${
-                  focusedButtonIndex === 0 
+                  !hideFocusIndicators && focusedButtonIndex === 0 
                     ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#3a3a3a]' 
                     : 'border-[#3b3b3b] bg-[#3a3a3a] hover:border-[#41c9fe]'
                 }`}
@@ -1126,7 +1126,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
               <button 
                 onClick={() => handleButtonClick('pause')}
                 className={`px-6 py-2 rounded border-4 flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-all min-w-[150px] justify-center ${
-                  focusedButtonIndex === 1 && !scrubberFocused
+                  !hideFocusIndicators && focusedButtonIndex === 1 && !scrubberFocused
                     ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#3a3a3a]' 
                     : 'border-[#3b3b3b] bg-[#3a3a3a] hover:border-[#41c9fe]'
                 }`}
@@ -1150,7 +1150,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
               <button 
                 onClick={() => handleButtonClick('live')}
                 className={`px-6 py-2 rounded border-4 flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-all min-w-[150px] justify-center ${
-                  focusedButtonIndex === 2 && !scrubberFocused
+                  !hideFocusIndicators && focusedButtonIndex === 2 && !scrubberFocused
                     ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#3a3a3a]' 
                     : 'border-[#3b3b3b] bg-[#3a3a3a] hover:border-[#41c9fe]'
                 }`}
@@ -1170,7 +1170,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
               <button 
                 onClick={() => handleButtonClick('bookmark')}
                 className={`px-6 py-2 rounded border-4 flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-all min-w-[150px] justify-center ${
-                  focusedButtonIndex === 0 && !scrubberFocused
+                  !hideFocusIndicators && focusedButtonIndex === 0 && !scrubberFocused
                     ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#3a3a3a]' 
                     : 'border-[#3b3b3b] bg-[#3a3a3a] hover:border-[#41c9fe]'
                 }`}
@@ -1183,7 +1183,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
               <button 
                 onClick={() => handleButtonClick('stop')}
                 className={`px-6 py-2 rounded border-4 flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-all min-w-[150px] justify-center ${
-                  focusedButtonIndex === 1 && !scrubberFocused
+                  !hideFocusIndicators && focusedButtonIndex === 1 && !scrubberFocused
                     ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#1474a4]' 
                     : 'border-[#3b3b3b] bg-[#1474a4] hover:border-[#41c9fe]'
                 }`}
@@ -1201,7 +1201,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
         {/* Left - Save Frame Button */}
         <button 
           className={`px-6 py-2 rounded border-4 flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-all min-w-[150px] justify-center ${
-            focusedButtonIndex === 0 && !scrubberFocused
+            !hideFocusIndicators && focusedButtonIndex === 0 && !scrubberFocused
               ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#3a3a3a]' 
               : 'border-[#3b3b3b] bg-[#3a3a3a] hover:border-[#41c9fe]'
           }`}
@@ -1217,7 +1217,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
           <button 
             onClick={() => handleButtonClick('freeze')}
             className={`px-6 py-2 rounded border-4 flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-all min-w-[150px] justify-center ${
-              focusedButtonIndex === 1 
+              !hideFocusIndicators && focusedButtonIndex === 1 
                 ? isFrozen
                   ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#1474a4]'
                   : 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#3a3a3a]'
@@ -1234,7 +1234,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
           <button 
             onClick={() => handleButtonClick('ringdown')}
             className={`px-6 py-2 rounded border-4 flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-all min-w-[150px] justify-center ${
-              focusedButtonIndex === 2 
+              !hideFocusIndicators && focusedButtonIndex === 2 
                 ? ringdownActive
                   ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#3a3a3a]'
                   : 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#1474a4]'
@@ -1251,7 +1251,7 @@ function InterventionalIVUSContent({ isFocused, isSelected }: { isFocused: boole
           <button 
             onClick={() => handleButtonClick('record')}
             className={`px-6 py-2 rounded border-4 flex items-center gap-2 text-white font-['CentraleSans:Book',_sans-serif] text-[13px] transition-all min-w-[150px] justify-center ${
-              focusedButtonIndex === 3 
+              !hideFocusIndicators && focusedButtonIndex === 3 
                 ? 'border-[#41c9fe] border-opacity-70 shadow-lg shadow-[#41c9fe]/30 bg-[#1474a4]'
                 : 'border-[#3b3b3b] bg-[#1474a4] hover:border-[#41c9fe]'
             }`}
@@ -1280,13 +1280,15 @@ interface InterventionalIVUSProps {
   hideHeader?: boolean;
   isFocused?: boolean;
   isSelected?: boolean;
+  hideFocusIndicators?: boolean;
 }
 
 export function InterventionalIVUS({ 
   componentSize = 'large', 
   hideHeader = false,
   isFocused = false,
-  isSelected = false
+  isSelected = false,
+  hideFocusIndicators = false
 }: InterventionalIVUSProps) {
   // Content scaling based on component size - headers stay normal, only content scales
   const getContentScale = () => {
@@ -1339,7 +1341,7 @@ export function InterventionalIVUS({
         {/* Content area uses full available space, then gets scaled */}
         <div className="absolute inset-0" style={{ top: hideHeader ? 0 : '40px' }}>
           <div className={`transform ${scale} origin-center w-full h-full flex items-center justify-center`}>
-            <InterventionalIVUSContent isFocused={isFocused} isSelected={isSelected} />
+            <InterventionalIVUSContent isFocused={isFocused} isSelected={isSelected} hideFocusIndicators={hideFocusIndicators} />
           </div>
         </div>
       </div>

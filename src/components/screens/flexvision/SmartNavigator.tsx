@@ -1166,8 +1166,6 @@ function StepperControl({ value, onChange, unit }: StepperControlProps) {
 }
 
 export function SmartNavigator({ componentSize = 'large', isActive = false, onComplete, hideHeader = false, onOverlayStateChange, hideFocusIndicators = false }: SmartNavigatorProps) {
-  console.log('[SmartNavigator] Render - Props:', { componentSize, isActive, hideHeader, hideFocusIndicators });
-  
   // Content scaling based on component size - headers stay normal, only content scales
   const getContentScale = () => {
     switch (componentSize) {
@@ -1305,13 +1303,10 @@ export function SmartNavigator({ componentSize = 'large', isActive = false, onCo
 
   // Navigation controls when SmartNavigator is active
   useEffect(() => {
-    console.log('[SmartNavigator Navigation] isActive:', isActive, 'hideFocusIndicators:', hideFocusIndicators);
     if (!isActive || hideFocusIndicators) {
-      console.log('[SmartNavigator Navigation] Skipping event listener registration - not active or focus hidden');
       return; // Only handle navigation when active and focus indicators are not hidden
     }
 
-    console.log('[SmartNavigator Navigation] Registering event listeners');
     const handleKeyDown = (event: KeyboardEvent) => {
       // Global navigation: Previous step (Q key by default)
       if (matchesInput(event, inputSettings.navigatorPreviousStep)) {

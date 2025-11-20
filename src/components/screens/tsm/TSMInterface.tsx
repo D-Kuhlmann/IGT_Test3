@@ -425,7 +425,7 @@ export function TSMInterface() {
       case 'xray-live':
         return <XrayLive componentSize="fullscreen" hideHeader={true} />;
       case 'uniguide':
-        return <InterventionalWorkspace componentSize="fullscreen" hideHeader={true} subFocusMode="angles" />;
+        return <InterventionalWorkspace componentSize="fullscreen" hideHeader={true} subFocusMode="angles" isActive={false} hideFocusIndicators={true} />;
       case 'hemo':
         return <Hemo componentSize="fullscreen" hideHeader={true} />;
       case 'smartnav':

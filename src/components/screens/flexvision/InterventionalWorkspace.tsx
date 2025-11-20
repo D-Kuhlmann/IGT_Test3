@@ -491,7 +491,7 @@ function ViewContainer({
   );
 }
 
-function TaskGuidancePanel({ subFocusMode, selectedAngleIndex, onAngleSelect }: { subFocusMode?: 'none' | 'angles'; selectedAngleIndex?: number; onAngleSelect?: (angleId: string) => void }) {
+function TaskGuidancePanel({ subFocusMode, selectedAngleIndex, onAngleSelect, hideFocusIndicators = false }: { subFocusMode?: 'none' | 'angles'; selectedAngleIndex?: number; onAngleSelect?: (angleId: string) => void; hideFocusIndicators?: boolean }) {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isViewingAnglesCollapsed, setIsViewingAnglesCollapsed] = useState(false);
   const { inputSettings } = useSettings();
@@ -653,7 +653,7 @@ function TaskGuidancePanel({ subFocusMode, selectedAngleIndex, onAngleSelect }: 
               { id: "3", name: "Angle 3", rotation: "Rot 0° Ang 45°" },
               { id: "4", name: "Angle 4", rotation: "Rot -90° Ang 30°" }
             ].map((angle, index) => {
-              const isCurrentlyNavigating = subFocusMode === 'angles' && selectedAngleIndex === index;
+              const isCurrentlyNavigating = !hideFocusIndicators && subFocusMode === 'angles' && selectedAngleIndex === index;
               const isActivated = selectedAngle?.id === angle.id;
               
               // Blue border for currently navigating (before activation)
@@ -749,6 +749,8 @@ interface InterventionalWorkspaceProps {
   hideHeader?: boolean;
   onOverlayStateChange?: (isActive: boolean) => void;
   contentImage?: string;
+  isActive?: boolean;
+  hideFocusIndicators?: boolean;
 }
 
 export function InterventionalWorkspace({ 
@@ -759,7 +761,9 @@ export function InterventionalWorkspace({
   componentSize = 'large',
   hideHeader = false,
   onOverlayStateChange,
-  contentImage
+  contentImage,
+  isActive = false,
+  hideFocusIndicators = false
 }: InterventionalWorkspaceProps) {
   const { selectedAngle, setSelectedAngle, activateUniGuide, clearSelectedAngle } = useAngle();
   const { inputSettings } = useSettings();
@@ -825,7 +829,7 @@ export function InterventionalWorkspace({
   
   // Keyboard navigation when component is selected (has blue border)
   useEffect(() => {
-    if (!focusMode) return; // Only handle keyboard when selected
+    if (!focusMode || !isActive || hideFocusIndicators) return; // Only handle keyboard when selected, active, and focus not hidden
     
     const handleKeyDown = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
@@ -1000,6 +1004,7 @@ export function InterventionalWorkspace({
                 subFocusMode={subFocusMode} 
                 selectedAngleIndex={currentAngleIndex}
                 onAngleSelect={handleAngleActivation}
+                hideFocusIndicators={hideFocusIndicators}
               />
             </div>
 

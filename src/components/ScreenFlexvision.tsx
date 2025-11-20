@@ -1431,6 +1431,8 @@ function ScreenFlexvisionInner() {
                       componentSize={componentSize}
                       onOverlayStateChange={setIsCarmOverlayActive}
                       contentImage={config.contentImage}
+                      isActive={true}
+                      hideFocusIndicators={showWorkflows}
                     />
                   );
                   focusKey = 'iw';
@@ -1444,7 +1446,7 @@ function ScreenFlexvisionInner() {
                     componentSize={componentSize}
                     isFocused={inputSettings.focusModeEnabled && focusMode && focusedComponent === 'iw' && iwSubFocus === 'none'}
                     isSelected={selectedComponent === 'iw'}
-                    showWorkflows={showWorkflows}
+                    hideFocusIndicators={showWorkflows}
                   />;
                   focusKey = 'iw'; // Use IW focus key for IVUS component
                   break;
@@ -1456,7 +1458,7 @@ function ScreenFlexvisionInner() {
                     componentSize={componentSize} 
                     isActive={true}
                     onOverlayStateChange={setIsCarmOverlayActive}
-                    showWorkflows={showWorkflows}
+                    hideFocusIndicators={showWorkflows}
                   />;
                   focusKey = 'smartnav';
                   break;
