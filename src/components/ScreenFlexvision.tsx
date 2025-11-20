@@ -895,6 +895,14 @@ function ScreenFlexvisionInner() {
 
   // Get focus styles for components
   const getFocusStyles = (componentType: 'xray' | 'iw' | 'hemo' | 'smartnav' | 'placeholder') => {
+    // Hide all focus styles when Smart Workflows overlay is open
+    if (showWorkflows) {
+      return {
+        className: "border-2 border-[#3b3b3b] border-solid",
+        style: {}
+      };
+    }
+    
     // Check if this component is selected (blue border)
     const isSelected = selectedComponent === componentType;
     
@@ -1436,6 +1444,7 @@ function ScreenFlexvisionInner() {
                     componentSize={componentSize}
                     isFocused={inputSettings.focusModeEnabled && focusMode && focusedComponent === 'iw' && iwSubFocus === 'none'}
                     isSelected={selectedComponent === 'iw'}
+                    showWorkflows={showWorkflows}
                   />;
                   focusKey = 'iw'; // Use IW focus key for IVUS component
                   break;
@@ -1447,6 +1456,7 @@ function ScreenFlexvisionInner() {
                     componentSize={componentSize} 
                     isActive={true}
                     onOverlayStateChange={setIsCarmOverlayActive}
+                    showWorkflows={showWorkflows}
                   />;
                   focusKey = 'smartnav';
                   break;

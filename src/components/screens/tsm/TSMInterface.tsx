@@ -439,8 +439,8 @@ export function TSMInterface() {
           <div className="w-full h-full flex items-center justify-center bg-black">
             <img 
               src={CollaborationLivePlaceholder} 
-              alt="Collaboration Live" 
-              className="w-full h-full object-contain"
+              alt="Collaboration Live Placeholder"
+              className="max-w-full max-h-full object-contain"
             />
           </div>
         );
