@@ -425,8 +425,15 @@ function ViewContainer({
       <div aria-hidden="true" className="absolute border border-[#383838] border-solid inset-0 pointer-events-none" />
       
       {/* Content */}
-      <div className="absolute bg-black inset-0 p-0.5" data-name="Content">
-        <div className="w-full h-full bg-center bg-contain bg-no-repeat" style={{ backgroundImage: `url('${image}')` }} />
+      <div className="absolute bg-black inset-0 p-0.5 flex items-center justify-center overflow-hidden" data-name="Content">
+        <div 
+          className="h-[70%] bg-center bg-no-repeat" 
+          style={{ 
+            backgroundImage: `url('${image}')`,
+            backgroundSize: '143% auto',
+            aspectRatio: '1 / 1'
+          }} 
+        />
       </div>
 
       {/* Image Information */}
@@ -905,10 +912,10 @@ export function InterventionalWorkspace({
   
   // Map angle IDs to their corresponding images
   const angleImages = {
-    "1": "/src/assets/ImageAngles/Angle1.png",
-    "2": "/src/assets/ImageAngles/Angle2.png",
-    "3": "/src/assets/ImageAngles/Angle3.png",
-    "4": "/src/assets/ImageAngles/Angle4.png"
+    "1": "/src/assets/ImageAngles/3D coronaries 180 degrees.png",
+    "2": "/src/assets/ImageAngles/3D coronaries 00 degrees.png",
+    "3": "/src/assets/ImageAngles/3D coronaries 45 degrees.png",
+    "4": "/src/assets/ImageAngles/3D coronaries 90 degrees.png"
   };
 
   // SmartUI function to activate angles and switch TSM tab
@@ -1023,23 +1030,23 @@ export function InterventionalWorkspace({
               {/* Right Side - Three Stacked Views */}
               <div className="flex-1 flex flex-col min-w-0">
                 <ViewContainer 
-                  image={imgImage2}
-                  orientationImage={imgCoronal}
-                  orientationText="Rot 0˚ Ang 0˚"
+                  image=""
+                  orientationImage="{imgCoronal}"
+                  orientationText=""
                   showReferenceLines={true}
                   indicatorColor="#23cc72"
                 />
                 <ViewContainer 
-                  image={imgImage3}
-                  orientationImage={imgAxial}
-                  orientationText="Rot 0˚ Ang 90˚"
+                  image=""
+                  orientationImage="{imgAxial}"
+                  orientationText=""
                   showReferenceLines={true}
                   indicatorColor="#ff8370"
                 />
                 <ViewContainer 
-                  image={imgImage4}
-                  orientationImage={imgAxial}
-                  orientationText="Rot 90˚ Ang 0˚"
+                  image=""
+                  orientationImage="{imgAxial}"
+                  orientationText=""
                   showReferenceLines={true}
                   indicatorColor="#ff8370"
                 />
