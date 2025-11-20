@@ -254,7 +254,17 @@ function NavigationBar() {
   );
 }
 
-function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators = false }: { isFocused: boolean; isSelected: boolean; hideFocusIndicators?: boolean }) {
+function InterventionalIVUSContent({ 
+  isFocused, 
+  isSelected, 
+  hideFocusIndicators = false, 
+  isViewOnly = false 
+}: { 
+  isFocused: boolean; 
+  isSelected: boolean; 
+  hideFocusIndicators?: boolean;
+  isViewOnly?: boolean; 
+}) {
   const { inputSettings } = useSettings();
   const workflowSync = useWorkflowSync();
   // Use shared state from workflowSync for cross-screen synchronization
@@ -262,10 +272,12 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
   const [focusedButtonIndex, setFocusedButtonIndex] = useState(2); // Start with Ringdown button selected in live mode
   const [ringdownActive, setRingdownActive] = useState(false);
   const [isFrozen, setIsFrozen] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
   // Use shared state from workflowSync for cross-screen synchronization
+  const isRecording = workflowSync.ivusIsRecording || false;
+  const [recordingTime, setRecordingTime] = useState(0);
   const isRecordingStopped = workflowSync.ivusRecordingStopped || false;
+  const ivusMode = workflowSync.ivusMode || 'LIVE'; // Get mode from context
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const pullbackVideoRef = useRef<HTMLVideoElement>(null);
   const scrubberRef = useRef<HTMLDivElement>(null);
@@ -298,7 +310,10 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
       ];
 
   const handleButtonClick = (buttonId: string) => {
-    console.log(`IVUS: Button clicked: ${buttonId}`);
+    // View-only instances (TSM) should not respond to button clicks
+    if (isViewOnly) {
+      return;
+    }
     
     if (buttonId === 'freeze') {
       setIsFrozen(!isFrozen);
@@ -307,20 +322,16 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
       } else if (isFrozen && videoRef.current) {
         videoRef.current.play();
       }
-      console.log('IVUS: Freeze toggled:', !isFrozen);
     } else if (buttonId === 'ringdown') {
       setRingdownActive(true);
-      console.log('IVUS: Ringdown activated');
     } else if (buttonId === 'record') {
       const newRecordingState = !isRecording;
-      setIsRecording(newRecordingState);
-      console.log('IVUS: Recording toggled:', newRecordingState);
       
       if (newRecordingState) {
         // Start recording - reset timer, play recording video, and reset button focus
         setRecordingTime(0);
         setFocusedButtonIndex(0); // Reset to first button (Bookmark)
-        workflowSync.setIvusRecordingState(true, 0); // Notify other components that recording started
+        workflowSync.setIvusMode('RECORDING'); // Broadcast RECORDING mode
         if (videoRef.current) {
           videoRef.current.currentTime = 0;
           videoRef.current.play();
@@ -333,14 +344,11 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
         // Stop recording
         setRecordingTime(0);
         setFocusedButtonIndex(0); // Reset to first button (Save Frame)
-        workflowSync.setIvusRecordingState(false); // Notify other components that recording stopped
+        workflowSync.setIvusMode('LIVE'); // Broadcast LIVE mode
       }
     } else if (buttonId === 'stop') {
       // Stop recording manually - enter review mode
-      setIsRecording(false);
-      workflowSync.setIvusRecordingStopped(true);
-      console.log('IVUS: Setting recording state to FALSE via setIvusRecordingState');
-      workflowSync.setIvusRecordingState(false, 32); // Notify with end time for pullback video
+      workflowSync.setIvusMode('REVIEW'); // Broadcast REVIEW mode
       setRecordingTime(34); // Jump to end (34 seconds)
       setFocusedButtonIndex(0); // Reset to first button (Bookmark)
       
@@ -353,17 +361,14 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
         pullbackVideoRef.current.pause();
         pullbackVideoRef.current.currentTime = 32;
       }
-      console.log('IVUS: Recording stopped manually, entering review mode');
     } else if (buttonId === 'pause' || buttonId === 'play') {
       // Toggle play/pause
       if (buttonId === 'pause') {
-        console.log('IVUS: Playback paused');
         setIsPlaying(false);
         if (videoRef.current) {
           videoRef.current.pause();
         }
       } else {
-        console.log('IVUS: Playback resumed');
         setIsPlaying(true);
         if (videoRef.current) {
           videoRef.current.play();
@@ -371,9 +376,7 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
       }
     } else if (buttonId === 'live') {
       // Live button - exit review mode and return to live view
-      console.log('IVUS: Returning to live view');
-      workflowSync.setIvusRecordingStopped(false);
-      workflowSync.setIvusRecordingState(false, 0); // Reset recording state
+      workflowSync.setIvusMode('LIVE'); // Broadcast LIVE mode
       setRecordingTime(0);
       setFocusedButtonIndex(2); // Auto-select Ringdown button when returning to live
       setIsPlaying(false);
@@ -382,7 +385,6 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
         videoRef.current.play();
       }
     } else if (buttonId === 'bookmark') {
-      console.log('IVUS: Bookmark added at', recordingTime);
       // Add bookmark at current position
       if (!bookmarks.includes(recordingTime)) {
         setBookmarks([...bookmarks, recordingTime].sort((a, b) => a - b));
@@ -450,6 +452,7 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
 
   // Start playback when entering review mode
   useEffect(() => {
+    if (isViewOnly) return; // View-only instances have their own sync logic
     if (isRecordingStopped && videoRef.current) {
       // Reset to beginning and start playing
       videoRef.current.currentTime = 0;
@@ -457,7 +460,7 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
       setIsPlaying(true);
       videoRef.current.play();
     }
-  }, [isRecordingStopped]);
+  }, [isRecordingStopped, isViewOnly]);
 
   // Sync scrubber with video playback
   useEffect(() => {
@@ -479,12 +482,6 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
     const interval = setInterval(updateScrubber, 100); // Update 10 times per second
     return () => clearInterval(interval);
   }, [isPlaying]);
-
-  // Debug: Log bookmarks when they change
-  useEffect(() => {
-    console.log('IVUS: Bookmarks array updated:', bookmarks);
-    console.log('IVUS: Number of bookmarks:', bookmarks.length);
-  }, [bookmarks]);
 
   // Sync pullback video with main IVUS video in review and recording mode
   useEffect(() => {
@@ -517,6 +514,9 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
 
   // Sync pullback video time to context for XRay Live placeholder
   useEffect(() => {
+    // Skip context updates if this is a view-only instance (TSM variant)
+    if (isViewOnly) return;
+    
     // Only sync during active recording, not during review
     if (!isRecording) return;
     if (!videoRef.current) return;
@@ -531,7 +531,63 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
 
     const interval = setInterval(updateContextVideoTime, 100); // Update 10 times per second
     return () => clearInterval(interval);
-  }, [isRecording, workflowSync]);
+  }, [isRecording, workflowSync, isViewOnly]);
+
+  // View-only instances: Simple mode-based sync
+  useEffect(() => {
+    if (!isViewOnly) return;
+    
+    if (ivusMode === 'LIVE') {
+      // LIVE mode
+      setRecordingTime(0);
+      setFocusedButtonIndex(2); // Ringdown button
+      setIsPlaying(false);
+      setIsFrozen(false);
+      setRingdownActive(false);
+      
+      if (videoRef.current) {
+        videoRef.current.currentTime = 0;
+        videoRef.current.loop = true;
+        videoRef.current.play();
+      }
+      if (pullbackVideoRef.current) {
+        pullbackVideoRef.current.currentTime = 0;
+        pullbackVideoRef.current.loop = true;
+      }
+    } else if (ivusMode === 'RECORDING') {
+      // RECORDING mode
+      setRecordingTime(0);
+      setFocusedButtonIndex(0); // First button
+      setIsPlaying(false);
+      
+      if (videoRef.current) {
+        videoRef.current.currentTime = 0;
+        videoRef.current.loop = false;
+        videoRef.current.play();
+      }
+      if (pullbackVideoRef.current) {
+        pullbackVideoRef.current.currentTime = 0;
+        pullbackVideoRef.current.loop = false;
+        pullbackVideoRef.current.play();
+      }
+    } else if (ivusMode === 'REVIEW') {
+      // REVIEW mode
+      setRecordingTime(0);
+      setFocusedButtonIndex(0); // First button
+      setIsPlaying(true);
+      
+      if (videoRef.current) {
+        videoRef.current.currentTime = 0;
+        videoRef.current.loop = false;
+        videoRef.current.play();
+      }
+      if (pullbackVideoRef.current) {
+        pullbackVideoRef.current.currentTime = 0;
+        pullbackVideoRef.current.loop = false;
+        pullbackVideoRef.current.play();
+      }
+    }
+  }, [isViewOnly, ivusMode]);
 
   // Handle keyboard navigation for bottom buttons
   useEffect(() => {
@@ -539,11 +595,8 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
     const isActive = (isFocused || isSelected) && !hideFocusIndicators;
     
     if (!isActive) {
-      console.log('IVUS: Not active (focused or selected) or focus hidden, keyboard control disabled');
       return;
     }
-
-    console.log('IVUS: Active (focused:', isFocused, 'selected:', isSelected, '), keyboard control enabled');
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // If in setup mode, handle activate key to advance steps
@@ -552,7 +605,6 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
         if (e.key.toLowerCase() === activateKey) {
           e.preventDefault();
           e.stopPropagation();
-          console.log('IVUS: Advancing setup step from', setupStep);
           if (setupStep < 3) {
             workflowSync.setIvusSetupStep(setupStep + 1);
           } else {
@@ -564,12 +616,10 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
       }
       // Prevent duplicate processing
       if (isProcessingKey.current) {
-        console.log('IVUS: Key already being processed, ignoring');
         return;
       }
       
       const key = e.key.toLowerCase();
-      console.log('IVUS: Key pressed:', key);
       
       const leftKey = typeof inputSettings.workflowStepLeft === 'string' ? inputSettings.workflowStepLeft.toLowerCase() : 'arrowleft';
       const rightKey = typeof inputSettings.workflowStepRight === 'string' ? inputSettings.workflowStepRight.toLowerCase() : 'arrowright';
@@ -578,21 +628,16 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
       
       // If scrubber is active (being controlled)
       if (scrubberActive && isRecordingStopped) {
-        console.log('IVUS: Scrubber is active, key pressed:', key);
         
         if (key === activateKey) {
           // Add bookmark at current position
           e.preventDefault();
           e.stopPropagation();
           isProcessingKey.current = true;
-          console.log('IVUS: Adding bookmark at', recordingTime);
-          console.log('IVUS: Current bookmarks:', bookmarks);
           if (!bookmarks.includes(recordingTime)) {
             const newBookmarks = [...bookmarks, recordingTime].sort((a, b) => a - b);
-            console.log('IVUS: New bookmarks array:', newBookmarks);
             setBookmarks(newBookmarks);
           } else {
-            console.log('IVUS: Bookmark already exists at this position');
           }
           setTimeout(() => { isProcessingKey.current = false; }, 100);
           return;
@@ -604,7 +649,6 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
           keyHoldCount.current++;
           const stepSize = Math.min(keyHoldCount.current * 0.1, 2); // Max 2 seconds per step
           
-          console.log('IVUS: Scrub backward, step:', stepSize);
           const newTime = Math.max(0, Math.round((recordingTime - stepSize) * 10) / 10);
           setRecordingTime(newTime);
           if (videoRef.current) {
@@ -624,7 +668,6 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
           keyHoldCount.current++;
           const stepSize = Math.min(keyHoldCount.current * 0.1, 2); // Max 2 seconds per step
           
-          console.log('IVUS: Scrub forward, step:', stepSize);
           const newTime = Math.min(34, Math.round((recordingTime + stepSize) * 10) / 10);
           setRecordingTime(newTime);
           if (videoRef.current) {
@@ -640,7 +683,6 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
           e.preventDefault();
           e.stopPropagation();
           isProcessingKey.current = true;
-          console.log('IVUS: Exit scrubber control');
           setScrubberActive(false);
           setTimeout(() => { isProcessingKey.current = false; }, 100);
         }
@@ -653,7 +695,6 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
           e.preventDefault();
           e.stopPropagation();
           isProcessingKey.current = true;
-          console.log('IVUS: Activate scrubber control');
           setScrubberActive(true);
           // Pause video when entering scrubber control
           if (isPlaying) {
@@ -668,7 +709,6 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
           e.preventDefault();
           e.stopPropagation();
           isProcessingKey.current = true;
-          console.log('IVUS: Unfocus scrubber');
           setScrubberFocused(false);
           setTimeout(() => { isProcessingKey.current = false; }, 100);
           return;
@@ -677,7 +717,6 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
           e.preventDefault();
           e.stopPropagation();
           isProcessingKey.current = true;
-          console.log('IVUS: Move from scrubber to first button');
           setScrubberFocused(false);
           setFocusedButtonIndex(0);
           setTimeout(() => { isProcessingKey.current = false; }, 100);
@@ -687,7 +726,6 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
           e.preventDefault();
           e.stopPropagation();
           isProcessingKey.current = true;
-          console.log('IVUS: Move from scrubber to last button');
           setScrubberFocused(false);
           setFocusedButtonIndex(buttons.length - 1);
           setTimeout(() => { isProcessingKey.current = false; }, 100);
@@ -705,12 +743,10 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
         e.preventDefault();
         e.stopPropagation();
         isProcessingKey.current = true;
-        console.log('IVUS: Navigate left from button', focusedButtonIndex);
         
         // Mirror of right navigation but in reverse
         if (focusedButtonIndex === 0 && isRecordingStopped) {
           // At first button, wrap to scrubber
-          console.log('IVUS: Wrapping to scrubber from first button');
           setFocusedButtonIndex(-1); // Clear button focus
           setScrubberFocused(true);
         } else {
@@ -723,11 +759,9 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
         e.preventDefault();
         e.stopPropagation();
         isProcessingKey.current = true;
-        console.log('IVUS: Navigate right from button', focusedButtonIndex);
         
         // If at last button and in review mode, focus scrubber
         if (focusedButtonIndex === buttons.length - 1 && isRecordingStopped) {
-          console.log('IVUS: Wrapping to scrubber from last button');
           setFocusedButtonIndex(-1); // Clear button focus
           setScrubberFocused(true);
         } else {
@@ -748,7 +782,6 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
 
     window.addEventListener('keydown', handleKeyDown);
     return () => {
-      console.log('IVUS: Removing keyboard listener');
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isFocused, isSelected, focusedButtonIndex, inputSettings, isRecording, isRecordingStopped, scrubberFocused, scrubberActive, recordingTime, isPlaying, isFrozen, setupStep]);
@@ -912,12 +945,14 @@ function InterventionalIVUSContent({ isFocused, isSelected, hideFocusIndicators 
                 playsInline
                 key={(isRecording || isRecordingStopped) ? 'recording' : 'live'}
                 onEnded={() => {
+                  // View-only instances should not handle video events
+                  if (isViewOnly) {
+                    return;
+                  }
+                  
                   if (isRecording) {
                     // When recording completes automatically, transition to review mode
-                    console.log('IVUS: Recording completed automatically, transitioning to review mode');
-                    setIsRecording(false);
-                    workflowSync.setIvusRecordingStopped(true);
-                    workflowSync.setIvusRecordingState(false, 32); // Set to last frame of pullback video
+                    workflowSync.setIvusMode('REVIEW'); // Broadcast REVIEW mode
                     setFocusedButtonIndex(0); // Focus first button (Bookmark) in review mode
                     // Set videos to end position
                     if (videoRef.current) {
@@ -1333,6 +1368,7 @@ interface InterventionalIVUSProps {
   isFocused?: boolean;
   isSelected?: boolean;
   hideFocusIndicators?: boolean;
+  isViewOnly?: boolean;
 }
 
 export function InterventionalIVUS({ 
@@ -1340,7 +1376,8 @@ export function InterventionalIVUS({
   hideHeader = false,
   isFocused = false,
   isSelected = false,
-  hideFocusIndicators = false
+  hideFocusIndicators = false,
+  isViewOnly = false
 }: InterventionalIVUSProps) {
   // Content scaling based on component size - headers stay normal, only content scales
   const getContentScale = () => {
@@ -1393,7 +1430,12 @@ export function InterventionalIVUS({
         {/* Content area uses full available space, then gets scaled */}
         <div className="absolute inset-0" style={{ top: hideHeader ? 0 : '40px' }}>
           <div className={`transform ${scale} origin-center w-full h-full flex items-center justify-center`}>
-            <InterventionalIVUSContent isFocused={isFocused} isSelected={isSelected} hideFocusIndicators={hideFocusIndicators} />
+            <InterventionalIVUSContent 
+              isFocused={isFocused} 
+              isSelected={isSelected} 
+              hideFocusIndicators={hideFocusIndicators}
+              isViewOnly={isViewOnly}
+            />
           </div>
         </div>
       </div>

@@ -433,7 +433,7 @@ export function TSMInterface() {
       case 'lumify':
         return <Lumify componentSize="fullscreen" />;
       case 'ivus':
-        return <InterventionalIVUS componentSize="fullscreen" />;
+        return <InterventionalIVUS componentSize="fullscreen" isFocused={false} isSelected={false} hideFocusIndicators={true} isViewOnly={true} />;
       case 'collaboration-live':
         return (
           <div className="w-full h-full flex items-center justify-center bg-black">

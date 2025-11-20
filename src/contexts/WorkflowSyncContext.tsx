@@ -15,6 +15,7 @@ interface WorkflowState {
   ivusSetupStep?: number; // IVUS setup step (1, 2, 3, or 0 for complete)
   ivusIsRecording?: boolean; // IVUS recording is active
   ivusVideoTime?: number; // Current time of IVUS pullback video for sync
+  ivusMode?: 'LIVE' | 'RECORDING' | 'REVIEW'; // Simple mode indicator for IVUS
   timestamp: number;
 }
 
@@ -33,6 +34,7 @@ interface WorkflowSyncContextType {
   ivusSetupStep?: number;
   ivusIsRecording?: boolean;
   ivusVideoTime?: number;
+  ivusMode?: 'LIVE' | 'RECORDING' | 'REVIEW';
   setWorkflowStep: (step: number, subStep?: string, workflowId?: string, wizardVisible?: boolean, wizardCompleted?: boolean) => void;
   setWorkflowStepId: (stepId: string, preset?: 1 | 2) => void;
   setWizardState: (visible: boolean, completed: boolean) => void;
@@ -41,6 +43,8 @@ interface WorkflowSyncContextType {
   setIvusRecordingStopped: (stopped: boolean) => void;
   setIvusSetupStep: (step: number) => void;
   setIvusRecordingState: (isRecording: boolean, videoTime?: number) => void;
+  setIvusStopRecording: (videoTime?: number) => void;
+  setIvusMode: (mode: 'LIVE' | 'RECORDING' | 'REVIEW') => void;
   syncWorkflowState: (state: WorkflowState) => void;
 }
 
@@ -69,6 +73,7 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
   const [ivusSetupStep, setIvusSetupStep_] = useState<number | undefined>(undefined);
   const [ivusIsRecording, setIvusIsRecording_] = useState<boolean | undefined>(undefined);
   const [ivusVideoTime, setIvusVideoTime_] = useState<number | undefined>(undefined);
+  const [ivusMode, setIvusMode_] = useState<'LIVE' | 'RECORDING' | 'REVIEW' | undefined>('LIVE');
   const channelRef = React.useRef<BroadcastChannel | null>(null);
 
   // Initialize BroadcastChannel and load initial state
@@ -393,6 +398,77 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     }
   }, [screenId, currentStep, currentSubStep, workflowId, workflowStepId, activePreset, wizardVisible, wizardCompleted, alignedSkullAP, alignedSkullLAT, currentAngleIndex, ivusRecordingStopped, ivusSetupStep]);
 
+  // Stop IVUS recording and enter review mode (atomically sets both states)
+  const setIvusStopRecording = useCallback((videoTime: number = 32) => {
+    const state: WorkflowState = {
+      currentStep,
+      currentSubStep,
+      workflowId,
+      workflowStepId,
+      activePreset,
+      wizardVisible,
+      wizardCompleted,
+      alignedSkullAP,
+      alignedSkullLAT,
+      currentAngleIndex,
+      ivusRecordingStopped: true,  // Enter review mode
+      ivusSetupStep,
+      ivusIsRecording: false,       // Stop recording
+      ivusVideoTime: videoTime,
+      ivusMode: 'REVIEW',           // Set mode to REVIEW
+      timestamp: Date.now(),
+    };
+
+    // Update local state
+    setIvusRecordingStopped_(true);
+    setIvusIsRecording_(false);
+    setIvusVideoTime_(videoTime);
+    setIvusMode_('REVIEW');
+
+    // Save to localStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+    // Broadcast to other screens
+    if (channelRef.current) {
+      channelRef.current.postMessage(state);
+    }
+  }, [screenId, currentStep, currentSubStep, workflowId, workflowStepId, activePreset, wizardVisible, wizardCompleted, alignedSkullAP, alignedSkullLAT, currentAngleIndex, ivusSetupStep]);
+
+  // Set IVUS mode directly (LIVE, RECORDING, or REVIEW)
+  const setIvusMode = useCallback((mode: 'LIVE' | 'RECORDING' | 'REVIEW') => {
+    const state: WorkflowState = {
+      currentStep,
+      currentSubStep,
+      workflowId,
+      workflowStepId,
+      activePreset,
+      wizardVisible,
+      wizardCompleted,
+      alignedSkullAP,
+      alignedSkullLAT,
+      currentAngleIndex,
+      ivusRecordingStopped: mode === 'REVIEW',
+      ivusSetupStep,
+      ivusIsRecording: mode === 'RECORDING',
+      ivusVideoTime,
+      ivusMode: mode,
+      timestamp: Date.now(),
+    };
+
+    // Update local state
+    setIvusMode_(mode);
+    setIvusRecordingStopped_(mode === 'REVIEW');
+    setIvusIsRecording_(mode === 'RECORDING');
+
+    // Save to localStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+    // Broadcast to other screens
+    if (channelRef.current) {
+      channelRef.current.postMessage(state);
+    }
+  }, [screenId, currentStep, currentSubStep, workflowId, workflowStepId, activePreset, wizardVisible, wizardCompleted, alignedSkullAP, alignedSkullLAT, currentAngleIndex, ivusSetupStep, ivusVideoTime]);
+
   // Sync workflow state (for external updates)
   const syncWorkflowState = useCallback((state: WorkflowState) => {
     setCurrentStep(state.currentStep);
@@ -411,6 +487,7 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     setIvusSetupStep_(state.ivusSetupStep);
     setIvusIsRecording_(state.ivusIsRecording);
     setIvusVideoTime_(state.ivusVideoTime);
+    setIvusMode_(state.ivusMode);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     
     if (channelRef.current) {
@@ -433,6 +510,7 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     ivusSetupStep,
     ivusIsRecording,
     ivusVideoTime,
+    ivusMode,
     setWorkflowStep,
     setWorkflowStepId,
     setWizardState,
@@ -441,6 +519,8 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     setIvusRecordingStopped,
     setIvusSetupStep,
     setIvusRecordingState,
+    setIvusStopRecording,
+    setIvusMode,
     syncWorkflowState,
   };
 
