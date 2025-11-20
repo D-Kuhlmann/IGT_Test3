@@ -655,10 +655,10 @@ function TaskGuidancePanel({ subFocusMode, selectedAngleIndex, onAngleSelect, hi
 
             {/* Angle List Items */}
             {[
-              { id: "1", name: "Angle 1", rotation: "Rot -180° Ang -180°" },
-              { id: "2", name: "Angle 2", rotation: "Rot 90° Ang 0°" },
-              { id: "3", name: "Angle 3", rotation: "Rot 0° Ang 45°" },
-              { id: "4", name: "Angle 4", rotation: "Rot -90° Ang 30°" }
+              { id: "1", name: "Angle 1", rotation: "Rot -180° Ang 0°" },
+              { id: "2", name: "Angle 2", rotation: "Rot 90° Ang 45°" },
+              { id: "3", name: "Angle 3", rotation: "Rot 0° Ang 90°" },
+              { id: "4", name: "Angle 4", rotation: "Rot -90° Ang 180°" }
             ].map((angle, index) => {
               const isCurrentlyNavigating = !hideFocusIndicators && subFocusMode === 'angles' && selectedAngleIndex === index;
               const isActivated = selectedAngle?.id === angle.id;
@@ -912,10 +912,10 @@ export function InterventionalWorkspace({
   
   // Map angle IDs to their corresponding images
   const angleImages = {
-    "1": "/src/assets/ImageAngles/3D coronaries 180 degrees.png",
-    "2": "/src/assets/ImageAngles/3D coronaries 00 degrees.png",
-    "3": "/src/assets/ImageAngles/3D coronaries 45 degrees.png",
-    "4": "/src/assets/ImageAngles/3D coronaries 90 degrees.png"
+    "1": "/src/assets/ImageAngles/3D coronaries 00 degrees.png",
+    "2": "/src/assets/ImageAngles/3D coronaries 45 degrees.png",
+    "3": "/src/assets/ImageAngles/3D coronaries 90 degrees.png",
+    "4": "/src/assets/ImageAngles/3D coronaries 180 degrees.png"
   };
 
   // SmartUI function to activate angles and switch TSM tab
@@ -925,10 +925,10 @@ export function InterventionalWorkspace({
     if (angleImage) {
       // Use consistent angle descriptions across screens
       const angleDescriptions = {
-        "1": { rotation: "Rot -180°", angle: "Ang -180°", rotValue: -180, angValue: -180 },
-        "2": { rotation: "Rot 90°", angle: "Ang 0°", rotValue: 90, angValue: 0 },
-        "3": { rotation: "Rot 0°", angle: "Ang 45°", rotValue: 0, angValue: 45 },
-        "4": { rotation: "Rot -90°", angle: "Ang 30°", rotValue: -90, angValue: 30 }
+        "1": { rotation: "Rot -180°", angle: "Ang 0°", rotValue: -180, angValue: -180 },
+        "2": { rotation: "Rot 90°", angle: "Ang 45°", rotValue: 90, angValue: 0 },
+        "3": { rotation: "Rot 0°", angle: "Ang 90°", rotValue: 0, angValue: 45 },
+        "4": { rotation: "Rot -90°", angle: "Ang 180°", rotValue: -90, angValue: 30 }
       };
       
       const angleDesc = angleDescriptions[angleId as keyof typeof angleDescriptions];
