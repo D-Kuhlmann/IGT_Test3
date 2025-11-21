@@ -25,6 +25,8 @@ import { useWorkflowSync } from '../../../contexts/WorkflowSyncContext';
 import { UniguideUI } from './UniguideUI';
 import CArmRotationVideo from '../../../assets/carm-rotation-testpathclear 1.mp4';
 import CBCTVideo from '../../../assets/neuro-3D-RA_Frontal (1).mp4';
+import CarmStartToAP from '../../../assets/ImageAngles/Carm-Start-to-AP.mov';
+import CarmAPToLAT from '../../../assets/ImageAngles/Carm-AP-to-LAT.mov';
 
 interface SmartNavigatorProps {
   componentSize?: 'small' | 'medium' | 'large' | 'xlarge' | 'fullscreen';
@@ -619,9 +621,53 @@ function IsocenterStep({ onPrevious, onContinue, onOverlayStateChange, hideHeade
   const [showCarmOverlay, setShowCarmOverlay] = useState(false);
   const [isCarmMoving, setIsCarmMoving] = useState(false);
   const [carmTargetPosition, setCarmTargetPosition] = useState<'AP' | 'Lateral'>('AP');
+  
+  // Video state
+  const [showCarmVideo, setShowCarmVideo] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const { inputSettings } = useSettings();
   const workflowSync = useWorkflowSync();
+  
+  // Show/hide video with overlay and listen for activate key
+  useEffect(() => {
+    if (!showCarmOverlay) {
+      setShowCarmVideo(false);
+      return;
+    }
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activateKey = typeof inputSettings.apcMovementActivate === 'string' ? inputSettings.apcMovementActivate.toLowerCase() : 's';
+      if (e.key.toLowerCase() === activateKey && !showCarmVideo) {
+        setShowCarmVideo(true);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showCarmOverlay, inputSettings.apcMovementActivate, showCarmVideo]);
+  
+  // Play video when it's shown
+  useEffect(() => {
+    if (showCarmVideo && videoRef.current) {
+      const video = videoRef.current;
+      video.currentTime = 0;
+      
+      // Wait for metadata to load to get actual duration
+      const playVideo = () => {
+        if (video.duration) {
+          video.playbackRate = video.duration / 4; // Speed up to fit 4 seconds
+        }
+        video.play();
+      };
+      
+      if (video.readyState >= 1) {
+        playVideo();
+      } else {
+        video.addEventListener('loadedmetadata', playVideo, { once: true });
+      }
+    }
+  }, [showCarmVideo]);
   
   // Notify parent when overlay state changes
   useEffect(() => {
@@ -1106,6 +1152,20 @@ function IsocenterStep({ onPrevious, onContinue, onOverlayStateChange, hideHeade
           Previous
         </button>
       </div>
+      
+      {/* C-arm Movement Video - Shows in upper right corner when activate key is pressed */}
+      {showCarmVideo && (
+        <div className="absolute top-0 right-6 w-80 h-80 rounded-lg overflow-hidden border-2 border-[#41c9fe] shadow-lg z-50 bg-black">
+          <video
+            ref={videoRef}
+            src={carmTargetPosition === 'AP' ? CarmStartToAP : CarmAPToLAT}
+            className="w-full h-full object-contain"
+            muted
+            playsInline
+            onEnded={() => setShowCarmVideo(false)}
+          />
+        </div>
+      )}
       
       {/* C-arm Position Confirmation Overlay */}
       <CarmPositionConfirmOverlay
