@@ -51,7 +51,7 @@ function ScreenFlexvisionInner() {
   const [activePreset, setActivePreset] = useState<1 | 2>(1);
   const [smartNavResetKey, setSmartNavResetKey] = useState(0);
   const [isCarmOverlayActive, setIsCarmOverlayActive] = useState(false);
-  const { setSelectedAngle, activateUniGuide } = useAngle();
+  const { setSelectedAngle, activateUniGuide, clearSelectedAngle, deactivateUniGuide } = useAngle();
   const { inputSettings, setIsSettingsOpen } = useSettings();
   const { setActiveComponents, setFocusedComponent: setContextFocusedComponent } = useActiveComponents();
 
@@ -445,8 +445,13 @@ function ScreenFlexvisionInner() {
   const handlePresetSelect = (preset: 1 | 2) => {
     setActivePreset(preset);
     setShowPresets(false);
-    // Clear workflow step to show empty state when preset changes
-    workflowSync.setWorkflowStepId('', preset);
+    // Reset all states when preset changes
+    workflowSync.resetAllStates(preset);
+    // Clear angle-related states
+    clearSelectedAngle();
+    deactivateUniGuide();
+    // Reset SmartNavigator component
+    setSmartNavResetKey(prev => prev + 1);
   };
 
   const handleStepSelect = (step: WorkflowStep) => {
