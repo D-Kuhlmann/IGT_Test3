@@ -56,6 +56,21 @@ function ScreenFlexvisionInner() {
   const { inputSettings, setIsSettingsOpen } = useSettings();
   const { setActiveComponents, setFocusedComponent: setContextFocusedComponent } = useActiveComponents();
 
+  // Send SmartUI mode when SmartWorkflows overlay opens
+  useEffect(() => {
+    if (showWorkflows) {
+      const sendSmartUICommand = async () => {
+        try {
+          await serialPortManager.sendCommand('tso', 'mode smartui');
+          console.log('SmartUI mode activated (workflows opened)');
+        } catch (err) {
+          console.log('SmartUI mode command failed:', err);
+        }
+      };
+      sendSmartUICommand();
+    }
+  }, [showWorkflows]);
+
   // Close SmartWorkflows overlay when C-arm overlay becomes active
   useEffect(() => {
     if (isCarmOverlayActive && showWorkflows) {
@@ -471,7 +486,7 @@ function ScreenFlexvisionInner() {
     setShowPresets(false);
     
     // Send SmartUI mode to Arduino when preset is loaded
-    await sendCommand('tso', 'mode smartui');
+    await sendCommand('tso', 'mode breathe');
     
     // Reset all states when preset changes
     workflowSync.resetAllStates(preset);

@@ -125,6 +125,17 @@ export function LEDTest() {
             >
               APC
             </button>
+            <button
+              onClick={() => sendCommand(TSO_CONNECTION, 'mode breathe', 'Breathe')}
+              disabled={!tsoConnected}
+              className={`w-full font-bold py-6 px-6 rounded-lg text-2xl transition-colors border-2 ${
+                tsoConnected
+                  ? 'bg-green-600 hover:bg-green-700 border-green-400 text-white'
+                  : 'bg-gray-700 border-gray-600 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              APC
+            </button>
 
             <button
               onClick={() => sendCommand(TSO_CONNECTION, 'mode none', 'Dim All')}
