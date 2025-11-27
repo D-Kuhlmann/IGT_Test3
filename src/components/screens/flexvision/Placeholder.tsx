@@ -60,14 +60,12 @@ export function Placeholder({ componentSize = 'large', title = 'Placeholder', hi
     return () => clearInterval(interval);
   }, [contentVideo, workflowSync.workflowStepId, workflowSync.ivusIsRecording, workflowSync.ivusVideoTime]);
 
-  // Determine if video should be visible - only show during active recording
+  // Determine if video should be rendered - render during active recording
   const isIvusStep = workflowSync.workflowStepId === 'ivus-acquisition';
-  const showVideo = contentVideo && isIvusStep && workflowSync.ivusIsRecording;
-
-  // Debug logging
-  if (contentVideo && isIvusStep) {
-    console.log('XRay Live Placeholder - isRecording:', workflowSync.ivusIsRecording, 'showVideo:', showVideo);
-  }
+  const isRecording = isIvusStep && workflowSync.ivusIsRecording;
+  const renderVideo = contentVideo && isRecording;
+  // Video is visible only when CINE button is pressed
+  const videoVisible = isRecording && workflowSync.ivusCinePressed;
 
   return (
     <div className="flex flex-col h-full">
@@ -76,11 +74,12 @@ export function Placeholder({ componentSize = 'large', title = 'Placeholder', hi
       
       {/* Content Area - Blank or with image/video, black or white background */}
       <div className={`flex-1 relative overflow-hidden ${whiteBg ? 'bg-[#ffffff]' : 'bg-[#000000]'}`}>
-        {showVideo ? (
+        {renderVideo ? (
           <video 
             ref={videoRef}
             src={contentVideo} 
             className="w-full h-full object-contain"
+            style={{ opacity: videoVisible ? 1 : 0 }}
             muted
             playsInline
           />

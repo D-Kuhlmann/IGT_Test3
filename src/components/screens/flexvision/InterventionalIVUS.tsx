@@ -289,6 +289,7 @@ function InterventionalIVUSContent({
   const [bookmarks, setBookmarks] = useState<number[]>([]); // Bookmark positions in seconds
   const keyHoldTimer = useRef<NodeJS.Timeout | null>(null);
   const keyHoldCount = useRef(0);
+  const [isCinePressed, setIsCinePressed] = useState(false); // Track CINE button press
   
   // Bottom row buttons (left to right) - changes based on recording state
   const buttons = isRecordingStopped
@@ -365,11 +366,13 @@ function InterventionalIVUSContent({
       // Toggle play/pause
       if (buttonId === 'pause') {
         setIsPlaying(false);
+        workflowSync.setIvusPlaybackState(false);
         if (videoRef.current) {
           videoRef.current.pause();
         }
       } else {
         setIsPlaying(true);
+        workflowSync.setIvusPlaybackState(true);
         if (videoRef.current) {
           videoRef.current.play();
         }
@@ -589,6 +592,26 @@ function InterventionalIVUSContent({
     }
   }, [isViewOnly, ivusMode]);
 
+  // View-only instances: Sync playback state from context
+  useEffect(() => {
+    if (!isViewOnly) return;
+    if (ivusMode !== 'REVIEW') return;
+    
+    const contextIsPlaying = workflowSync.ivusIsPlaying ?? false;
+    
+    // Update local state
+    setIsPlaying(contextIsPlaying);
+    
+    // Update video playback
+    if (videoRef.current) {
+      if (contextIsPlaying && videoRef.current.paused) {
+        videoRef.current.play().catch(err => console.log('Video play failed:', err));
+      } else if (!contextIsPlaying && !videoRef.current.paused) {
+        videoRef.current.pause();
+      }
+    }
+  }, [isViewOnly, ivusMode, workflowSync.ivusIsPlaying]);
+
   // Handle keyboard navigation for bottom buttons
   useEffect(() => {
     // Enable keyboard control when either focused OR selected AND focus indicators are not hidden
@@ -625,6 +648,16 @@ function InterventionalIVUSContent({
       const rightKey = typeof inputSettings.workflowStepRight === 'string' ? inputSettings.workflowStepRight.toLowerCase() : 'arrowright';
       const activateKey = typeof inputSettings.workflowStepActivate === 'string' ? inputSettings.workflowStepActivate.toLowerCase() : 'enter';
       const previousKey = typeof inputSettings.navigatorPreviousStep === 'string' ? inputSettings.navigatorPreviousStep.toLowerCase() : 'q';
+      const cineKey = typeof inputSettings.navigatorCineButton === 'string' ? inputSettings.navigatorCineButton.toLowerCase() : 'u';
+      
+      // Handle CINE button press (only during recording)
+      if (key === cineKey && isRecording) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsCinePressed(true);
+        workflowSync.setIvusCinePressed(true);
+        return;
+      }
       
       // If scrubber is active (being controlled)
       if (scrubberActive && isRecordingStopped) {
@@ -780,9 +813,24 @@ function InterventionalIVUSContent({
       }
     };
 
+    const handleKeyUp = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      const cineKey = typeof inputSettings.navigatorCineButton === 'string' ? inputSettings.navigatorCineButton.toLowerCase() : 'u';
+      
+      // Release CINE button
+      if (key === cineKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsCinePressed(false);
+        workflowSync.setIvusCinePressed(false);
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
     };
   }, [isFocused, isSelected, focusedButtonIndex, inputSettings, isRecording, isRecordingStopped, scrubberFocused, scrubberActive, recordingTime, isPlaying, isFrozen, setupStep]);
 
@@ -813,8 +861,8 @@ function InterventionalIVUSContent({
       <div className="flex-1 flex gap-0 overflow-hidden">
         {/* Left Panel - Controller Information */}
         <div className={`bg-black flex flex-col p-6 ${(isRecordingStopped || isRecording) ? 'w-[600px]' : 'w-[400px]'}`}>
-          {isRecordingStopped ? (
-            /* Review Mode - Show IVUS Pullback video */
+          {isRecordingStopped && !isViewOnly ? (
+            /* Review Mode - Show IVUS Pullback video (not on TSM) */
             <div className="flex-1 flex items-start justify-center">
               <video 
                 ref={pullbackVideoRef}
@@ -825,18 +873,20 @@ function InterventionalIVUSContent({
               />
             </div>
           ) : isRecording ? (
-            /* Recording Mode - Show IVUS Pullback video */
+            /* Recording Mode - Video always playing but only visible when CINE pressed */
             <div className="flex-1 flex items-start justify-center">
               <video 
                 ref={pullbackVideoRef}
                 src="/src/assets/Assets_Prototype-vids/IVUS pullback.mp4" 
                 className="w-full h-auto object-contain"
+                style={{ opacity: isCinePressed ? 1 : 0 }}
                 muted
                 playsInline
               />
             </div>
           ) : (
-            /* Normal Mode - Show tutorial */
+            /* Normal Mode - Show tutorial (not on TSM) */
+            !isViewOnly && (
             <>
               {/* Warning Message */}
               <div className="bg-[#2a2a2a] border-l-4 border-yellow-500 p-4 mb-6">
@@ -896,6 +946,7 @@ function InterventionalIVUSContent({
             </div>
           </div>
             </>
+            )
           )}
         </div>
 
