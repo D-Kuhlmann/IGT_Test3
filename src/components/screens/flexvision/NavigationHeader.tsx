@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import svgPaths from "../../../imports/svg-lswmsw7mth";
 import { useSettings } from "../../../contexts/SettingsContext";
 import { useDateTime } from "../../../hooks/useDateTime";
+import { serialPortManager } from "../../../utils/serialPort";
 
 interface WorkflowStep {
   id: string;
@@ -427,6 +428,124 @@ function RightSide({ date, time }: { date: string; time: string }) {
   );
 }
 
+/* ──────────────────────────── Applications Menu ──────────────────────────── */
+
+function ApplicationsMenu() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [tsoConnected, setTsoConnected] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Check connection status on mount and when menu opens
+  useEffect(() => {
+    if (isOpen) {
+      setTsoConnected(serialPortManager.isConnected('tso'));
+    }
+  }, [isOpen]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  const handleConnectTSO = async () => {
+    try {
+      if (!serialPortManager.isSupported()) {
+        console.error('Web Serial API not supported in this browser');
+        return;
+      }
+      await serialPortManager.selectAndConnect('tso', 9600);
+      setTsoConnected(true);
+      console.log('TSO COM port connected successfully');
+    } catch (err) {
+      console.error('Failed to connect TSO port:', err);
+    }
+  };
+
+  const handleDisconnectTSO = async () => {
+    try {
+      await serialPortManager.disconnect('tso');
+      setTsoConnected(false);
+      console.log('TSO COM port disconnected');
+    } catch (err) {
+      console.error('Failed to disconnect TSO port:', err);
+    }
+  };
+
+  const handleReleaseAll = async () => {
+    try {
+      await serialPortManager.disconnectAll();
+      setTsoConnected(false);
+      console.log('All COM ports released');
+    } catch (err) {
+      console.error('Failed to release ports:', err);
+    }
+  };
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button 
+        onClick={() => setIsOpen(!isOpen)} 
+        className="hover:opacity-80 transition-opacity"
+      >
+        <NavItem icon={<AppsIcon />} label="Applications" />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 w-64 bg-[#2a2a2a] border-2 border-[#0086BB] rounded-lg shadow-lg z-50">
+          <div className="p-4">
+            <h3 className="text-white font-['CentraleSans:Medium',_sans-serif] text-lg mb-4">COM Port Management</h3>
+            
+            <div className="space-y-2">
+              <button
+                onClick={handleConnectTSO}
+                disabled={tsoConnected}
+                className={`w-full px-4 py-2 rounded text-sm font-['CentraleSans:Book',_sans-serif] transition-colors ${
+                  tsoConnected
+                    ? 'bg-green-600 text-white cursor-not-allowed'
+                    : 'bg-[#0086BB] hover:bg-[#006a94] text-white'
+                }`}
+              >
+                {tsoConnected ? '✓ TSO Connected' : 'Connect TSO Port'}
+              </button>
+
+              <button
+                onClick={handleDisconnectTSO}
+                disabled={!tsoConnected}
+                className={`w-full px-4 py-2 rounded text-sm font-['CentraleSans:Book',_sans-serif] transition-colors ${
+                  !tsoConnected
+                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                    : 'bg-orange-600 hover:bg-orange-700 text-white'
+                }`}
+              >
+                Disconnect TSO
+              </button>
+
+              <button
+                onClick={handleReleaseAll}
+                className="w-full px-4 py-2 rounded text-sm font-['CentraleSans:Book',_sans-serif] bg-red-600 hover:bg-red-700 text-white transition-colors"
+              >
+                Release All Ports
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ──────────────────────────── Header ──────────────────────────── */
 
 export function NavigationHeader({
@@ -460,7 +579,7 @@ export function NavigationHeader({
           {/* Left: brand + primary nav */}
           <div className="flex items-center gap-12">
             <Left />
-            <NavItem icon={<AppsIcon />} label="Applications" />
+            <ApplicationsMenu />
             <button onClick={onShowPresets} className="hover:opacity-80 transition-opacity">
               <NavItem icon={<PresetsIcon />} label="Presets" />
             </button>
