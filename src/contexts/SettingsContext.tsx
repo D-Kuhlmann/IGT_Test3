@@ -84,7 +84,7 @@ const defaultSettings: InputSettings = {
   // APC defaults
   apcMovementActivate: 's',
   apcMovementCancel: 'w',
-  apcActivateHoldDuration: 4000, // 4 seconds
+  apcActivateHoldDuration: 3000, // 3 seconds
   apcCancelHoldDuration: 2000, // 2 seconds
   apcSafetyEnabled: true, // Safety button enabled by default
   apcSafetyButton: 'f', // F key for safety activation

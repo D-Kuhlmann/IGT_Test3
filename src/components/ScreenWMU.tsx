@@ -3,9 +3,10 @@ import { useAuth } from '../hooks/useAuth';
 import { useSettings } from '../contexts/SettingsContext';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useMouseShortcuts } from '../hooks/useMouseShortcuts';
+import { useDateTime } from '../hooks/useDateTime';
 import { SettingsMenu } from './SettingsMenu';
 import { imgPhilipsWordmark2, imgIcon, imgIcon1, imgIcon2, imgIcon3, imgIcon4 } from '../assets/wmu-svg-assets';
-import { getFormattedPatientName, getPatientId, getFormattedTime } from '../data/patientData';
+import { getFormattedPatientName, getPatientId } from '../data/patientData';
 
 /* ─────────────────────────── Branding ─────────────────────────── */
 
@@ -47,10 +48,11 @@ function Left() {
 /* ─────────────────────────── Time & Burger ────────────────────── */
 
 function Time() {
+  const { currentTime } = useDateTime();
   return (
     <div className="content-stretch flex gap-1 items-center justify-start relative shrink-0" data-name="Time">
       <div className="flex flex-col font-['CentraleSansDS:Book',_sans-serif] justify-center leading-none not-italic relative shrink-0 text-[#d6d6d6] text-[20px] text-nowrap">
-        <p className="leading-[28px] whitespace-pre">{getFormattedTime()}</p>
+        <p className="leading-[28px] whitespace-pre">{currentTime}</p>
       </div>
     </div>
   );
@@ -365,6 +367,7 @@ function Frame120() {
 /* ─────────────────────────── Screen ───────────────────────────── */
 
 export function ScreenWMU() {
+  const { currentTime } = useDateTime();
   const { setIsSettingsOpen } = useSettings();
   
   // Add keyboard shortcuts support
@@ -397,7 +400,7 @@ export function ScreenWMU() {
         <NavigationBarIgt />
   
         <div className="flex flex-col font-['CentraleSans:Book',_sans-serif] h-14 justify-center leading-none not-italic relative shrink-0 text-[56px] text-center text-white w-[258px]">
-          <p className="leading-[56px]">{getFormattedTime()}</p>
+          <p className="leading-[56px]">{currentTime}</p>
         </div>
         <div className="flex flex-col font-['CentraleSans:Book',_sans-serif] h-6 justify-center leading-none not-italic relative shrink-0 text-[20px] text-center text-white w-[258px]">
           <p className="leading-[28px]">{dateString}</p>

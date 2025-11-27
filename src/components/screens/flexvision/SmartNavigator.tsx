@@ -25,8 +25,8 @@ import { useWorkflowSync } from '../../../contexts/WorkflowSyncContext';
 import { UniguideUI } from './UniguideUI';
 import CArmRotationVideo from '../../../assets/carm-rotation-testpathclear 1.mp4';
 import CBCTVideo from '../../../assets/neuro-3D-RA_Frontal (1).mp4';
-import CarmStartToAP from '../../../assets/ImageAngles/Carm-Start-to-AP.mov';
-import CarmAPToLAT from '../../../assets/ImageAngles/Carm-AP-to-LAT.mov';
+import CarmStartToAP from '../../../assets/ImageAngles/Carm-Start-to-AP.mp4';
+import CarmAPToLAT from '../../../assets/ImageAngles/Carm-AP-to-LAT.mp4';
 
 interface SmartNavigatorProps {
   componentSize?: 'small' | 'medium' | 'large' | 'xlarge' | 'fullscreen';
@@ -656,7 +656,7 @@ function IsocenterStep({ onPrevious, onContinue, onOverlayStateChange, hideHeade
       // Wait for metadata to load to get actual duration
       const playVideo = () => {
         if (video.duration) {
-          video.playbackRate = video.duration / 4; // Speed up to fit 4 seconds
+          video.playbackRate = video.duration / 3; // Speed up to fit 3 seconds
         }
         video.play();
       };
