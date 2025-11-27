@@ -46,6 +46,7 @@ interface WorkflowSyncContextType {
   setIvusStopRecording: (videoTime?: number) => void;
   setIvusMode: (mode: 'LIVE' | 'RECORDING' | 'REVIEW') => void;
   syncWorkflowState: (state: WorkflowState) => void;
+  resetAllStates: (preset?: 1 | 2) => void;
 }
 
 const WorkflowSyncContext = createContext<WorkflowSyncContextType | undefined>(undefined);
@@ -495,6 +496,55 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     }
   }, []);
 
+  // Reset all states to initial values (for preset changes)
+  const resetAllStates = useCallback((preset?: 1 | 2) => {
+    const resetState: WorkflowState = {
+      currentStep: 1,
+      currentSubStep: undefined,
+      workflowId: undefined,
+      workflowStepId: '',
+      activePreset: preset || activePreset,
+      wizardVisible: undefined,
+      wizardCompleted: undefined,
+      alignedSkullAP: undefined,
+      alignedSkullLAT: undefined,
+      currentAngleIndex: undefined,
+      ivusRecordingStopped: undefined,
+      ivusSetupStep: undefined,
+      ivusIsRecording: undefined,
+      ivusVideoTime: undefined,
+      ivusMode: 'LIVE',
+      timestamp: Date.now(),
+    };
+
+    // Update all local states
+    setCurrentStep(1);
+    setCurrentSubStep(undefined);
+    setWorkflowId(undefined);
+    setWorkflowStepId_('');
+    if (preset) {
+      setActivePreset(preset);
+    }
+    setWizardVisible(undefined);
+    setWizardCompleted(undefined);
+    setAlignedSkullAP(undefined);
+    setAlignedSkullLAT(undefined);
+    setCurrentAngleIndex_(undefined);
+    setIvusRecordingStopped_(undefined);
+    setIvusSetupStep_(undefined);
+    setIvusIsRecording_(undefined);
+    setIvusVideoTime_(undefined);
+    setIvusMode_('LIVE');
+
+    // Save to localStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(resetState));
+
+    // Broadcast to other screens
+    if (channelRef.current) {
+      channelRef.current.postMessage(resetState);
+    }
+  }, [activePreset]);
+
   const value: WorkflowSyncContextType = {
     currentStep,
     currentSubStep,
@@ -522,6 +572,7 @@ export function WorkflowSyncProvider({ children, screenId }: WorkflowSyncProvide
     setIvusStopRecording,
     setIvusMode,
     syncWorkflowState,
+    resetAllStates,
   };
 
   return (
