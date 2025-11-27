@@ -28,6 +28,7 @@ import { useGlobalVoice } from '../contexts/GlobalVoiceContext';
 import { useVoiceInputState } from '../contexts/VoiceInputStateContext';
 import { useSettings, matchesInput } from '../contexts/SettingsContext';
 import { useInputBroadcast } from '../contexts/InputBroadcastContext';
+import { serialPortManager } from '../utils/serialPort';
 import { WorkflowSyncProvider, useWorkflowSync } from '../contexts/WorkflowSyncContext';
 import { useUnifiedInput } from '../hooks/useUnifiedInput';
 import { useAngle } from '../contexts/AngleContext';
@@ -442,9 +443,36 @@ function ScreenFlexvisionInner() {
     setShowPresets(false);
   };
 
-  const handlePresetSelect = (preset: 1 | 2) => {
+  // Connect to TSO COM port
+  const handleConnectTSO = async () => {
+    try {
+      if (!serialPortManager.isSupported()) {
+        console.error('Web Serial API not supported in this browser');
+        return;
+      }
+      await serialPortManager.selectAndConnect('tso', 9600);
+      console.log('TSO COM port connected successfully');
+    } catch (err) {
+      console.error('Failed to connect TSO port:', err);
+    }
+  };
+
+  // Send command to Arduino
+  const sendCommand = async (connectionId: string, command: string) => {
+    try {
+      await serialPortManager.sendCommand(connectionId, command);
+    } catch (err) {
+      console.log(`Command failed:`, err);
+    }
+  };
+
+  const handlePresetSelect = async (preset: 1 | 2) => {
     setActivePreset(preset);
     setShowPresets(false);
+    
+    // Send SmartUI mode to Arduino when preset is loaded
+    await sendCommand('tso', 'mode smartui');
+    
     // Reset all states when preset changes
     workflowSync.resetAllStates(preset);
     // Clear angle-related states
@@ -888,6 +916,10 @@ function ScreenFlexvisionInner() {
         case '2':
           event.preventDefault();
           handlePresetSelect(2);
+          break;
+        case '=':
+          event.preventDefault();
+          handleConnectTSO();
           break;
       }
     };

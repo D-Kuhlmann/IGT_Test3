@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSettings } from '../../contexts/SettingsContext';
+import { serialPortManager } from '../../utils/serialPort';
 
 interface CarmPositionConfirmOverlayProps {
   isVisible: boolean;
@@ -35,6 +36,32 @@ export function CarmPositionConfirmOverlay({
   const safetyEnabled = inputSettings.apcSafetyEnabled;
   const activateDuration = inputSettings.apcActivateHoldDuration;
   const cancelDuration = inputSettings.apcCancelHoldDuration;
+
+  // Send APC mode command when overlay becomes visible, SmartUI when it closes
+  useEffect(() => {
+    if (isVisible) {
+      const sendAPCCommand = async () => {
+        try {
+          await serialPortManager.sendCommand('tso', 'mode apc');
+          console.log('APC mode activated');
+        } catch (err) {
+          console.log('APC mode command failed:', err);
+        }
+      };
+      sendAPCCommand();
+    } else {
+      // When overlay closes, return to SmartUI mode
+      const sendSmartUICommand = async () => {
+        try {
+          await serialPortManager.sendCommand('tso', 'mode smartui');
+          console.log('SmartUI mode activated');
+        } catch (err) {
+          console.log('SmartUI mode command failed:', err);
+        }
+      };
+      sendSmartUICommand();
+    }
+  }, [isVisible]);
 
   useEffect(() => {
     if (!isVisible) {
