@@ -488,6 +488,9 @@ function ScreenFlexvisionInner() {
     // Send SmartUI mode to Arduino when preset is loaded
     await sendCommand('tso', 'mode breathe');
     
+    // Turn on footswitch LEDs when preset is selected
+    await sendCommand('footswitch', 'led on');
+    
     // Reset all states when preset changes
     workflowSync.resetAllStates(preset);
     // Clear angle-related states

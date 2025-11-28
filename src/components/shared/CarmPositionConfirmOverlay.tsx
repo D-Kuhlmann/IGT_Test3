@@ -38,6 +38,7 @@ export function CarmPositionConfirmOverlay({
   const cancelDuration = inputSettings.apcCancelHoldDuration;
 
   // Send APC mode command when overlay becomes visible, SmartUI when it closes
+  // Also control footswitch LEDs
   useEffect(() => {
     if (isVisible) {
       const sendAPCCommand = async () => {
@@ -48,9 +49,18 @@ export function CarmPositionConfirmOverlay({
           console.log('APC mode command failed:', err);
         }
       };
+      const turnOffFootswitchLEDs = async () => {
+        try {
+          await serialPortManager.sendCommand('footswitch', 'led off');
+          console.log('Footswitch LEDs turned off');
+        } catch (err) {
+          console.log('Footswitch LED off command failed:', err);
+        }
+      };
       sendAPCCommand();
+      turnOffFootswitchLEDs();
     } else {
-      // When overlay closes, return to SmartUI mode
+      // When overlay closes, return to SmartUI mode and turn footswitch LEDs back on
       const sendSmartUICommand = async () => {
         try {
           await serialPortManager.sendCommand('tso', 'mode smartui');
@@ -59,7 +69,16 @@ export function CarmPositionConfirmOverlay({
           console.log('SmartUI mode command failed:', err);
         }
       };
+      const turnOnFootswitchLEDs = async () => {
+        try {
+          await serialPortManager.sendCommand('footswitch', 'led on');
+          console.log('Footswitch LEDs turned on');
+        } catch (err) {
+          console.log('Footswitch LED on command failed:', err);
+        }
+      };
       sendSmartUICommand();
+      turnOnFootswitchLEDs();
     }
   }, [isVisible]);
 

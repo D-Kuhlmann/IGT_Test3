@@ -433,12 +433,14 @@ function RightSide({ date, time }: { date: string; time: string }) {
 function ApplicationsMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [tsoConnected, setTsoConnected] = useState(false);
+  const [footswitchConnected, setFootswitchConnected] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Check connection status on mount and when menu opens
   useEffect(() => {
     if (isOpen) {
       setTsoConnected(serialPortManager.isConnected('tso'));
+      setFootswitchConnected(serialPortManager.isConnected('footswitch'));
     }
   }, [isOpen]);
 
@@ -483,10 +485,35 @@ function ApplicationsMenu() {
     }
   };
 
+  const handleConnectFootswitch = async () => {
+    try {
+      if (!serialPortManager.isSupported()) {
+        console.error('Web Serial API not supported in this browser');
+        return;
+      }
+      await serialPortManager.selectAndConnect('footswitch', 9600);
+      setFootswitchConnected(true);
+      console.log('Footswitch COM port connected successfully');
+    } catch (err) {
+      console.error('Failed to connect Footswitch port:', err);
+    }
+  };
+
+  const handleDisconnectFootswitch = async () => {
+    try {
+      await serialPortManager.disconnect('footswitch');
+      setFootswitchConnected(false);
+      console.log('Footswitch COM port disconnected');
+    } catch (err) {
+      console.error('Failed to disconnect Footswitch port:', err);
+    }
+  };
+
   const handleReleaseAll = async () => {
     try {
       await serialPortManager.disconnectAll();
       setTsoConnected(false);
+      setFootswitchConnected(false);
       console.log('All COM ports released');
     } catch (err) {
       console.error('Failed to release ports:', err);
@@ -507,37 +534,72 @@ function ApplicationsMenu() {
           <div className="p-4">
             <h3 className="text-white font-['CentraleSans:Medium',_sans-serif] text-lg mb-4">COM Port Management</h3>
             
-            <div className="space-y-2">
-              <button
-                onClick={handleConnectTSO}
-                disabled={tsoConnected}
-                className={`w-full px-4 py-2 rounded text-sm font-['CentraleSans:Book',_sans-serif] transition-colors ${
-                  tsoConnected
-                    ? 'bg-green-600 text-white cursor-not-allowed'
-                    : 'bg-[#0086BB] hover:bg-[#006a94] text-white'
-                }`}
-              >
-                {tsoConnected ? '✓ TSO Connected' : 'Connect TSO Port'}
-              </button>
+            <div className="space-y-3">
+              {/* TSO Connection Section */}
+              <div className="space-y-2">
+                <p className="text-[#41c9fe] text-xs font-['CentraleSans:Medium',_sans-serif] uppercase">TSO Controller</p>
+                <button
+                  onClick={handleConnectTSO}
+                  disabled={tsoConnected}
+                  className={`w-full px-4 py-2 rounded text-sm font-['CentraleSans:Book',_sans-serif] transition-colors ${
+                    tsoConnected
+                      ? 'bg-green-600 text-white cursor-not-allowed'
+                      : 'bg-[#0086BB] hover:bg-[#006a94] text-white'
+                  }`}
+                >
+                  {tsoConnected ? '✓ TSO Connected' : 'Connect TSO Port'}
+                </button>
 
-              <button
-                onClick={handleDisconnectTSO}
-                disabled={!tsoConnected}
-                className={`w-full px-4 py-2 rounded text-sm font-['CentraleSans:Book',_sans-serif] transition-colors ${
-                  !tsoConnected
-                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                    : 'bg-orange-600 hover:bg-orange-700 text-white'
-                }`}
-              >
-                Disconnect TSO
-              </button>
+                <button
+                  onClick={handleDisconnectTSO}
+                  disabled={!tsoConnected}
+                  className={`w-full px-4 py-2 rounded text-sm font-['CentraleSans:Book',_sans-serif] transition-colors ${
+                    !tsoConnected
+                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                      : 'bg-orange-600 hover:bg-orange-700 text-white'
+                  }`}
+                >
+                  Disconnect TSO
+                </button>
+              </div>
 
-              <button
-                onClick={handleReleaseAll}
-                className="w-full px-4 py-2 rounded text-sm font-['CentraleSans:Book',_sans-serif] bg-red-600 hover:bg-red-700 text-white transition-colors"
-              >
-                Release All Ports
-              </button>
+              {/* Footswitch Connection Section */}
+              <div className="space-y-2 pt-2 border-t border-gray-600">
+                <p className="text-[#41c9fe] text-xs font-['CentraleSans:Medium',_sans-serif] uppercase">Footswitch</p>
+                <button
+                  onClick={handleConnectFootswitch}
+                  disabled={footswitchConnected}
+                  className={`w-full px-4 py-2 rounded text-sm font-['CentraleSans:Book',_sans-serif] transition-colors ${
+                    footswitchConnected
+                      ? 'bg-green-600 text-white cursor-not-allowed'
+                      : 'bg-[#0086BB] hover:bg-[#006a94] text-white'
+                  }`}
+                >
+                  {footswitchConnected ? '✓ Footswitch Connected' : 'Connect Footswitch'}
+                </button>
+
+                <button
+                  onClick={handleDisconnectFootswitch}
+                  disabled={!footswitchConnected}
+                  className={`w-full px-4 py-2 rounded text-sm font-['CentraleSans:Book',_sans-serif] transition-colors ${
+                    !footswitchConnected
+                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                      : 'bg-orange-600 hover:bg-orange-700 text-white'
+                  }`}
+                >
+                  Disconnect Footswitch
+                </button>
+              </div>
+
+              {/* Release All Button */}
+              <div className="pt-2 border-t border-gray-600">
+                <button
+                  onClick={handleReleaseAll}
+                  className="w-full px-4 py-2 rounded text-sm font-['CentraleSans:Book',_sans-serif] bg-red-600 hover:bg-red-700 text-white transition-colors"
+                >
+                  Release All Ports
+                </button>
+              </div>
             </div>
           </div>
         </div>
